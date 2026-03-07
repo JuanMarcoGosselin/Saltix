@@ -27,3 +27,4 @@ class Horario(models.Model):
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     aula = models.CharField(max_length=10)
+    
