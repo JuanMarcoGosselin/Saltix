@@ -37,9 +37,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'users',
-    
+    'users', 
+    'Profesores',
+    'jefatura',
+    'core',
+    'Contabilidad',
+    'Asistencias',
+    'admin',
 ]
+
+AUTH_USER_MODEL = "users.Usuario"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

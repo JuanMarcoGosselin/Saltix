@@ -11,6 +11,9 @@ class Usuario(models.Model):
     last_login = models.TimeField(null= True, blank = True)
     rol_id = models.ForeignKey('Rol', on_delete=models.PROTECT, null=True, blank=True, related_name='users')
 
+    def __str__(self):
+        return self.nombre
+
 class Rol(models.Model): 
     nombre = models.CharField(max_length=50, blank=False, null=False)
     descripcion = models.TextField(max_length= 1000, blank= True, null=True)
