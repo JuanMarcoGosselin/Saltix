@@ -18,7 +18,7 @@ class Rol(models.Model):
     nombre = models.CharField(max_length=50, blank=False, null=False)
     descripcion = models.TextField(max_length= 1000, blank= True, null=True)
 
-class Departamnto(models.Model): 
+class Departamento(models.Model): 
     nombre = models.CharField(max_length=40)
     description = models.CharField(max_length=1000)
     jefe = models.ForeignKey("Usuario", on_delete=models.PROTECT) 
