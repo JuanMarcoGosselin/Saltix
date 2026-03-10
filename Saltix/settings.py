@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'core',
     'Contabilidad',
     'Asistencias',
-    'admin',
+    'admin.apps.AdminConfig',
 ]
 
 AUTH_USER_MODEL = "users.Usuario"

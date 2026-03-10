@@ -1,30 +1,48 @@
 from django.db import models
 
 class Profesor(models.Model): 
-    usuario_id = models.ForeignKey("Usuario", on_delete=models.CASCADE)
+    # Datos principales del profesor: identidad, estado laboral y adscripcion.
+    ESTADOS = [
+        ("ACTIVO", "Activo"),
+        ("SUSPENDIDO", "Suspendido"),
+        ("BAJA_TEMPORAL", "Baja temporal"),
+        ("BAJA_DEFINITIVA", "Baja definitiva"),
+    ]
+
+    usuario = models.ForeignKey("users.Usuario", on_delete=models.CASCADE)
     rfc = models.CharField(max_length=13)
     curp = models.CharField(max_length=18)
     telefono = models.CharField(max_length=10)
-    direcion = models.TextField(max_length=100)
+    direccion = models.TextField(max_length=100)
     fecha_ingreso = models.DateField()
-    estado_laboral = models.CharField(max_length=25)
-    #7 por si hay inflacion bro 
-    salario_por_hora = models.DecimalField(max_digits=7, decimal_places=2)
+    estado_laboral = models.CharField(max_length=20, choices=ESTADOS, default="ACTIVO")
+    costo_por_hora = models.DecimalField(max_digits=12, decimal_places=4)
     tipo_contrato = models.CharField(max_length=25)
-    departamento = models.ForeignKey("Departamento", on_delete=models.PROTECT, null=True)
+    departamento = models.ForeignKey("users.Departamento", on_delete=models.PROTECT)
+    plantel = models.ForeignKey("core.Plantel", on_delete=models.PROTECT)
 
 class Horario(models.Model): 
+    # Horario por profesor para horas clase programadas.
     DIAS = [
         ("LUN", "Lunes"),
         ("MAR", "Martes"),
         ("MIE", "Miercoles"), 
-        ("JUE", "Jueves")
-        ("VIE", "Viernes")
-        ("SAB", "Sabado")
+        ("JUE", "Jueves"),
+        ("VIE", "Viernes"),
+        ("SAB", "Sabado"),
     ]
-    profesor_id = models.ForeignKey("Profesor", on_delete=models.CASCADE)
+    profesor = models.ForeignKey("Profesor", on_delete=models.CASCADE)
     dia_semana = models.CharField(max_length=3, choices=DIAS)
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     aula = models.CharField(max_length=10)
+    es_hora_clase = models.BooleanField(default=True)
+
+class TransferenciaDepartamento(models.Model):
+    # Historial de cambios de departamento del profesor.
+    profesor = models.ForeignKey("Profesor", on_delete=models.PROTECT)
+    departamento_origen = models.ForeignKey("users.Departamento", on_delete=models.PROTECT, related_name="transferencias_origen")
+    departamento_destino = models.ForeignKey("users.Departamento", on_delete=models.PROTECT, related_name="transferencias_destino")
+    fecha = models.DateTimeField(auto_now_add=True)
+    aprobado_por = models.ForeignKey("users.Usuario", on_delete=models.PROTECT, null=True, blank=True)
     
