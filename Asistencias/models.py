@@ -27,6 +27,9 @@ class Asistencia(models.Model):
     fecha_registro = models.DateTimeField(auto_now_add=True)
     bitacora = models.ForeignKey("core.BitacoraAuditoria", on_delete=models.SET_NULL, null=True, blank=True)
 
+    def __str__(self):
+        return f"{self.profesor} | {self.fecha} | {self.estado}"
+
 class Incidencia(models.Model): 
     # Justificacion de faltas/retardos con su flujo de aprobacion.
     TIPOS = [
@@ -48,12 +51,18 @@ class Incidencia(models.Model):
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     fecha_de_resolucion = models.DateTimeField(null=True, blank=True)
 
+    def __str__(self):
+        return f"{self.asistencia} | {self.tipo} | {self.estado}"
+
 class EvidenciaIncidencia(models.Model):
     # Evidencias adjuntas (archivos) para respaldar incidencias.
     incidencia = models.ForeignKey("Incidencia", on_delete=models.CASCADE)
     archivo = models.FileField(upload_to="incidencias/")
     descripcion = models.CharField(max_length=255, blank=True, null=True)
     fecha_subida = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Evidencia {self.incidencia_id}"
 
 class SolicitudCorreccion(models.Model):
     # Solicitud del profesor para corregir un registro de asistencia.
@@ -71,6 +80,9 @@ class SolicitudCorreccion(models.Model):
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     fecha_resolucion = models.DateTimeField(null=True, blank=True)
 
+    def __str__(self):
+        return f"{self.profesor} | {self.estado}"
+
 class CorreccionAsistencia(models.Model):
     # Correccion por compensacion, no se edita la asistencia original.
     asistencia_original = models.ForeignKey("Asistencia", on_delete=models.PROTECT, related_name="correcciones")
@@ -78,3 +90,6 @@ class CorreccionAsistencia(models.Model):
     motivo = models.TextField(max_length=1000)
     aprobada_por = models.ForeignKey("users.Usuario", on_delete=models.PROTECT, null=True, blank=True)
     fecha_aprobacion = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Correccion {self.asistencia_original_id}"

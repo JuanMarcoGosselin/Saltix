@@ -21,6 +21,9 @@ class Profesor(models.Model):
     departamento = models.ForeignKey("users.Departamento", on_delete=models.PROTECT)
     plantel = models.ForeignKey("core.Plantel", on_delete=models.PROTECT)
 
+    def __str__(self):
+        return f"{self.usuario} | {self.rfc}"
+
 class Horario(models.Model): 
     # Horario por profesor para horas clase programadas.
     DIAS = [
@@ -38,6 +41,9 @@ class Horario(models.Model):
     aula = models.CharField(max_length=10)
     es_hora_clase = models.BooleanField(default=True)
 
+    def __str__(self):
+        return f"{self.profesor} | {self.dia_semana} {self.hora_inicio}-{self.hora_fin}"
+
 class TransferenciaDepartamento(models.Model):
     # Historial de cambios de departamento del profesor.
     profesor = models.ForeignKey("Profesor", on_delete=models.PROTECT)
@@ -45,4 +51,7 @@ class TransferenciaDepartamento(models.Model):
     departamento_destino = models.ForeignKey("users.Departamento", on_delete=models.PROTECT, related_name="transferencias_destino")
     fecha = models.DateTimeField(auto_now_add=True)
     aprobado_por = models.ForeignKey("users.Usuario", on_delete=models.PROTECT, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.profesor} | {self.departamento_origen} -> {self.departamento_destino}"
     

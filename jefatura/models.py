@@ -26,3 +26,6 @@ class SolicitudAprobacion(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.PROTECT)
     object_id = models.PositiveIntegerField()
     referencia = GenericForeignKey("content_type", "object_id")
+
+    def __str__(self):
+        return f"{self.tipo} | {self.estado}"

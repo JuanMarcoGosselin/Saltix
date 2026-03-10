@@ -6,6 +6,9 @@ class Plantel(models.Model):
     direccion = models.CharField(max_length=255)
     activo = models.BooleanField(default=True)
 
+    def __str__(self):
+        return self.nombre
+
 class BitacoraAuditoria(models.Model):
     # Bitacora simple de cambios para auditoria.
     usuario = models.ForeignKey("users.Usuario", on_delete=models.PROTECT)
@@ -15,6 +18,9 @@ class BitacoraAuditoria(models.Model):
     valor_anterior = models.TextField(blank=True, null=True)
     valor_nuevo = models.TextField(blank=True, null=True)
     fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.modelo} | {self.accion} | {self.fecha}"
 
 class Notificacion(models.Model):
     # Notificaciones internas (y base para correo).
@@ -30,3 +36,6 @@ class Notificacion(models.Model):
     mensaje = models.CharField(max_length=255)
     leida = models.BooleanField(default=False)
     fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.usuario} | {self.tipo}"

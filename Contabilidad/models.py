@@ -12,6 +12,9 @@ class Nomina(models.Model):
     total_neto = models.DecimalField(max_digits=12, decimal_places=4)
     fecha_de_generacion = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"{self.profesor} | {self.periodo}"
+
 class Periodo(models.Model):
     # Periodos de nomina por plantel (solo uno abierto a la vez).
     TIPOS = [
@@ -40,6 +43,9 @@ class Periodo(models.Model):
             )
         ]
 
+    def __str__(self):
+        return f"{self.plantel} | {self.tipo} | {self.fecha_inicio} - {self.fecha_fin}"
+
 class CatalogoConcepto(models.Model):
     # Catalogo de conceptos de percepciones/deducciones y su clasificacion fiscal.
     TIPOS = [
@@ -57,11 +63,17 @@ class CatalogoConcepto(models.Model):
     clasificacion_fiscal = models.CharField(max_length=10, choices=CLASIFICACION_FISCAL)
     activo = models.BooleanField(default=True)
 
+    def __str__(self):
+        return f"{self.nombre} | {self.tipo}"
+
 class DetalleNomina(models.Model): 
     # Partidas que componen la nomina (concepto + monto).
     nomina = models.ForeignKey("Nomina", on_delete=models.CASCADE)
     concepto = models.ForeignKey("CatalogoConcepto", on_delete=models.PROTECT)
     monto = models.DecimalField(max_digits=12, decimal_places=4)
+
+    def __str__(self):
+        return f"{self.nomina} | {self.concepto}"
 
 class ReciboNomina(models.Model):
     # Recibo PDF generado cuando la nomina se cierra.
@@ -69,8 +81,14 @@ class ReciboNomina(models.Model):
     pdf = models.FileField(upload_to="recibos/")
     fecha_emision = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"Recibo {self.nomina_id}"
+
 class VistaPreviaNomina(models.Model):
     # Calculo previo de nomina, sin cerrar el periodo.
     periodo = models.ForeignKey("Periodo", on_delete=models.CASCADE)
     generado_por = models.ForeignKey("users.Usuario", on_delete=models.PROTECT)
     fecha_generacion = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Vista previa {self.periodo_id}"

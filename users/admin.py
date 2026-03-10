@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
 from .forms import CustomUserCreationForm, CustomUserChangeForm
-from .models import Usuario
+from .models import Usuario, Rol, Permiso, RolPermiso, Departamento
 
 
 class CustomUserAdmin(UserAdmin):
@@ -35,3 +35,30 @@ class CustomUserAdmin(UserAdmin):
 
 
 admin.site.register(Usuario, CustomUserAdmin)
+
+
+@admin.register(Rol)
+class RolAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "descripcion")
+    search_fields = ("nombre",)
+
+
+@admin.register(Permiso)
+class PermisoAdmin(admin.ModelAdmin):
+    list_display = ("codigo", "descripcion")
+    search_fields = ("codigo", "descripcion")
+
+
+@admin.register(RolPermiso)
+class RolPermisoAdmin(admin.ModelAdmin):
+    list_display = ("rol", "permiso")
+    list_filter = ("rol",)
+    list_select_related = ("rol", "permiso")
+
+
+@admin.register(Departamento)
+class DepartamentoAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "jefe", "plantel", "activo")
+    list_filter = ("plantel", "activo")
+    search_fields = ("nombre", "jefe__email")
+    list_select_related = ("jefe", "plantel")

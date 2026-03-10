@@ -35,22 +35,31 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ["nombre", "apellido"]
 
     def __str__(self):
-        return self.nombre
+        return f"{self.nombre} {self.apellido} <{self.email}>"
 
 class Rol(models.Model): 
     # Rol funcional del sistema (admin, jefatura, profesor, etc).
     nombre = models.CharField(max_length=50, blank=False, null=False)
     descripcion = models.TextField(max_length=1000, blank=True, null=True)
 
+    def __str__(self):
+        return self.nombre
+
 class Permiso(models.Model):
     # Permiso granular por accion del sistema.
     codigo = models.CharField(max_length=80, unique=True)
     descripcion = models.CharField(max_length=255)
 
+    def __str__(self):
+        return self.codigo
+
 class RolPermiso(models.Model):
     # Relacion N:M entre rol y permiso.
     rol = models.ForeignKey("Rol", on_delete=models.CASCADE)
     permiso = models.ForeignKey("Permiso", on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.rol} -> {self.permiso}"
 
 class Departamento(models.Model): 
     # Departamento con jefe asignado y ligado a un plantel.
@@ -59,3 +68,6 @@ class Departamento(models.Model):
     jefe = models.ForeignKey("Usuario", on_delete=models.PROTECT)
     plantel = models.ForeignKey("core.Plantel", on_delete=models.PROTECT)
     activo = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.nombre
