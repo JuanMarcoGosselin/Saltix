@@ -19,7 +19,7 @@ class Profesor(models.Model):
     costo_por_hora = models.DecimalField(max_digits=12, decimal_places=4)
     tipo_contrato = models.CharField(max_length=25)
     departamento = models.ForeignKey("users.Departamento", on_delete=models.PROTECT)
-    plantel = models.ForeignKey("core.Plantel", on_delete=models.PROTECT)
+    planteles = models.ManyToManyField("core.Plantel", related_name="profesores")
 
     def __str__(self):
         return f"{self.usuario} | {self.rfc}"

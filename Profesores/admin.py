@@ -5,10 +5,16 @@ from .models import Profesor, Horario, TransferenciaDepartamento
 
 @admin.register(Profesor)
 class ProfesorAdmin(admin.ModelAdmin):
-    list_display = ("usuario", "rfc", "estado_laboral", "departamento", "plantel")
-    list_filter = ("estado_laboral", "departamento", "plantel")
+    list_display = ("usuario", "rfc", "estado_laboral", "departamento", "planteles_display")
+    list_filter = ("estado_laboral", "departamento", "planteles")
     search_fields = ("usuario__nombre", "usuario__apellido", "rfc", "curp")
-    list_select_related = ("usuario", "departamento", "plantel")
+    list_select_related = ("usuario", "departamento")
+    list_prefetch_related = ("planteles",)
+
+    def planteles_display(self, obj):
+        return ", ".join(p.nombre for p in obj.planteles.all())
+
+    planteles_display.short_description = "Planteles"
 
 
 @admin.register(Horario)
