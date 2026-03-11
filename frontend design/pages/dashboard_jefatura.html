@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SALTIX – Jefatura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="..//css/dashboard_jefatura.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">SX</div>
+    <h1>SALTIX</h1>
+    <span class="role-tag">Panel de Jefatura</span>
+  </div>
+  <nav>
+    <button class="nav-item active" onclick="showPage('equipo', this)">
+      <span class="icon">👥</span> Mi equipo
+    </button>
+    <button class="nav-item" onclick="showPage('asistencia', this)">
+      <span class="icon">🕐</span> Asistencia
+    </button>
+    <button class="nav-item" onclick="showPage('solicitudes', this)">
+      <span class="icon">📋</span> Solicitudes
+      <span class="badge" style="position:relative;top:0;right:0;margin-left:auto;background:#e74c3c;color:#fff;border-radius:999px;padding:1px 7px;font-size:0.68rem;">3</span>
+    </button>
+    <button class="nav-item" onclick="showPage('reportes', this)">
+      <span class="icon">📊</span> Reportes
+    </button>
+  </nav>
+  <div class="sidebar-profile">
+    <div class="avatar">JR</div>
+    <div class="profile-info">
+      <div class="profile-name">Juan Ramos</div>
+      <div class="profile-role">Jefe</div>
+    </div>
+    <button class="logout-btn" title="Cerrar sesión">⎋</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:0.75rem;">
+      <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
+      <span class="breadcrumb"> <strong></strong> Dashboard <span>/ Jefatura</span></span>
+    </div>
+    <div class="topbar-date">📅 Julio 2025</div>
+  </header>
+
+  <div class="content">
+
+    <!-- ── PAGE: MI EQUIPO ── -->
+    <div class="page active" id="page-equipo">
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:1.2rem;font-weight:800;margin-bottom:0.2rem;">Mi equipo</div>
+        <div style="font-size:0.82rem;color:var(--gray-400);">Departamento de Matemáticas · Ciclo 2025-A</div>
+      </div>
+
+      <div class="cards-grid">
+        <div class="card">
+          <div class="card-icon">👥</div>
+          <div class="card-label">Empleados a cargo</div>
+          <div class="card-value">12</div>
+          <div class="card-sub">↑ 1 nuevo este mes</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🕐</div>
+          <div class="card-label">Horas trabajadas</div>
+          <div class="card-value">486</div>
+          <div class="card-sub">Promedio: 40.5 h/sem</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📋</div>
+          <div class="card-label">Solicitudes pendientes</div>
+          <div class="card-value">3</div>
+          <div class="card-sub">Requieren tu aprobación</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Empleados del departamento</h3>
+          <button class="btn-primary btn-sm">+ Agregar</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Puesto</th>
+              <th>Horas sem.</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Ana García</td><td>Profesora</td><td>40 h</td><td><span class="pill pill-green">Activa</span></td><td><button class="btn-primary btn-sm">Ver</button></td></tr>
+            <tr><td>Luis Morales</td><td>Profesor</td><td>36 h</td><td><span class="pill pill-green">Activo</span></td><td><button class="btn-primary btn-sm">Ver</button></td></tr>
+            <tr><td>Carmen Ruiz</td><td>Asistente</td><td>40 h</td><td><span class="pill pill-yellow">Permiso</span></td><td><button class="btn-primary btn-sm">Ver</button></td></tr>
+            <tr><td>Pedro Soto</td><td>Profesor</td><td>32 h</td><td><span class="pill pill-green">Activo</span></td><td><button class="btn-primary btn-sm">Ver</button></td></tr>
+            <tr><td>Rosa Méndez</td><td>Tutora</td><td>20 h</td><td><span class="pill pill-blue">Medio tiempo</span></td><td><button class="btn-primary btn-sm">Ver</button></td></tr>
+            <tr><td>Jorge Herrera</td><td>Profesor</td><td>0 h</td><td><span class="pill pill-red">Baja</span></td><td><button class="btn-primary btn-sm">Ver</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE: ASISTENCIA ── -->
+    <div class="page" id="page-asistencia">
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:1.2rem;font-weight:800;margin-bottom:0.2rem;">Control de asistencias</div>
+        <div style="font-size:0.82rem;color:var(--gray-400);">Semana del 7 al 11 de julio, 2025</div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Registro semanal</h3>
+          <button class="btn-primary btn-sm">Exportar</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Lunes</th>
+              <th>Martes</th>
+              <th>Miércoles</th>
+              <th>Jueves</th>
+              <th>Viernes</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Ana García</td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-green">✔</span></td><td>40 h</td></tr>
+            <tr><td>Luis Morales</td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-yellow">½</span></td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-green">✔</span></td><td>36 h</td></tr>
+            <tr><td>Carmen Ruiz</td><td><span class="pill pill-yellow">P</span></td><td><span class="pill pill-yellow">P</span></td><td><span class="pill pill-yellow">P</span></td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-green">✔</span></td><td>16 h</td></tr>
+            <tr><td>Pedro Soto</td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-red">✘</span></td><td><span class="pill pill-green">✔</span></td><td><span class="pill pill-green">✔</span></td><td>32 h</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAGE: SOLICITUDES ── -->
+    <div class="page" id="page-solicitudes">
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:1.2rem;font-weight:800;margin-bottom:0.2rem;">Solicitudes pendientes</div>
+        <div style="font-size:0.82rem;color:var(--gray-400);">3 solicitudes esperan tu aprobación</div>
+      </div>
+
+      <div class="solicitudes-list">
+        <div class="solicitud-card">
+          <div class="sol-icon">🏖️</div>
+          <div class="sol-info">
+            <div class="sol-name">Ana García — Solicitud de vacaciones</div>
+            <div class="sol-desc">Del 14 al 18 de julio · 5 días hábiles</div>
+          </div>
+          <div class="sol-actions">
+            <button class="btn-approve">Aprobar</button>
+            <button class="btn-reject">Rechazar</button>
+          </div>
+        </div>
+        <div class="solicitud-card">
+          <div class="sol-icon">⏰</div>
+          <div class="sol-info">
+            <div class="sol-name">Luis Morales — Ajuste de horas</div>
+            <div class="sol-desc">Solicita corrección de 4 h el martes 8 de julio</div>
+          </div>
+          <div class="sol-actions">
+            <button class="btn-approve">Aprobar</button>
+            <button class="btn-reject">Rechazar</button>
+          </div>
+        </div>
+        <div class="solicitud-card">
+          <div class="sol-icon">📄</div>
+          <div class="sol-info">
+            <div class="sol-name">Pedro Soto — Permiso de ausencia</div>
+            <div class="sol-desc">Miércoles 9 de julio · Cita médica</div>
+          </div>
+          <div class="sol-actions">
+            <button class="btn-approve">Aprobar</button>
+            <button class="btn-reject">Rechazar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE: REPORTES ── -->
+    <div class="page" id="page-reportes">
+
+      <div style="margin-bottom:1.5rem;">
+        <div style="font-size:1.2rem;font-weight:800;margin-bottom:0.2rem;">Reportes del Departamento</div>
+        <div style="font-size:0.82rem;color:var(--gray-400);">Genera y descarga informes de tu equipo</div>
+      </div>
+
+      <div class="report-grid">
+        <div class="report-card">
+          <div class="report-icon">📊</div>
+          <div class="report-title">Asistencia mensual</div>
+          <div class="report-desc">Resumen de asistencias, faltas y permisos del mes.</div>
+          <button class="btn-primary btn-sm">Generar</button>
+        </div>
+        <div class="report-card">
+          <div class="report-icon">🕐</div>
+          <div class="report-title">Horas trabajadas</div>
+          <div class="report-desc">Total de horas por empleado en el periodo seleccionado.</div>
+          <button class="btn-primary btn-sm">Generar</button>
+        </div>
+        <div class="report-card">
+          <div class="report-icon">📋</div>
+          <div class="report-title">Solicitudes procesadas</div>
+          <div class="report-desc">Historial de solicitudes aprobadas y rechazadas.</div>
+          <button class="btn-primary btn-sm">Generar</button>
+        </div>
+        <div class="report-card">
+          <div class="report-icon">👥</div>
+          <div class="report-title">Plantilla del equipo</div>
+          <div class="report-desc">Listado completo de empleados activos en el departamento.</div>
+          <button class="btn-primary btn-sm">Generar</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  function showPage(id, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  // Botones aprobar/rechazar
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-approve')) {
+      const card = e.target.closest('.solicitud-card');
+      card.style.opacity = '0.4';
+      card.style.pointerEvents = 'none';
+      const name = card.querySelector('.sol-name').textContent;
+      alert('✅ Aprobado: ' + name);
+    }
+    if (e.target.classList.contains('btn-reject')) {
+      const card = e.target.closest('.solicitud-card');
+      card.style.opacity = '0.4';
+      card.style.pointerEvents = 'none';
+      const name = card.querySelector('.sol-name').textContent;
+      alert('❌ Rechazado: ' + name);
+    }
+  });
+</script>
+</body>
+</html>
