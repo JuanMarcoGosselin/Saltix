@@ -6,19 +6,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 {% endblock %}
 {% block page_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard_base.css' %}">
 <link rel="stylesheet" href="{% static 'core/css/dashboard_profesor.css' %}">
 {% endblock %}
 
 {% block topbar %}
 <header class="topbar">
-            <div class="topbar-left">
-                <button class="hamburger-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-                <div class="breadcrumb" id="breadcrumb">
-                    <strong>Inicio</strong>
-                </div>
-            </div>
-            <div class="topbar-date">{{ fecha_actual }}</div>
-        </header>
+    <div class="topbar-left">
+        <button class="hamburger-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <div class="breadcrumb" id="breadcrumb">
+            <strong>Inicio</strong>
+        </div>
+    </div>
+    <div class="topbar-date">{{ fecha_actual }}</div>
+</header>
 {% endblock %}
 
 {% block content %}
@@ -364,7 +365,7 @@
                     <label class="file-upload" id="file-label">
                         <input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">
 
-                                  📎 Adjunta un comprobante (PDF, JPG, PNG)
+                                📎 Adjunta un comprobante (PDF, JPG, PNG)
                                 
                     </label>
                 </div>

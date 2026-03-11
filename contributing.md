@@ -29,7 +29,7 @@ Donde:
 
 | Abreviatura | Significado |
 |-------------|-------------|
-| SISPROF | Sistema de Gestión de Profesores |
+| STX | SALTIX |
 
 ---
 
