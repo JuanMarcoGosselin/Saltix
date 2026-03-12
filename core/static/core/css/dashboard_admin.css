@@ -98,7 +98,9 @@
 .bar-orange { background: linear-gradient(90deg,#f7971e,#ffd200); }
 .bar-red { background: linear-gradient(90deg,#e17055,#fd79a8); }
 
-.modal-wide { max-width: 920px; }
+.modal-wide { max-width: 860px; width: 100%; }
+.modal-wide.cols-1 { max-width: 720px; }
+.modal-wide.cols-2 { max-width: 980px; }
 .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .form-select[multiple] { min-height: 120px; }
 
@@ -256,10 +258,54 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
+  align-items: start;
+  width: 100%;
 }
 
 .modal-left,
 .modal-right {
+  background: var(--gray-100);
+  border-radius: 14px;
+  padding: 1rem;
+  border: 1px solid var(--gray-200);
+  min-width: 0;
+}
+
+.modal-row {
+  background: var(--gray-100);
+  border-radius: 14px;
+  padding: .85rem 1rem;
+  border: 1px solid var(--gray-200);
+}
+
+.modal-grid {
+  gap: .8rem;
+}
+
+.form-input, .form-select, .form-textarea {
+  padding: .55rem .8rem;
+  font-size: .84rem;
+}
+
+.form-label {
+  font-size: .7rem;
+}
+
+.modal-footer {
+  margin-top: .75rem;
+}
+
+.modal-split.single-column {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+.modal-split.single-column .modal-left {
+  width: min(720px, 100%);
+}
+
+.modal-row {
+  grid-column: 1 / -1;
   background: var(--gray-100);
   border-radius: 14px;
   padding: 1rem;
@@ -307,6 +353,11 @@
 .horario-wrap table {
   width: 100%;
   min-width: 720px;
+}
+
+.horario-grid-wrap {
+  max-width: 100%;
+  overflow: auto;
 }
 
 .horario-grid-wrap {

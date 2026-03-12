@@ -511,6 +511,10 @@ tr:hover td { background: #fafcff; }
   padding: 2rem;
   box-shadow: 0 24px 60px rgba(13, 31, 60, .2);
   animation: modalIn .25s ease;
+  max-height: 80vh;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes modalIn {
@@ -566,6 +570,8 @@ tr:hover td { background: #fafcff; }
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
+  overflow: auto;
+  min-height: 0;
 }
 
 .form-group {

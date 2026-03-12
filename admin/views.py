@@ -10,7 +10,7 @@ from django.utils.timesince import timesince
 from django.urls import reverse
 
 from core.models import BitacoraAuditoria, Notificacion, Plantel
-from Profesores.models import Profesor
+from Profesores.models import Profesor, Horario
 from users.models import Departamento, Rol, RolPermiso, Usuario
 
 
@@ -103,6 +103,16 @@ def dashboard(request):
         .select_related("usuario")
         .prefetch_related("planteles", "departamentos")
     }
+    horarios_by_user = {}
+    for h in Horario.objects.filter(profesor__usuario_id__in=usuarios_ids).select_related("profesor"):
+        horarios_by_user.setdefault(h.profesor.usuario_id, []).append(
+            {
+                "dia": h.dia_semana,
+                "inicio": h.hora_inicio.strftime("%H:%M"),
+                "fin": h.hora_fin.strftime("%H:%M"),
+                "aula": h.aula,
+            }
+        )
     dept_by_jefe = {
         d.jefe_id: d
         for d in Departamento.objects.filter(jefe_id__in=usuarios_ids)
@@ -137,14 +147,24 @@ def dashboard(request):
         if rol_key == "administrador":
             plantel_nombre = "Todos"
             plantel_key = "todos"
+        elif rol_key == "contabilidad":
+            plantel_nombre = "Todos"
+            plantel_key = "todos"
         else:
             profesor = profes_by_user.get(u.id)
             if profesor:
                 if profesor.planteles.exists():
-                    plantel = profesor.planteles.first()
-                    plantel_nombre = plantel.nombre
-                    plantel_key = plantel.nombre.lower().replace(" ", "-")
                     plantel_ids = [str(p.id) for p in profesor.planteles.all()]
+                    plantel_nombres = [p.nombre for p in profesor.planteles.all()]
+                    plantel_nombre = ", ".join(plantel_nombres)
+                    plantel_key = plantel_nombres[0].lower().replace(" ", "-")
+                elif profesor.departamentos.exists():
+                    dept_planteles = {d.plantel for d in profesor.departamentos.select_related("plantel")}
+                    plantel_ids = [str(p.id) for p in dept_planteles]
+                    plantel_nombres = [p.nombre for p in dept_planteles]
+                    plantel_nombre = ", ".join(plantel_nombres)
+                    if plantel_nombres:
+                        plantel_key = plantel_nombres[0].lower().replace(" ", "-")
                 depto_ids = [str(d.id) for d in profesor.departamentos.all()]
                 depto_nombres = [d.nombre for d in profesor.departamentos.all()]
                 prof_data = {
@@ -203,9 +223,10 @@ def dashboard(request):
 
     empleados_data = []
     for p in profesores_qs:
-        plantel_nombre = (
-            p.planteles.first().nombre if p.planteles.exists() else "Sin plantel"
-        )
+        if p.planteles.exists():
+            plantel_nombre = ", ".join([pl.nombre for pl in p.planteles.all()])
+        else:
+            plantel_nombre = "Sin plantel"
         dept_names = [d.nombre for d in p.departamentos.all()]
         dept_label = ", ".join(dept_names) if dept_names else "Sin departamento"
         empleados_data.append(
@@ -322,6 +343,7 @@ def dashboard(request):
         },
         "recent_activity": recent_activity,
         "usuarios": usuarios,
+        "horarios_by_user": horarios_by_user,
         "roles_permisos": roles,
         "permisos_resumen": permisos_resumen,
         "empleados_data": empleados_data,
@@ -582,6 +604,9 @@ def update_departamento(request):
             return redirect(_redirect_with_message(error="Jefe invalido para departamento."))
         if Departamento.objects.filter(jefe=jefe).exclude(id=depto.id).exists():
             return redirect(_redirect_with_message(error="Ese jefe ya esta asignado a un plantel."))
+    else:
+        # Sin asignar: reasigna al administrador actual
+        jefe = request.user
 
     depto.nombre = nombre
     depto.descripcion = descripcion or nombre
@@ -613,7 +638,7 @@ def _upsert_profesor_from_request(request, user, is_new):
     if not dept_ids:
         return "Selecciona al menos un departamento para profesor."
 
-    if not re.match(r"^\\d{1,4}\\.\\d{2}$", salario):
+    if not re.match(r"^\d+(\.\d{2})?$", salario):
         return "Salario invalido. Usa formato 0000.00."
     try:
         costo_por_hora = Decimal(salario)
