@@ -18,10 +18,6 @@
     <div class="breadcrumb" id="breadcrumb"><strong>Inicio</strong></div>
   </div>
   <div style="display:flex;align-items:center;gap:.75rem;">
-    <div class="search-bar">
-      <span class="search-icon">&#x1F50D;</span>
-      <input type="text" placeholder="Buscar empleado, usuario...">
-    </div>
     <div class="topbar-notif">&#x1F514;<span class="notif-dot">{{ notificaciones_count }}</span></div>
     <div class="avatar" style="width:34px;height:34px;font-size:.8rem;background:linear-gradient(135deg,#7c3aed,#a78bfa);">{{ user.nombre|default:"U"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}</div>
   </div>
@@ -388,7 +384,7 @@
         <div class="modal-grid">
           <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre del plantel</label><input class="form-input" id="plantel-nombre" name="plantel_nombre" type="text" placeholder="Ej. Plantel Oriente" required></div>
           <div class="form-group" style="grid-column:1/-1"><label class="form-label">Direccion</label><input class="form-input" id="plantel-dir" name="plantel_direccion" type="text" placeholder="Calle, numero, colonia, ciudad" required></div>
-          <div class="form-group"><label class="form-label">Activo</label><input type="checkbox" name="plantel_activo" checked></div>
+          <div class="form-group checkbox-row"><label class="form-label">Activo</label><input type="checkbox" name="plantel_activo" checked></div>
         </div>
         <div style="margin-top:.75rem;">
           <div style="font-weight:700;margin-bottom:.4rem;">Departamentos del plantel</div>
@@ -420,11 +416,12 @@
         <div class="modal-grid">
           <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre del plantel</label><input class="form-input" id="plantel-edit-nombre" name="plantel_nombre" type="text" required></div>
           <div class="form-group" style="grid-column:1/-1"><label class="form-label">Direccion</label><input class="form-input" id="plantel-edit-dir" name="plantel_direccion" type="text" required></div>
-          <div class="form-group"><label class="form-label">Activo</label><input type="checkbox" id="plantel-edit-activo" name="plantel_activo"></div>
+          <div class="form-group checkbox-row"><label class="form-label">Activo</label><input type="checkbox" id="plantel-edit-activo" name="plantel_activo"></div>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-cancel" onclick="document.getElementById('modal-plantel-edit').classList.remove('open')">Cancelar</button>
+        <button type="button" class="btn-outline btn-danger" onclick="deletePlantelFromEdit()">Eliminar</button>
         <button type="submit" class="btn-submit">Guardar cambios</button>
       </div>
     </form>
@@ -452,10 +449,11 @@
             <option value="">&#x2014; Sin asignar &#x2014;</option>
           </select>
         </div>  
-        <div class="form-group"><label class="form-label">Activo</label><input type="checkbox" id="dept-activo" name="dept_activo" checked></div>
+        <div class="form-group checkbox-row"><label class="form-label">Activo</label><input type="checkbox" id="dept-activo" name="dept_activo" checked></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-cancel" onclick="document.getElementById('modal-dept').classList.remove('open')">Cancelar</button>
+        <button type="button" class="btn-outline btn-danger" onclick="deleteDepartamentoFromEdit()">Eliminar</button>
         <button type="submit" class="btn-submit" id="dept-submit">Guardar departamento</button>
       </div>
     </form>
@@ -463,6 +461,16 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<form method="post" id="plantel-delete-form" action="{% url 'admin_delete_plantel' %}" style="display:none;">
+  {% csrf_token %}
+  <input type="hidden" name="plantel_id" id="plantel-delete-id">
+</form>
+
+<form method="post" id="dept-delete-form" action="{% url 'admin_delete_departamento' %}" style="display:none;">
+  {% csrf_token %}
+  <input type="hidden" name="dept_id" id="dept-delete-id">
+</form>
 {% endblock %}
 
 {% block page_js %}

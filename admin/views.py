@@ -10,7 +10,7 @@ from django.utils.timesince import timesince
 from django.urls import reverse
 
 from core.models import BitacoraAuditoria, Notificacion, Plantel
-from Profesores.models import Profesor, Horario
+from Profesores.models import Profesor, Horario, TransferenciaDepartamento
 from users.models import Departamento, Rol, RolPermiso, Usuario
 
 
@@ -220,6 +220,15 @@ def dashboard(request):
                 "profesor": prof_data,
             }
         )
+
+    rol_order = {
+        "jefatura": 1,
+        "profesor": 2,
+        "contabilidad": 3,
+        "administrador": 4,
+        "admin": 4,
+    }
+    usuarios.sort(key=lambda u: (rol_order.get(u.get("rol"), 99), u.get("nombre") or "", u.get("apellido") or ""))
 
     empleados_data = []
     for p in profesores_qs:
@@ -616,6 +625,61 @@ def update_departamento(request):
     depto.save()
 
     return redirect(_redirect_with_message(ok="Departamento actualizado."))
+
+
+def delete_plantel(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    plantel_id = request.POST.get("plantel_id")
+    if not plantel_id:
+        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+
+    plantel = Plantel.objects.filter(id=plantel_id).first()
+    if not plantel:
+        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+
+    if plantel.profesores.exists():
+        return redirect(_redirect_with_message(error="No puedes eliminar el plantel porque tiene profesores asignados."))
+
+    departamentos = list(Departamento.objects.filter(plantel=plantel))
+    for depto in departamentos:
+        if depto.profesores.exists():
+            return redirect(_redirect_with_message(error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene profesores asignados."))
+        if TransferenciaDepartamento.objects.filter(
+            Q(departamento_origen=depto) | Q(departamento_destino=depto)
+        ).exists():
+            return redirect(_redirect_with_message(error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene historial de transferencias."))
+
+    for depto in departamentos:
+        depto.delete()
+
+    plantel.delete()
+    return redirect(_redirect_with_message(ok="Plantel eliminado."))
+
+
+def delete_departamento(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    dept_id = request.POST.get("dept_id")
+    if not dept_id:
+        return redirect(_redirect_with_message(error="Departamento no encontrado."))
+
+    depto = Departamento.objects.select_related("plantel").filter(id=dept_id).first()
+    if not depto:
+        return redirect(_redirect_with_message(error="Departamento no encontrado."))
+
+    if depto.profesores.exists():
+        return redirect(_redirect_with_message(error="No puedes eliminar el departamento porque tiene profesores asignados."))
+
+    if TransferenciaDepartamento.objects.filter(
+        Q(departamento_origen=depto) | Q(departamento_destino=depto)
+    ).exists():
+        return redirect(_redirect_with_message(error="No puedes eliminar el departamento porque tiene historial de transferencias."))
+
+    depto.delete()
+    return redirect(_redirect_with_message(ok="Departamento eliminado."))
 
 
 def _upsert_profesor_from_request(request, user, is_new):

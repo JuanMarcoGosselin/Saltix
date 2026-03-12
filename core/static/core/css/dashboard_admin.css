@@ -238,6 +238,15 @@
 .plantel-name { font-size: .95rem; font-weight: 800; color: var(--navy); }
 .plantel-meta { font-size: .75rem; color: var(--gray-400); margin-top: .1rem; }
 .plantel-actions { display: flex; align-items: center; gap: .6rem; }
+.btn-danger {
+  border-color: #f5c6c2;
+  color: #c0392b;
+  background: #fdecea;
+}
+
+.btn-danger:hover {
+  background: #fbd7d1;
+}
 .plantel-toggle-icon { font-size: .8rem; color: var(--gray-400); transition: transform .25s; }
 .plantel-toggle-icon.open { transform: rotate(180deg); }
 .depts-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(210px,1fr)); gap: 1rem; padding-left: .5rem; margin-top: .25rem; animation: fadeUp .25s ease; }
@@ -289,6 +298,26 @@
 
 .form-label {
   font-size: .7rem;
+}
+
+.form-group.checkbox-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: .6rem;
+  min-height: 36px;
+}
+
+.form-group.checkbox-row .form-label {
+  margin: 0;
+  line-height: 1;
+}
+
+.form-group.checkbox-row input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
 }
 
 .modal-footer {

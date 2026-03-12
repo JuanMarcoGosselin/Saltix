@@ -1,4 +1,39 @@
 const breadcrumbs={inicio:'Inicio',empleados:'Empleados',usuarios:'Usuarios',departamentos:'Planteles y Departamentos',configuracion:'Configuracion'};
+const PAGE_STORAGE_KEY = 'admin_active_page';
+
+function getNavButtons(){
+  return Array.from(document.querySelectorAll('.nav-item'));
+}
+
+function getPageFromButton(btn){
+  if (!btn) return '';
+  const dataPage = btn.dataset.page;
+  if (dataPage) return dataPage;
+  const onClick = btn.getAttribute('onclick') || '';
+  const match = onClick.match(/showPage\('([^']+)'\)/);
+  return match ? match[1] : '';
+}
+
+function findNavButton(pageId){
+  return getNavButtons().find(btn => getPageFromButton(btn) === pageId);
+}
+
+function saveActivePage(pageId){
+  if (!pageId) return;
+  try { localStorage.setItem(PAGE_STORAGE_KEY, pageId); } catch (e) {}
+}
+
+function restoreActivePage(){
+  let pageId = '';
+  try { pageId = localStorage.getItem(PAGE_STORAGE_KEY) || ''; } catch (e) {}
+  if (!pageId || !document.getElementById('page-' + pageId)) {
+    const defaultBtn = getNavButtons().find(btn => btn.classList.contains('active'));
+    pageId = getPageFromButton(defaultBtn) || 'inicio';
+  }
+  const btn = findNavButton(pageId);
+  showPage(pageId, btn || null);
+}
+
 function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -6,6 +41,7 @@ function showPage(id,btn){
   if(btn)btn.classList.add('active');
   document.getElementById('breadcrumb').innerHTML='<strong>'+breadcrumbs[id]+'</strong>';
   document.getElementById('sidebar').classList.remove('open');
+  saveActivePage(id);
 }
 
 const empleados = JSON.parse(document.getElementById('empleados-data').textContent || '[]');
@@ -473,10 +509,45 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'),3500);
 }
 
+function deletePlantel(plantelId){
+  const plantel = plantelesData.find(p => String(p.id) === String(plantelId));
+  const nombre = plantel ? plantel.nombre : 'este plantel';
+  const count = plantel ? plantel.depts.length : 0;
+  const msg = count
+    ? `¿Eliminar "${nombre}"? Se eliminarán ${count} departamento(s).`
+    : `¿Eliminar "${nombre}"?`;
+  if (!confirm(msg)) return;
+  const form = document.getElementById('plantel-delete-form');
+  document.getElementById('plantel-delete-id').value = plantelId;
+  form.submit();
+}
+
+function deleteDepartamento(deptId){
+  const depto = deptIndex[String(deptId)];
+  const nombre = depto ? depto.nombre : 'este departamento';
+  if (!confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  const form = document.getElementById('dept-delete-form');
+  document.getElementById('dept-delete-id').value = deptId;
+  form.submit();
+}
+
+function deletePlantelFromEdit(){
+  const plantelId = document.getElementById('plantel-edit-id').value;
+  if (!plantelId) return;
+  deletePlantel(plantelId);
+}
+
+function deleteDepartamentoFromEdit(){
+  const deptId = document.getElementById('dept-id').value;
+  if (!deptId) return;
+  deleteDepartamento(deptId);
+}
+
 renderEmpleados();
 buildDeptIndex();
 renderPlanteles();
 updateDeptsByPlantel('usr-plantel','usr-dept');
+restoreActivePage();
 
 document.getElementById('user-form').addEventListener('submit', (e) => {
   const role = document.getElementById('usr-rol').value;

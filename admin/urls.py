@@ -9,6 +9,8 @@ urlpatterns = [
     path("usuarios/editar/", views.update_user, name="admin_update_user"),
     path("planteles/crear/", views.create_plantel, name="admin_create_plantel"),
     path("planteles/editar/", views.update_plantel, name="admin_update_plantel"),
+    path("planteles/eliminar/", views.delete_plantel, name="admin_delete_plantel"),
     path("departamentos/crear/", views.create_departamento, name="admin_create_departamento"),
     path("departamentos/editar/", views.update_departamento, name="admin_update_departamento"),
+    path("departamentos/eliminar/", views.delete_departamento, name="admin_delete_departamento"),
 ]
