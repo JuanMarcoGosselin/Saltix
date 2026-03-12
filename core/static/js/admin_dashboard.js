@@ -142,6 +142,31 @@ function renderEmpleados(){
 function filterEmpleados(f,btn){empFilter=f;document.querySelectorAll('#emp-tabs .tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderEmpleados();}
 function searchEmpleados(val){empSearch=val;renderEmpleados();}
 
+function searchUsuarios(val){
+  const tbody = document.getElementById('usuarios-tbody');
+  if (!tbody) return;
+  const term = (val || '').trim().toLowerCase();
+  const rows = Array.from(tbody.querySelectorAll('tr[data-search]'));
+  let any = false;
+  rows.forEach(row => {
+    const match = !term || (row.dataset.search || '').includes(term);
+    row.style.display = match ? '' : 'none';
+    if (match) any = true;
+  });
+  let emptyRow = tbody.querySelector('tr.usuarios-empty');
+  if (!rows.length) return;
+  if (!any) {
+    if (!emptyRow) {
+      emptyRow = document.createElement('tr');
+      emptyRow.className = 'usuarios-empty';
+      emptyRow.innerHTML = '<td colspan="7" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin resultados.</td>';
+      tbody.appendChild(emptyRow);
+    }
+  } else if (emptyRow) {
+    emptyRow.remove();
+  }
+}
+
 function openModalUsuario(){
   const form = document.getElementById('user-form');
   form.action = form.dataset.createUrl;

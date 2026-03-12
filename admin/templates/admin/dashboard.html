@@ -44,7 +44,7 @@
         <p>Resumen general del sistema &#x00B7; {{ fecha_actual }}</p>
       </div>
       <div class="welcome-chips">
-        <div class="welcome-chip"><div class="chip-val">{{ stats.empleados_total }}</div><div class="chip-label">Empleados</div></div>
+        <div class="welcome-chip"><div class="chip-val">{{ stats.empleados_total }}</div><div class="chip-label">Profesores</div></div>
         <div class="welcome-chip"><div class="chip-val">{{ stats.planteles_total }}</div><div class="chip-label">Planteles</div></div>
         <div class="welcome-chip"><div class="chip-val">{{ stats.departamentos_total }}</div><div class="chip-label">Departamentos</div></div>
         <div class="welcome-chip"><div class="chip-val">{{ stats.usuarios_total }}</div><div class="chip-label">Usuarios</div></div>
@@ -133,12 +133,18 @@
       <button class="btn-primary" onclick="openModalUsuario()">+ Nuevo usuario</button>
     </div>
     <div class="table-wrap">
-      <div class="table-header"><h3>Usuarios del sistema</h3></div>
+      <div class="table-header">
+        <h3>Usuarios del sistema</h3>
+        <div class="search-bar" style="border:1.5px solid var(--gray-200);">
+          <span class="search-icon">&#x1F50D;</span>
+          <input type="text" placeholder="Buscar..." oninput="searchUsuarios(this.value)" style="width:160px;">
+        </div>
+      </div>
       <table>
         <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Plantel</th><th>Ultimo acceso</th><th>Estado</th><th>Acciones</th></tr></thead>
-        <tbody>
+        <tbody id="usuarios-tbody">
           {% for u in usuarios %}
-            <tr>
+            <tr data-search="{{ u.email|lower }} {{ u.nombre|lower }} {{ u.apellido|lower }} {{ u.rol_label|lower }} {{ u.plantel|lower }} {{ u.estado_label|lower }}">
               <td><code style="font-size:.8rem;background:var(--gray-100);padding:.1rem .45rem;border-radius:5px;">{{ u.email }}</code></td>
               <td>{{ u.nombre }} {{ u.apellido }}</td>
               <td><span class="chip-perm {{ u.rol_clase }}">{{ u.rol_label }}</span></td>
