@@ -18,24 +18,48 @@
     <div class="breadcrumb" id="breadcrumb"><strong>Inicio</strong></div>
   </div>
   <div style="display:flex;align-items:center;gap:.75rem;">
-    <div class="topbar-notif">&#x1F514;<span class="notif-dot">{{ notificaciones_count }}</span></div>
+    <div class="notif-wrap">
+      <button class="topbar-notif" id="notif-btn" type="button">
+        &#x1F514;
+        {% if notificaciones_count %}
+          <span class="notif-dot">{{ notificaciones_count }}</span>
+        {% endif %}
+      </button>
+      <div class="notif-panel" id="notif-panel" data-read-all-url="{% url 'admin_notif_read_all' %}" data-read-one-url="{% url 'admin_notif_read' %}">
+        <div class="notif-panel-header">
+          <span>Notificaciones &#x00B7; Ultimos 7 dias</span>
+          <button type="button" class="notif-mark-read" id="notif-mark-read">Marcar todas</button>
+        </div>
+        <div class="notif-list">
+          {% for n in notificaciones %}
+            <div class="notif-item{% if not n.leida %} notif-unread{% endif %}" data-id="{{ n.id }}">
+              <div class="notif-msg">{{ n.mensaje }}</div>
+              <div class="notif-meta">
+                {% if n.tipo == "INCIDENCIA" %}
+                  <span class="pill pill-red">Incidencia</span>
+                {% elif n.tipo == "NOMINA" %}
+                  <span class="pill pill-yellow">Nomina</span>
+                {% elif n.tipo == "RECIBO" %}
+                  <span class="pill pill-blue">Recibo</span>
+                {% else %}
+                  <span class="pill pill-gray">Sistema</span>
+                {% endif %}
+                <span class="notif-time">{{ n.cuando }}</span>
+              </div>
+              <button type="button" class="notif-dismiss" title="Quitar">&#x2715;</button>
+            </div>
+          {% empty %}
+            <div class="notif-empty">Sin notificaciones recientes.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
     <div class="avatar" style="width:34px;height:34px;font-size:.8rem;background:linear-gradient(135deg,#7c3aed,#a78bfa);">{{ user.nombre|default:"U"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}</div>
   </div>
 </header>
 {% endblock %}
 
 {% block content %}
-
-  {% if form_error %}
-    <div class="table-wrap" style="margin-bottom:1.5rem;border-left:4px solid #c0392b;">
-      <div style="padding:0.9rem 1.25rem;color:#c0392b;font-weight:600;">{{ form_error }}</div>
-    </div>
-  {% endif %}
-  {% if form_success %}
-    <div class="table-wrap" style="margin-bottom:1.5rem;border-left:4px solid #00916e;">
-      <div style="padding:0.9rem 1.25rem;color:#00916e;font-weight:600;">{{ form_success }}</div>
-    </div>
-  {% endif %}
 
   <div class="page active" id="page-inicio">
     <div class="welcome-banner">

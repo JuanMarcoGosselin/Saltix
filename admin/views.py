@@ -1,7 +1,6 @@
 from datetime import date, timedelta
 import re
 from decimal import Decimal, InvalidOperation
-from urllib.parse import urlencode
 
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
@@ -44,9 +43,12 @@ def dashboard(request):
     usuarios_total = Usuario.objects.count()
     usuarios_roles_label = f"{Usuario.objects.values('rol_id').distinct().count()} roles"
 
-    notificaciones_count = Notificacion.objects.filter(
-        usuario=request.user, leida=False
-    ).count()
+    notificaciones_qs = Notificacion.objects.filter(
+        usuario=request.user,
+        fecha__gte=now - timedelta(days=7),
+        leida=False,
+    ).order_by("-fecha")
+    notificaciones_count = notificaciones_qs.count()
 
     modelo_to_modulo = {
         "SolicitudAprobacion": ("Solicitudes", "pill-blue"),
@@ -335,9 +337,16 @@ def dashboard(request):
 
     context = {
         "fecha_actual": now.strftime("%B %Y").capitalize(),
-        "form_error": request.GET.get("error", ""),
-        "form_success": request.GET.get("ok", ""),
         "notificaciones_count": notificaciones_count,
+        "notificaciones": [
+            {
+                "id": n.id,
+                "mensaje": n.mensaje,
+                "tipo": n.tipo,
+                "cuando": f"Hace {timesince(n.fecha).split(',')[0]}",
+            }
+            for n in notificaciones_qs[:20]
+        ],
         "stats": {
             "empleados_total": empleados_total,
             "empleados_activos": empleados_activos,
@@ -365,12 +374,12 @@ def dashboard(request):
     return render(request, "admin/dashboard.html", context)
 
 
-def _redirect_with_message(ok=None, error=None):
+def _redirect_with_message(request, ok=None, error=None):
     base = reverse("admin_dashboard")
-    if ok:
-        return f"{base}?{urlencode({'ok': ok})}"
-    if error:
-        return f"{base}?{urlencode({'error': error})}"
+    msg = ok or error
+    if msg and getattr(request, "user", None) and request.user.is_authenticated:
+        tipo = "SISTEMA" if ok else "INCIDENCIA"
+        Notificacion.objects.create(usuario=request.user, tipo=tipo, mensaje=msg, leida=False)
     return base
 
 
@@ -386,19 +395,19 @@ def create_user(request):
     password2 = request.POST.get("password2") or ""
 
     if not email or not nombre or not apellido or not rol_nombre:
-        return redirect(_redirect_with_message(error="Completa email, nombre, apellido y rol."))
+        return redirect(_redirect_with_message(request, error="Completa email, nombre, apellido y rol."))
 
     if not password:
-        return redirect(_redirect_with_message(error="La contrasena es obligatoria."))
+        return redirect(_redirect_with_message(request, error="La contrasena es obligatoria."))
     if password != password2:
-        return redirect(_redirect_with_message(error="Las contraseñas no coinciden."))
+        return redirect(_redirect_with_message(request, error="Las contraseñas no coinciden."))
 
     if Usuario.objects.filter(email=email).exists():
-        return redirect(_redirect_with_message(error="Ya existe un usuario con ese email."))
+        return redirect(_redirect_with_message(request, error="Ya existe un usuario con ese email."))
 
     rol = Rol.objects.filter(nombre__iexact=rol_nombre).first()
     if not rol:
-        return redirect(_redirect_with_message(error="Rol no valido."))
+        return redirect(_redirect_with_message(request, error="Rol no valido."))
 
     user = Usuario.objects.create_user(
         email=email,
@@ -414,14 +423,14 @@ def create_user(request):
         prof_err = _upsert_profesor_from_request(request, user, is_new=True)
         if prof_err:
             user.delete()
-            return redirect(_redirect_with_message(error=prof_err))
+            return redirect(_redirect_with_message(request, error=prof_err))
     elif rol_key == "jefatura":
         jefe_err = _assign_jefatura_departamento(request, user)
         if jefe_err:
             user.delete()
-            return redirect(_redirect_with_message(error=jefe_err))
+            return redirect(_redirect_with_message(request, error=jefe_err))
 
-    return redirect(_redirect_with_message(ok="Usuario creado."))
+    return redirect(_redirect_with_message(request, ok="Usuario creado."))
 
 
 def update_user(request):
@@ -430,11 +439,11 @@ def update_user(request):
 
     user_id = request.POST.get("user_id")
     if not user_id:
-        return redirect(_redirect_with_message(error="Usuario no encontrado."))
+        return redirect(_redirect_with_message(request, error="Usuario no encontrado."))
 
     user = Usuario.objects.filter(id=user_id).select_related("rol_id").first()
     if not user:
-        return redirect(_redirect_with_message(error="Usuario no encontrado."))
+        return redirect(_redirect_with_message(request, error="Usuario no encontrado."))
 
     email = (request.POST.get("email") or "").strip().lower()
     nombre = (request.POST.get("nombre") or "").strip()
@@ -444,17 +453,17 @@ def update_user(request):
     password2 = request.POST.get("password2") or ""
 
     if not email or not nombre or not apellido or not rol_nombre:
-        return redirect(_redirect_with_message(error="Completa email, nombre, apellido y rol."))
+        return redirect(_redirect_with_message(request, error="Completa email, nombre, apellido y rol."))
 
     if password and password != password2:
-        return redirect(_redirect_with_message(error="Las contraseñas no coinciden."))
+        return redirect(_redirect_with_message(request, error="Las contraseñas no coinciden."))
 
     if Usuario.objects.exclude(id=user.id).filter(email=email).exists():
-        return redirect(_redirect_with_message(error="Ya existe un usuario con ese email."))
+        return redirect(_redirect_with_message(request, error="Ya existe un usuario con ese email."))
 
     rol = Rol.objects.filter(nombre__iexact=rol_nombre).first()
     if not rol:
-        return redirect(_redirect_with_message(error="Rol no valido."))
+        return redirect(_redirect_with_message(request, error="Rol no valido."))
 
     user.email = email
     user.nombre = nombre
@@ -468,16 +477,16 @@ def update_user(request):
     if rol_key == "profesor":
         prof_err = _upsert_profesor_from_request(request, user, is_new=False)
         if prof_err:
-            return redirect(_redirect_with_message(error=prof_err))
+            return redirect(_redirect_with_message(request, error=prof_err))
         _clear_jefatura_if_needed(request, user)
     elif rol_key == "jefatura":
         jefe_err = _assign_jefatura_departamento(request, user)
         if jefe_err:
-            return redirect(_redirect_with_message(error=jefe_err))
+            return redirect(_redirect_with_message(request, error=jefe_err))
     else:
         _clear_jefatura_if_needed(request, user)
 
-    return redirect(_redirect_with_message(ok="Usuario actualizado."))
+    return redirect(_redirect_with_message(request, ok="Usuario actualizado."))
 
 
 def create_plantel(request):
@@ -490,16 +499,16 @@ def create_plantel(request):
     departamentos_raw = (request.POST.get("departamentos_csv") or "").strip()
 
     if not nombre or not direccion:
-        return redirect(_redirect_with_message(error="Nombre y direccion del plantel son obligatorios."))
+        return redirect(_redirect_with_message(request, error="Nombre y direccion del plantel son obligatorios."))
 
     if Plantel.objects.filter(nombre__iexact=nombre).exists():
-        return redirect(_redirect_with_message(error="Ya existe un plantel con ese nombre."))
+        return redirect(_redirect_with_message(request, error="Ya existe un plantel con ese nombre."))
 
     departamentos = [
         d.strip() for d in departamentos_raw.replace(";", ",").split(",") if d.strip()
     ]
     if not departamentos:
-        return redirect(_redirect_with_message(error="Agrega al menos un departamento."))
+        return redirect(_redirect_with_message(request, error="Agrega al menos un departamento."))
 
     plantel = Plantel.objects.create(nombre=nombre, direccion=direccion, activo=activo)
     for dept in departamentos:
@@ -511,7 +520,7 @@ def create_plantel(request):
             activo=True,
         )
 
-    return redirect(_redirect_with_message(ok="Plantel creado."))
+    return redirect(_redirect_with_message(request, ok="Plantel creado."))
 
 
 def update_plantel(request):
@@ -520,28 +529,28 @@ def update_plantel(request):
 
     plantel_id = request.POST.get("plantel_id")
     if not plantel_id:
-        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
 
     plantel = Plantel.objects.filter(id=plantel_id).first()
     if not plantel:
-        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
 
     nombre = (request.POST.get("plantel_nombre") or "").strip()
     direccion = (request.POST.get("plantel_direccion") or "").strip()
     activo = request.POST.get("plantel_activo") == "on"
 
     if not nombre or not direccion:
-        return redirect(_redirect_with_message(error="Nombre y direccion del plantel son obligatorios."))
+        return redirect(_redirect_with_message(request, error="Nombre y direccion del plantel son obligatorios."))
 
     if Plantel.objects.exclude(id=plantel.id).filter(nombre__iexact=nombre).exists():
-        return redirect(_redirect_with_message(error="Ya existe un plantel con ese nombre."))
+        return redirect(_redirect_with_message(request, error="Ya existe un plantel con ese nombre."))
 
     plantel.nombre = nombre
     plantel.direccion = direccion
     plantel.activo = activo
     plantel.save()
 
-    return redirect(_redirect_with_message(ok="Plantel actualizado."))
+    return redirect(_redirect_with_message(request, ok="Plantel actualizado."))
 
 
 def create_departamento(request):
@@ -555,22 +564,22 @@ def create_departamento(request):
     jefe_id = (request.POST.get("dept_jefe_id") or "").strip()
 
     if not plantel_id or not nombre:
-        return redirect(_redirect_with_message(error="Plantel y nombre del departamento son obligatorios."))
+        return redirect(_redirect_with_message(request, error="Plantel y nombre del departamento son obligatorios."))
 
     plantel = Plantel.objects.filter(id=plantel_id).first()
     if not plantel:
-        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
 
     if Departamento.objects.filter(plantel=plantel, nombre__iexact=nombre).exists():
-        return redirect(_redirect_with_message(error="Ya existe un departamento con ese nombre en el plantel."))
+        return redirect(_redirect_with_message(request, error="Ya existe un departamento con ese nombre en el plantel."))
 
     jefe = None
     if jefe_id:
         jefe = Usuario.objects.select_related("rol_id").filter(id=jefe_id).first()
         if not jefe or not jefe.rol_id or jefe.rol_id.nombre.lower() != "jefatura":
-            return redirect(_redirect_with_message(error="Jefe invalido para departamento."))
+            return redirect(_redirect_with_message(request, error="Jefe invalido para departamento."))
         if Departamento.objects.filter(jefe=jefe).exists():
-            return redirect(_redirect_with_message(error="Ese jefe ya esta asignado a un plantel."))
+            return redirect(_redirect_with_message(request, error="Ese jefe ya esta asignado a un plantel."))
 
     Departamento.objects.create(
         nombre=nombre,
@@ -580,7 +589,7 @@ def create_departamento(request):
         activo=activo,
     )
 
-    return redirect(_redirect_with_message(ok="Departamento creado."))
+    return redirect(_redirect_with_message(request, ok="Departamento creado."))
 
 
 def update_departamento(request):
@@ -589,11 +598,11 @@ def update_departamento(request):
 
     dept_id = request.POST.get("dept_id")
     if not dept_id:
-        return redirect(_redirect_with_message(error="Departamento no encontrado."))
+        return redirect(_redirect_with_message(request, error="Departamento no encontrado."))
 
     depto = Departamento.objects.select_related("plantel").filter(id=dept_id).first()
     if not depto:
-        return redirect(_redirect_with_message(error="Departamento no encontrado."))
+        return redirect(_redirect_with_message(request, error="Departamento no encontrado."))
 
     nombre = (request.POST.get("dept_nombre") or "").strip()
     descripcion = (request.POST.get("dept_descripcion") or "").strip()
@@ -601,18 +610,18 @@ def update_departamento(request):
     jefe_id = (request.POST.get("dept_jefe_id") or "").strip()
 
     if not nombre:
-        return redirect(_redirect_with_message(error="Nombre del departamento es obligatorio."))
+        return redirect(_redirect_with_message(request, error="Nombre del departamento es obligatorio."))
 
     if Departamento.objects.filter(plantel=depto.plantel, nombre__iexact=nombre).exclude(id=depto.id).exists():
-        return redirect(_redirect_with_message(error="Ya existe un departamento con ese nombre en el plantel."))
+        return redirect(_redirect_with_message(request, error="Ya existe un departamento con ese nombre en el plantel."))
 
     jefe = None
     if jefe_id:
         jefe = Usuario.objects.select_related("rol_id").filter(id=jefe_id).first()
         if not jefe or not jefe.rol_id or jefe.rol_id.nombre.lower() != "jefatura":
-            return redirect(_redirect_with_message(error="Jefe invalido para departamento."))
+            return redirect(_redirect_with_message(request, error="Jefe invalido para departamento."))
         if Departamento.objects.filter(jefe=jefe).exclude(id=depto.id).exists():
-            return redirect(_redirect_with_message(error="Ese jefe ya esta asignado a un plantel."))
+            return redirect(_redirect_with_message(request, error="Ese jefe ya esta asignado a un plantel."))
     else:
         # Sin asignar: reasigna al administrador actual
         jefe = request.user
@@ -624,7 +633,7 @@ def update_departamento(request):
         depto.jefe = jefe
     depto.save()
 
-    return redirect(_redirect_with_message(ok="Departamento actualizado."))
+    return redirect(_redirect_with_message(request, ok="Departamento actualizado."))
 
 
 def delete_plantel(request):
@@ -633,29 +642,29 @@ def delete_plantel(request):
 
     plantel_id = request.POST.get("plantel_id")
     if not plantel_id:
-        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
 
     plantel = Plantel.objects.filter(id=plantel_id).first()
     if not plantel:
-        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
 
     if plantel.profesores.exists():
-        return redirect(_redirect_with_message(error="No puedes eliminar el plantel porque tiene profesores asignados."))
+        return redirect(_redirect_with_message(request, error="No puedes eliminar el plantel porque tiene profesores asignados."))
 
     departamentos = list(Departamento.objects.filter(plantel=plantel))
     for depto in departamentos:
         if depto.profesores.exists():
-            return redirect(_redirect_with_message(error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene profesores asignados."))
+            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene profesores asignados."))
         if TransferenciaDepartamento.objects.filter(
             Q(departamento_origen=depto) | Q(departamento_destino=depto)
         ).exists():
-            return redirect(_redirect_with_message(error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene historial de transferencias."))
+            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene historial de transferencias."))
 
     for depto in departamentos:
         depto.delete()
 
     plantel.delete()
-    return redirect(_redirect_with_message(ok="Plantel eliminado."))
+    return redirect(_redirect_with_message(request, ok="Plantel eliminado."))
 
 
 def delete_departamento(request):
@@ -664,22 +673,47 @@ def delete_departamento(request):
 
     dept_id = request.POST.get("dept_id")
     if not dept_id:
-        return redirect(_redirect_with_message(error="Departamento no encontrado."))
+        return redirect(_redirect_with_message(request, error="Departamento no encontrado."))
 
     depto = Departamento.objects.select_related("plantel").filter(id=dept_id).first()
     if not depto:
-        return redirect(_redirect_with_message(error="Departamento no encontrado."))
+        return redirect(_redirect_with_message(request, error="Departamento no encontrado."))
 
     if depto.profesores.exists():
-        return redirect(_redirect_with_message(error="No puedes eliminar el departamento porque tiene profesores asignados."))
+        return redirect(_redirect_with_message(request, error="No puedes eliminar el departamento porque tiene profesores asignados."))
 
     if TransferenciaDepartamento.objects.filter(
         Q(departamento_origen=depto) | Q(departamento_destino=depto)
     ).exists():
-        return redirect(_redirect_with_message(error="No puedes eliminar el departamento porque tiene historial de transferencias."))
+        return redirect(_redirect_with_message(request, error="No puedes eliminar el departamento porque tiene historial de transferencias."))
 
     depto.delete()
-    return redirect(_redirect_with_message(ok="Departamento eliminado."))
+    return redirect(_redirect_with_message(request, ok="Departamento eliminado."))
+
+
+def marcar_notificacion_leida(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    notif_id = (request.POST.get("notif_id") or "").strip()
+    if not notif_id:
+        return redirect("admin_dashboard")
+
+    Notificacion.objects.filter(id=notif_id, usuario=request.user).update(leida=True)
+    return redirect("admin_dashboard")
+
+
+def marcar_notificaciones_leidas(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    now = timezone.localtime()
+    Notificacion.objects.filter(
+        usuario=request.user,
+        fecha__gte=now - timedelta(days=7),
+        leida=False,
+    ).update(leida=True)
+    return redirect("admin_dashboard")
 
 
 def _upsert_profesor_from_request(request, user, is_new):

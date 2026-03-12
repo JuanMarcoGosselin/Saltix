@@ -13,4 +13,6 @@ urlpatterns = [
     path("departamentos/crear/", views.create_departamento, name="admin_create_departamento"),
     path("departamentos/editar/", views.update_departamento, name="admin_update_departamento"),
     path("departamentos/eliminar/", views.delete_departamento, name="admin_delete_departamento"),
+    path("notificaciones/leida/", views.marcar_notificacion_leida, name="admin_notif_read"),
+    path("notificaciones/leidas/", views.marcar_notificaciones_leidas, name="admin_notif_read_all"),
 ]
