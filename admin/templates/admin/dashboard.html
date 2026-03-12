@@ -30,6 +30,17 @@
 
 {% block content %}
 
+  {% if form_error %}
+    <div class="table-wrap" style="margin-bottom:1.5rem;border-left:4px solid #c0392b;">
+      <div style="padding:0.9rem 1.25rem;color:#c0392b;font-weight:600;">{{ form_error }}</div>
+    </div>
+  {% endif %}
+  {% if form_success %}
+    <div class="table-wrap" style="margin-bottom:1.5rem;border-left:4px solid #00916e;">
+      <div style="padding:0.9rem 1.25rem;color:#00916e;font-weight:600;">{{ form_success }}</div>
+    </div>
+  {% endif %}
+
   <div class="page active" id="page-inicio">
     <div class="welcome-banner">
       <div class="welcome-text">
@@ -96,19 +107,18 @@
   </div>
 
   <div class="page" id="page-empleados">
-    <div class="section-title">Gestion de Empleados</div>
-    <div class="section-sub">{{ stats.empleados_total }} empleados registrados &#x00B7; {{ stats.empleados_activos }} activos</div>
+    <div class="section-title">Profesores</div>
+    <div class="section-sub">{{ stats.empleados_total }} profesores registrados &#x00B7; {{ stats.empleados_activos }} activos</div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
       <div class="tabs" id="emp-tabs">
         <button class="tab-btn active" onclick="filterEmpleados('todos',this)">Todos</button>
         <button class="tab-btn" onclick="filterEmpleados('activo',this)">Activos</button>
         <button class="tab-btn" onclick="filterEmpleados('baja',this)">Bajas</button>
       </div>
-      <button class="btn-primary" onclick="openModalEmpleado()">+ Nuevo empleado</button>
     </div>
     <div class="table-wrap">
       <div class="table-header">
-        <h3>Lista de empleados</h3>
+        <h3>Lista de profesores</h3>
         <div class="search-bar" style="border:1.5px solid var(--gray-200);">
           <span class="search-icon">&#x1F50D;</span>
           <input type="text" placeholder="Buscar..." oninput="searchEmpleados(this.value)" style="width:160px;">
@@ -133,13 +143,35 @@
         <tbody>
           {% for u in usuarios %}
             <tr>
-              <td><code style="font-size:.8rem;background:var(--gray-100);padding:.1rem .45rem;border-radius:5px;">{{ u.username }}</code></td>
-              <td>{{ u.nombre }}</td>
-              <td><span class="chip-perm {{ u.rol_clase }}">{{ u.rol_icono }} {{ u.rol_label }}</span></td>
+              <td><code style="font-size:.8rem;background:var(--gray-100);padding:.1rem .45rem;border-radius:5px;">{{ u.email }}</code></td>
+              <td>{{ u.nombre }} {{ u.apellido }}</td>
+              <td><span class="chip-perm {{ u.rol_clase }}">{{ u.rol_label }}</span></td>
               <td><span class="pill {{ u.plantel_clase }}" style="font-size:.7rem;">{{ u.plantel }}</span></td>
               <td style="font-size:.8rem;color:var(--gray-400);">{{ u.ultimo_acceso }}</td>
               <td><span class="pill {{ u.estado_clase }}">{{ u.estado_label }}</span></td>
-              <td><button class="btn-outline" style="padding:.3rem .75rem;font-size:.75rem;" onclick="openModalUsuarioEdit('{{ u.username }}','{{ u.nombre }}','{{ u.rol }}','{{ u.plantel_key }}')">Editar</button></td>
+              <td>
+                <button
+                  class="btn-outline"
+                  style="padding:.3rem .75rem;font-size:.75rem;"
+                  data-id="{{ u.id }}"
+                  data-email="{{ u.email }}"
+                  data-nombre="{{ u.nombre }}"
+                  data-apellido="{{ u.apellido }}"
+                  data-rol="{{ u.rol }}"
+                  data-planteles="{{ u.plantel_ids|join:',' }}"
+                  data-departamentos="{{ u.departamento_ids|join:',' }}"
+                  data-jef-plantel="{{ u.jefatura_plantel_id }}"
+                  data-jef-dept="{{ u.jefatura_depto_id }}"
+                  data-rfc="{{ u.profesor.rfc|default:'' }}"
+                  data-curp="{{ u.profesor.curp|default:'' }}"
+                  data-telefono="{{ u.profesor.telefono|default:'' }}"
+                  data-direccion="{{ u.profesor.direccion|default:'' }}"
+                  data-fecha-ingreso="{{ u.profesor.fecha_ingreso|default:'' }}"
+                  data-tipo-contrato="{{ u.profesor.tipo_contrato|default:'' }}"
+                  data-salario="{{ u.profesor.salario|default:'' }}"
+                  onclick="openModalUsuarioEdit(this)"
+                >Editar</button>
+              </td>
             </tr>
           {% empty %}
             <tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin usuarios registrados.</td></tr>
@@ -176,6 +208,9 @@
   <div class="page" id="page-departamentos">
     <div class="section-title">Planteles y Departamentos</div>
     <div class="section-sub">Administra la estructura academica por plantel</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:1rem;">
+      <button class="btn-primary" onclick="openModalPlantel()">+ Nuevo plantel</button>
+    </div>
     <div id="planteles-container"></div>
   </div>
 
@@ -213,129 +248,210 @@
 {% if empleados_data %}{{ empleados_data|json_script:"empleados-data" }}{% else %}<script id="empleados-data" type="application/json">[]</script>{% endif %}
 {% if planteles_data %}{{ planteles_data|json_script:"planteles-data" }}{% else %}<script id="planteles-data" type="application/json">[]</script>{% endif %}
 {% if depts_by_plantel %}{{ depts_by_plantel|json_script:"depts-by-plantel" }}{% else %}<script id="depts-by-plantel" type="application/json">{}</script>{% endif %}
+{% if jefes_data %}{{ jefes_data|json_script:"jefes-data" }}{% else %}<script id="jefes-data" type="application/json">[]</script>{% endif %}
 
-<div class="modal-overlay" id="modal-emp" onclick="if(event.target===this)this.classList.remove('open')">
-  <div class="modal modal-wide">
-    <div class="modal-header">
-      <div><div class="modal-title" id="modal-emp-title">Nuevo empleado</div><div class="modal-sub">Completa la informacion del empleado</div></div>
-      <button class="modal-close" onclick="document.getElementById('modal-emp').classList.remove('open')">&#x2715;</button>
-    </div>
-    <div class="modal-body">
-      <div class="modal-grid">
-        <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" type="text" placeholder="Nombre y apellido"></div>
-        <div class="form-group"><label class="form-label">Puesto</label><input class="form-input" type="text" placeholder="Ej. Profesor TC"></div>
-        <div class="form-group"><label class="form-label">Plantel</label>
-          <select class="form-select" id="emp-plantel-sel" onchange="updateDeptsByPlantel('emp-plantel-sel','emp-dept-sel')">
-            <option value="">&#x2014; Seleccionar &#x2014;</option>
-            {% for plantel in planteles_data %}
-              <option value="{{ plantel.id }}">{{ plantel.nombre }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Departamento</label>
-          <select class="form-select" id="emp-dept-sel"><option value="">&#x2014; Primero selecciona un plantel &#x2014;</option></select>
-        </div>
-        <div class="form-group"><label class="form-label">Salario mensual</label><input class="form-input" type="text" placeholder="$0.00"></div>
-        <div class="form-group"><label class="form-label">Estado</label><select class="form-select"><option>Activo</option><option>Baja</option></select></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="document.getElementById('modal-emp').classList.remove('open')">Cancelar</button>
-      <button class="btn-submit" onclick="showToast('&#x2705; Empleado guardado')">Guardar</button>
-    </div>
-  </div>
-</div>
 <div class="modal-overlay" id="modal-usr" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal modal-wide">
-    <div class="modal-header">
-      <div><div class="modal-title" id="modal-usr-title">Nuevo usuario</div><div class="modal-sub">Configura el acceso y permisos</div></div>
-      <button class="modal-close" onclick="document.getElementById('modal-usr').classList.remove('open')">&#x2715;</button>
-    </div>
-    <div class="modal-body">
-      <div class="modal-grid">
-        <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="usr-username" type="text" placeholder="usuario"></div>
-        <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="usr-name" type="text" placeholder="Nombre y apellido"></div>
-        <div class="form-group"><label class="form-label">Rol</label>
-          <select class="form-select" id="usr-rol" onchange="togglePlantelField()">
-            <option value="">&#x2014; Seleccionar &#x2014;</option>
-            {% for role in roles_permisos %}
-              <option value="{{ role.nombre|lower }}">{{ role.nombre }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="form-group" id="usr-plantel-wrap"><label class="form-label">Plantel</label>
-          <select class="form-select" id="usr-plantel" onchange="updateDeptsByPlantel('usr-plantel','usr-dept')">
-            <option value="todos">Todos</option>
-            {% for plantel in planteles_data %}
-              <option value="{{ plantel.id }}">{{ plantel.nombre }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="form-group" id="usr-dept-wrap"><label class="form-label">Departamento</label>
-          <select class="form-select" id="usr-dept"><option value="">&#x2014; Primero selecciona un plantel &#x2014;</option></select>
-        </div>
-        <div class="form-group"><label class="form-label">Contrasena</label><input class="form-input" id="usr-pass" type="password" placeholder="********"></div>
-        <div class="form-group"><label class="form-label">Confirmar contrasena</label><input class="form-input" id="usr-pass2" type="password" placeholder="********"></div>
-        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Correo de contacto</label>
-          <input class="form-input" id="usr-email" type="email" placeholder="correo@saltix.edu.mx">
+    <form method="post" id="user-form" action="{% url 'admin_create_user' %}" data-create-url="{% url 'admin_create_user' %}" data-update-url="{% url 'admin_update_user' %}">
+      {% csrf_token %}
+      <input type="hidden" name="user_id" id="user-id">
+      <div class="modal-header">
+        <div><div class="modal-title" id="modal-usr-title">Nuevo usuario</div><div class="modal-sub">Configura el acceso y permisos</div></div>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-usr').classList.remove('open')">&#x2715;</button>
+      </div>
+        <div class="modal-body">
+          <div class="modal-split">
+          <div class="modal-left">
+            <div class="modal-grid">
+              <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="usr-email" name="email" type="email" placeholder="correo@saltix.edu.mx" required></div>
+              <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="usr-nombre" name="nombre" type="text" placeholder="Nombre" required></div>
+              <div class="form-group"><label class="form-label">Apellido</label><input class="form-input" id="usr-apellido" name="apellido" type="text" placeholder="Apellido" required></div>
+              <div class="form-group"><label class="form-label">Rol</label>
+                <select class="form-select" id="usr-rol" name="rol" onchange="togglePlantelField()" required>
+                  <option value="">&#x2014; Seleccionar &#x2014;</option>
+                  {% for role in roles_permisos %}
+                    <option value="{{ role.nombre|lower }}">{{ role.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group" id="usr-plantel-wrap"><label class="form-label">Planteles</label>
+                <select class="form-select" id="usr-plantel" name="planteles" multiple onchange="updateDeptsByPlantel('usr-plantel','usr-dept')">
+                  {% for plantel in planteles_data %}
+                    <option value="{{ plantel.id }}">{{ plantel.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group" id="usr-dept-wrap"><label class="form-label">Departamentos</label>
+                <select class="form-select" id="usr-dept" name="departamentos" multiple><option value="">&#x2014; Selecciona planteles &#x2014;</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Contrasena</label><input class="form-input" id="usr-pass" name="password" type="password" placeholder="********"></div>
+              <div class="form-group"><label class="form-label">Confirmar contrasena</label><input class="form-input" id="usr-pass2" name="password2" type="password" placeholder="********"></div>
+            </div>
+
+          </div>
+
+          <div class="modal-right" id="role-panels">
+            <div id="profesor-fields" class="role-panel" style="display:none;">
+              <div class="profesor-title">Datos de profesor</div>
+              <div class="modal-grid">
+                <div class="form-group"><label class="form-label">Salario por hora</label><input class="form-input" id="prof-salario" name="salario" type="text" placeholder="0000.00"></div>
+                <div class="form-group"><label class="form-label">Tipo contrato</label><input class="form-input" id="prof-contrato" name="tipo_contrato" type="text" placeholder="Ej. Tiempo completo"></div>
+                <div class="form-group"><label class="form-label">RFC</label><input class="form-input" id="prof-rfc" name="rfc" type="text" placeholder="RFC"></div>
+                <div class="form-group"><label class="form-label">CURP</label><input class="form-input" id="prof-curp" name="curp" type="text" placeholder="CURP"></div>
+                <div class="form-group"><label class="form-label">Telefono</label><input class="form-input" id="prof-telefono" name="telefono" type="text" placeholder="Telefono"></div>
+                <div class="form-group"><label class="form-label">Direccion</label><input class="form-input" id="prof-direccion" name="direccion" type="text" placeholder="Direccion"></div>
+                <div class="form-group"><label class="form-label">Fecha ingreso</label><input class="form-input" id="prof-fecha" name="fecha_ingreso" type="date"></div>
+              </div>
+            </div>
+            <div id="profesor-horario" class="role-panel" style="display:none;">
+              <div class="profesor-title">Horario semanal</div>
+              <div class="table-wrap horario-wrap">
+                <div class="horario-grid-wrap">
+                  <table class="horario-grid">
+                    <thead>
+                      <tr>
+                        <th>Hora</th>
+                        {% for code, label in dias %}
+                          <th data-day="{{ code }}">{{ label }}</th>
+                        {% endfor %}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for hora in horas %}
+                        <tr>
+                          <td class="hora-col">{{ hora }}:00</td>
+                          {% for code, label in dias %}
+                            <td class="hora-cell">
+                              <label class="hora-check">
+                                <input type="checkbox" class="horario-slot" data-day="{{ code }}" data-hour="{{ hora }}">
+                                <span></span>
+                              </label>
+                            </td>
+                          {% endfor %}
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <div id="horario-hidden"></div>
+                <div class="role-note">Selecciona bloques de 1 hora. Se agrupan automaticamente en rangos continuos.</div>
+              </div>
+            </div>
+
+            <div id="jefatura-panel" class="role-panel" style="display:none;">
+              <div class="profesor-title">Datos de jefatura</div>
+              <div class="form-group">
+                <label class="form-label">Plantel</label>
+                <select class="form-select" id="jef-plantel" name="jefatura_plantel" onchange="updateJefaturaDepts()">
+                  <option value="">&#x2014; Seleccionar &#x2014;</option>
+                  {% for plantel in planteles_data %}
+                    <option value="{{ plantel.id }}">{{ plantel.nombre }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Departamento</label>
+                <select class="form-select" id="jef-depto" name="jefatura_departamento">
+                  <option value="">&#x2014; Selecciona plantel &#x2014;</option>
+                </select>
+              </div>
+              <div class="role-note">El jefe de departamento queda ligado 1 a 1 con el departamento seleccionado.</div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="document.getElementById('modal-usr').classList.remove('open')">Cancelar</button>
-      <button class="btn-submit" onclick="saveUsuario()">Guardar usuario</button>
-    </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('modal-usr').classList.remove('open')">Cancelar</button>
+        <button type="submit" class="btn-submit" id="user-submit">Guardar usuario</button>
+      </div>
+    </form>
   </div>
 </div>
 
 <div class="modal-overlay" id="modal-plantel" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal modal-wide">
-    <div class="modal-header">
-      <div><div class="modal-title" id="modal-plantel-title">Nuevo plantel</div><div class="modal-sub">Configura el plantel y sus departamentos</div></div>
-      <button class="modal-close" onclick="document.getElementById('modal-plantel').classList.remove('open')">&#x2715;</button>
-    </div>
-    <div class="modal-body">
-      <div class="modal-tabs">
-        <button class="modal-tab active" onclick="switchModalTab('tab-info',this)">&#x1F4CB; Informacion</button>
-        <button class="modal-tab" onclick="switchModalTab('tab-depts',this)">&#x1F3E2; Departamentos</button>
-        <button class="modal-tab" onclick="switchModalTab('tab-resp',this)">&#x1F464; Responsable</button>
+    <form method="post" action="{% url 'admin_create_plantel' %}" id="plantel-form">
+      {% csrf_token %}
+      <input type="hidden" name="departamentos_csv" id="departamentos-csv">
+      <div class="modal-header">
+        <div><div class="modal-title" id="modal-plantel-title">Nuevo plantel</div><div class="modal-sub">Configura el plantel y sus departamentos</div></div>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-plantel').classList.remove('open')">&#x2715;</button>
       </div>
-      <div class="modal-tab-content active" id="tab-info">
+      <div class="modal-body">
         <div class="modal-grid">
-          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre del plantel</label><input class="form-input" id="plantel-nombre" type="text" placeholder="Ej. Plantel Oriente"></div>
-          <div class="form-group"><label class="form-label">Clave / Codigo</label><input class="form-input" id="plantel-clave" type="text" placeholder="Ej. PLT-04"></div>
-          <div class="form-group"><label class="form-label">Estado</label><select class="form-select" id="plantel-estado"><option>Activo</option><option>Inactivo</option></select></div>
-          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Direccion</label><input class="form-input" id="plantel-dir" type="text" placeholder="Calle, numero, colonia, ciudad"></div>
-          <div class="form-group"><label class="form-label">Telefono</label><input class="form-input" id="plantel-tel" type="tel" placeholder="55 0000 0000"></div>
-          <div class="form-group"><label class="form-label">Correo de contacto</label><input class="form-input" id="plantel-email" type="email" placeholder="plantel@saltix.edu.mx"></div>
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre del plantel</label><input class="form-input" id="plantel-nombre" name="plantel_nombre" type="text" placeholder="Ej. Plantel Oriente" required></div>
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Direccion</label><input class="form-input" id="plantel-dir" name="plantel_direccion" type="text" placeholder="Calle, numero, colonia, ciudad" required></div>
+          <div class="form-group"><label class="form-label">Activo</label><input type="checkbox" name="plantel_activo" checked></div>
         </div>
-      </div>
-      <div class="modal-tab-content" id="tab-depts">
-        <div id="depts-list" style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1rem;"></div>
-        <div style="display:flex;gap:.6rem;">
-          <input class="form-input" id="nuevo-dept-input" type="text" placeholder="Nombre del departamento..." style="flex:1;">
-          <button class="btn-primary" style="white-space:nowrap;padding:.6rem 1rem;" onclick="addDeptToModal()">+ Agregar</button>
-        </div>
-        <div style="font-size:.75rem;color:var(--gray-400);margin-top:.6rem;">&#x1F4A1; Agrega los departamentos que perteneceran a este plantel.</div>
-      </div>
-      <div class="modal-tab-content" id="tab-resp">
-        <div class="modal-grid">
-          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Responsable del plantel</label>
-            <select class="form-select" id="plantel-resp">
-              <option value="">&#x2014; Seleccionar usuario &#x2014;</option>
-              {% for u in usuarios %}
-                <option>{{ u.nombre }}</option>
-              {% endfor %}
-            </select>
+        <div style="margin-top:.75rem;">
+          <div style="font-weight:700;margin-bottom:.4rem;">Departamentos del plantel</div>
+          <div style="display:flex;gap:.6rem;">
+            <input class="form-input" id="nuevo-dept-input" type="text" placeholder="Nombre del departamento..." style="flex:1;">
+            <button type="button" class="btn-primary" style="white-space:nowrap;padding:.6rem 1rem;" onclick="addDeptToModal()">+ Agregar</button>
           </div>
-          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas internas</label><textarea class="form-textarea" id="plantel-notas" placeholder="Notas adicionales sobre este plantel..."></textarea></div>
+          <div id="depts-list" style="display:flex;flex-direction:column;gap:.6rem;margin:.8rem 0 0;"></div>
         </div>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="document.getElementById('modal-plantel').classList.remove('open')">Cancelar</button>
-      <button class="btn-submit" onclick="savePlantel()">Guardar plantel</button>
-    </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('modal-plantel').classList.remove('open')">Cancelar</button>
+        <button type="submit" class="btn-submit">Guardar plantel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-plantel-edit" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal modal-wide">
+    <form method="post" action="{% url 'admin_update_plantel' %}" id="plantel-edit-form">
+      {% csrf_token %}
+      <input type="hidden" name="plantel_id" id="plantel-edit-id">
+      <div class="modal-header">
+        <div><div class="modal-title">Editar plantel</div><div class="modal-sub">Actualiza la informacion general</div></div>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-plantel-edit').classList.remove('open')">&#x2715;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre del plantel</label><input class="form-input" id="plantel-edit-nombre" name="plantel_nombre" type="text" required></div>
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Direccion</label><input class="form-input" id="plantel-edit-dir" name="plantel_direccion" type="text" required></div>
+          <div class="form-group"><label class="form-label">Activo</label><input type="checkbox" id="plantel-edit-activo" name="plantel_activo"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('modal-plantel-edit').classList.remove('open')">Cancelar</button>
+        <button type="submit" class="btn-submit">Guardar cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-dept" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <form method="post" id="dept-form" action="{% url 'admin_create_departamento' %}" data-create-url="{% url 'admin_create_departamento' %}" data-update-url="{% url 'admin_update_departamento' %}">
+      {% csrf_token %}
+      <input type="hidden" name="dept_id" id="dept-id">
+      <input type="hidden" name="dept_plantel_id" id="dept-plantel-id">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="dept-modal-title">Nuevo departamento</div>
+          <div class="modal-sub" id="dept-plantel-label"></div>
+        </div>
+        <button type="button" class="modal-close" onclick="document.getElementById('modal-dept').classList.remove('open')">&#x2715;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Nombre del departamento</label><input class="form-input" id="dept-nombre" name="dept_nombre" type="text" required></div>
+        <div class="form-group"><label class="form-label">Descripcion</label><input class="form-input" id="dept-descripcion" name="dept_descripcion" type="text" placeholder="Opcional"></div>
+        <div class="form-group"><label class="form-label">Jefe de departamento</label>
+          <select class="form-select" id="dept-jefe" name="dept_jefe_id">
+            <option value="">&#x2014; Sin asignar &#x2014;</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Activo</label><input type="checkbox" id="dept-activo" name="dept_activo" checked></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" onclick="document.getElementById('modal-dept').classList.remove('open')">Cancelar</button>
+        <button type="submit" class="btn-submit" id="dept-submit">Guardar departamento</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -357,10 +473,32 @@ function showPage(id,btn){
 const empleados = JSON.parse(document.getElementById('empleados-data').textContent || '[]');
 const plantelesData = JSON.parse(document.getElementById('planteles-data').textContent || '[]');
 const deptsByPlantel = JSON.parse(document.getElementById('depts-by-plantel').textContent || '{}');
+const jefesData = JSON.parse(document.getElementById('jefes-data').textContent || '[]');
+const deptIndex = {};
+
+function buildDeptIndex(){
+  Object.keys(deptIndex).forEach(k => delete deptIndex[k]);
+  plantelesData.forEach(p => {
+    (p.depts || []).forEach(d => {
+      deptIndex[String(d.id)] = {
+        id: d.id,
+        nombre: d.nombre,
+        descripcion: d.descripcion || '',
+        activo: d.activo,
+        plantel_id: p.id,
+        plantel_nombre: p.nombre,
+      };
+    });
+  });
+}
 
 function renderPlanteles(){
   const container = document.getElementById('planteles-container');
   container.innerHTML = '';
+  if (!plantelesData.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:1.5rem;">Sin planteles registrados.</div>';
+    return;
+  }
   plantelesData.forEach(p => {
     const block = document.createElement('div');
     block.className = 'plantel-block';
@@ -374,8 +512,8 @@ function renderPlanteles(){
           </div>
         </div>
         <div class="plantel-actions">
-          <button class="btn-outline" style="padding:.3rem .8rem;font-size:.75rem;" onclick="event.stopPropagation();openModalPlantelEdit('${p.id}')">Editar</button>
-          <button style="background:#fdecea;color:#c0392b;border:1px solid #f5c6c2;border-radius:7px;padding:.3rem .8rem;font-size:.75rem;cursor:pointer;" onclick="event.stopPropagation();showToast('&#x1F5D1;&#xFE0F; Plantel eliminado')">Eliminar</button>
+          <button class="btn-outline btn-sm" onclick="event.stopPropagation(); openModalPlantelEdit('${p.id}')">Editar</button>
+          <button class="btn-outline btn-sm" onclick="event.stopPropagation(); openModalDeptCreate('${p.id}')">+ Dept</button>
           <span class="plantel-toggle-icon open" id="arrow-${p.id}">&#x25BC;</span>
         </div>
       </div>
@@ -383,24 +521,18 @@ function renderPlanteles(){
         ${p.depts.map(d => `
           <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem;">
             <div class="card-bar ${p.color}"></div>
-            <div style="font-size:.8rem;font-weight:700;color:var(--gray-400);margin-bottom:.2rem;">${p.nombre}</div>
+            <div class="dept-card-top">
+              <div style="font-size:.8rem;font-weight:700;color:var(--gray-400);margin-bottom:.2rem;">${p.nombre}</div>
+              <button class="btn-outline btn-sm" onclick="openModalDeptEdit('${p.id}','${d.id}')">Editar</button>
+            </div>
             <div style="font-weight:800;font-size:.9rem;margin-bottom:.2rem;">${d.nombre}</div>
             <div style="font-size:.75rem;color:var(--gray-400);margin-bottom:.5rem;">${d.empleados} empleados</div>
             <div class="progress-wrap">
               <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${d.prog}%"></div></div>
               <div class="progress-label"><span>Nomina</span><span>${d.prog === 0 ? 'Pendiente' : d.prog+'%'}</span></div>
             </div>
-            <div style="display:flex;gap:.4rem;margin-top:.75rem;">
-              <button class="btn-outline" style="flex:1;padding:.35rem;font-size:.75rem;" onclick="showToast('&#x2699;&#xFE0F; Editando ${d.nombre}')">Editar</button>
-              <button style="flex:1;background:#fdecea;color:#c0392b;border:1px solid #f5c6c2;border-radius:7px;padding:.35rem;font-size:.75rem;cursor:pointer;" onclick="showToast('&#x1F5D1;&#xFE0F; Departamento eliminado')">Eliminar</button>
-            </div>
+            <div class="dept-status ${d.activo ? 'dept-active' : 'dept-inactive'}">${d.activo ? 'Activo' : 'Inactivo'}</div>
           </div>`).join('')}
-        <div class="card" style="border:2px dashed var(--gray-200);background:transparent;display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer;transition:border-color .2s,background .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='#f4f9ff'" onmouseout="this.style.borderColor='var(--gray-200)';this.style.background='transparent'" onclick="showToast('&#x2795; Agregar departamento a ${p.nombre}')">
-          <div style="text-align:center;color:var(--gray-400);">
-            <div style="font-size:1.4rem;">&#x2795;</div>
-            <div style="font-size:.78rem;font-weight:600;margin-top:.35rem;">Nuevo depto.</div>
-          </div>
-        </div>
       </div>`;
     container.appendChild(block);
   });
@@ -428,135 +560,303 @@ function renderEmpleados(){
   filtered.forEach(e=>{
     const pill=e.estado==='activo'?'<span class="pill pill-green">Activo</span>':'<span class="pill pill-gray">Baja</span>';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td style="font-size:.8rem;color:var(--gray-400)">${e.id}</td><td>${e.nombre}</td><td><span class="pill pill-blue" style="font-size:.7rem;">${e.plantel}</span></td><td>${e.dept}</td><td>${e.puesto}</td><td>${e.salario}</td><td>${pill}</td><td style="display:flex;gap:.4rem;padding:.85rem 1.5rem"><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem;" onclick="openModalEmpleadoEdit('${e.nombre}')">Editar</button><button style="background:#fdecea;color:#c0392b;border:1px solid #f5c6c2;border-radius:7px;padding:.3rem .7rem;font-size:.75rem;cursor:pointer;" onclick="showToast('&#x1F5D1;&#xFE0F; Empleado eliminado')">Eliminar</button></td>`;
+    tr.innerHTML=`<td style="font-size:.8rem;color:var(--gray-400)">${e.id}</td><td>${e.nombre}</td><td><span class="pill pill-blue" style="font-size:.7rem;">${e.plantel}</span></td><td>${e.dept}</td><td>${e.puesto}</td><td>${e.salario}</td><td>${pill}</td><td style="color:var(--gray-400)">�</td>`;
     tbody.appendChild(tr);
   });
 }
 function filterEmpleados(f,btn){empFilter=f;document.querySelectorAll('#emp-tabs .tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderEmpleados();}
 function searchEmpleados(val){empSearch=val;renderEmpleados();}
 
-function openModalEmpleado(){
-  document.getElementById('modal-emp-title').textContent='Nuevo empleado';
-  document.getElementById('emp-plantel-sel').value='';
-  document.getElementById('emp-dept-sel').innerHTML='<option value="">&#x2014; Primero selecciona un plantel &#x2014;</option>';
-  document.getElementById('modal-emp').classList.add('open');
-}
-function openModalEmpleadoEdit(nombre){
-  document.getElementById('modal-emp-title').textContent='Editar: '+nombre;
-  document.getElementById('modal-emp').classList.add('open');
+function openModalUsuario(){
+  const form = document.getElementById('user-form');
+  form.action = form.dataset.createUrl;
+  document.getElementById('modal-usr-title').textContent = 'Nuevo usuario';
+  document.getElementById('user-id').value = '';
+  document.getElementById('usr-email').value = '';
+  document.getElementById('usr-nombre').value = '';
+  document.getElementById('usr-apellido').value = '';
+  document.getElementById('usr-rol').value = '';
+  document.getElementById('usr-pass').value = '';
+  document.getElementById('usr-pass2').value = '';
+  Array.from(document.getElementById('usr-plantel').options).forEach(o=>o.selected=false);
+  updateDeptsByPlantel('usr-plantel','usr-dept');
+  Array.from(document.getElementById('usr-dept').options).forEach(o=>o.selected=false);
+  clearProfesorFields();
+  resetHorarioGrid();
+  document.getElementById('modal-usr').classList.add('open');
 }
 
-function openModalUsuario(){
-  document.getElementById('modal-usr-title').textContent='Nuevo usuario';
-  document.getElementById('usr-username').value='';
-  document.getElementById('usr-rol').value='';
-  document.getElementById('usr-plantel').value='';
-  document.getElementById('usr-dept').innerHTML='<option value="">&#x2014; Primero selecciona un plantel &#x2014;</option>';
-  document.getElementById('usr-pass').value='';
-  document.getElementById('usr-pass2').value='';
-  document.getElementById('usr-email').value='';
-  togglePlantelField();
-  document.getElementById('modal-usr').classList.add('open');
-}
-function openModalUsuarioEdit(username, nombre, rol, plantel){
-  document.getElementById('modal-usr-title').textContent='Editar: '+nombre;
-  document.getElementById('usr-username').value=username;
-  document.getElementById('usr-rol').value=rol;
-  document.getElementById('usr-plantel').value=plantel;
+function openModalUsuarioEdit(btn){
+  const form = document.getElementById('user-form');
+  form.action = form.dataset.updateUrl;
+  document.getElementById('modal-usr-title').textContent = 'Editar usuario';
+  document.getElementById('user-id').value = btn.dataset.id || '';
+  document.getElementById('usr-email').value = btn.dataset.email || '';
+  document.getElementById('usr-nombre').value = btn.dataset.nombre || '';
+  document.getElementById('usr-apellido').value = btn.dataset.apellido || '';
+  document.getElementById('usr-rol').value = btn.dataset.rol || '';
+  document.getElementById('usr-pass').value = '';
+  document.getElementById('usr-pass2').value = '';
+  const plantelSel = document.getElementById('usr-plantel');
+  const planteles = (btn.dataset.planteles || '').split(',').filter(Boolean);
+  Array.from(plantelSel.options).forEach(o=>o.selected = planteles.includes(o.value));
   updateDeptsByPlantel('usr-plantel','usr-dept');
-  togglePlantelField();
+  const deptIds = (btn.dataset.departamentos || '').split(',').filter(Boolean);
+  Array.from(document.getElementById('usr-dept').options).forEach(o=>o.selected = deptIds.includes(o.value));
+
+  resetHorarioGrid();
+  fillProfesorFields(btn);
   document.getElementById('modal-usr').classList.add('open');
 }
+
 function togglePlantelField(){
-  const rol=document.getElementById('usr-rol').value;
-  const wrap=document.getElementById('usr-plantel-wrap');
-  const dwrap=document.getElementById('usr-dept-wrap');
-  if(rol==='administrador'||rol==='admin'){
-    wrap.style.opacity='.5';wrap.style.pointerEvents='none';
-    dwrap.style.opacity='.5';dwrap.style.pointerEvents='none';
-    document.getElementById('usr-plantel').value='todos';
-  } else {
-    wrap.style.opacity='1';wrap.style.pointerEvents='auto';
-    dwrap.style.opacity='1';dwrap.style.pointerEvents='auto';
-  }
+  const role = document.getElementById('usr-rol').value;
+  const prof = document.getElementById('profesor-fields');
+  const horario = document.getElementById('profesor-horario');
+  const jefe = document.getElementById('jefatura-panel');
+  const plantelWrap = document.getElementById('usr-plantel-wrap');
+  const deptWrap = document.getElementById('usr-dept-wrap');
+  const showProf = role === 'profesor';
+  const showJefe = role === 'jefatura';
+  plantelWrap.style.display = showProf ? 'block' : 'none';
+  deptWrap.style.display = showProf ? 'block' : 'none';
+  prof.style.display = showProf ? 'block' : 'none';
+  horario.style.display = showProf ? 'block' : 'none';
+  jefe.style.display = showJefe ? 'block' : 'none';
+  if (!showProf) resetHorarioGrid();
 }
-function saveUsuario(){
-  document.getElementById('modal-usr').classList.remove('open');
-  showToast('Usuario guardado.');
+
+function clearProfesorFields(){
+  document.getElementById('prof-salario').value = '';
+  document.getElementById('prof-contrato').value = '';
+  document.getElementById('prof-rfc').value = '';
+  document.getElementById('prof-curp').value = '';
+  document.getElementById('prof-telefono').value = '';
+  document.getElementById('prof-direccion').value = '';
+  document.getElementById('prof-fecha').value = '';
+  clearJefaturaFields();
+  document.getElementById('usr-plantel-wrap').style.display = 'none';
+  document.getElementById('usr-dept-wrap').style.display = 'none';
+  togglePlantelField();
+}
+
+function fillProfesorFields(btn){
+  document.getElementById('prof-salario').value = btn.dataset.salario || '';
+  document.getElementById('prof-contrato').value = btn.dataset.tipoContrato || '';
+  document.getElementById('prof-rfc').value = btn.dataset.rfc || '';
+  document.getElementById('prof-curp').value = btn.dataset.curp || '';
+  document.getElementById('prof-telefono').value = btn.dataset.telefono || '';
+  document.getElementById('prof-direccion').value = btn.dataset.direccion || '';
+  document.getElementById('prof-fecha').value = btn.dataset.fechaIngreso || '';
+  fillJefaturaFields(btn);
+  togglePlantelField();
+}
+
+function clearJefaturaFields(){
+  document.getElementById('jef-plantel').value = '';
+  document.getElementById('jef-depto').innerHTML = '<option value="">-- Selecciona plantel --</option>';
+}
+
+function fillJefaturaFields(btn){
+  const plantelId = btn.dataset.jefPlantel || '';
+  const deptId = btn.dataset.jefDept || '';
+  document.getElementById('jef-plantel').value = plantelId;
+  updateJefaturaDepts();
+  document.getElementById('jef-depto').value = deptId;
+}
+
+function updateJefaturaDepts(){
+  const plantelId = document.getElementById('jef-plantel').value;
+  const deptSel = document.getElementById('jef-depto');
+  if (!plantelId) {
+    deptSel.innerHTML = '<option value="">-- Selecciona plantel --</option>';
+    return;
+  }
+  const list = deptsByPlantel[plantelId] || [];
+  deptSel.innerHTML = list.length
+    ? list
+        .slice()
+        .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+        .map(d => `<option value="${d.id}">${d.nombre}</option>`)
+        .join('')
+    : '<option value="">Sin departamentos disponibles</option>';
+}
+
+function resetHorarioGrid(){
+  document.querySelectorAll('.horario-slot').forEach(cb => cb.checked = false);
+  const hidden = document.getElementById('horario-hidden');
+  if (hidden) hidden.innerHTML = '';
+}
+
+function buildHorarioHiddenInputs(){
+  const hidden = document.getElementById('horario-hidden');
+  if (!hidden) return;
+  hidden.innerHTML = '';
+  const slots = Array.from(document.querySelectorAll('.horario-slot:checked'));
+  const byDay = {};
+  slots.forEach(cb => {
+    const day = cb.dataset.day;
+    const hour = parseInt(cb.dataset.hour, 10);
+    if (!byDay[day]) byDay[day] = [];
+    byDay[day].push(hour);
+  });
+
+  const dayOrder = Array.from(document.querySelectorAll('.horario-grid thead th[data-day]')).map(th => th.dataset.day);
+  dayOrder.forEach(day => {
+    const hours = (byDay[day] || []).sort((a, b) => a - b);
+    let i = 0;
+    while (i < hours.length) {
+      const start = hours[i];
+      let end = start + 1;
+      i++;
+      while (i < hours.length && hours[i] === end) {
+        end++;
+        i++;
+      }
+      const startStr = `${String(start).padStart(2,'0')}:00`;
+      const endStr = end >= 24 ? '23:59' : `${String(end).padStart(2,'0')}:00`;
+      appendHorarioInput(`horario_${day}_inicio[]`, startStr);
+      appendHorarioInput(`horario_${day}_fin[]`, endStr);
+      appendHorarioInput(`horario_${day}_aula[]`, '');
+      appendHorarioInput(`horario_${day}_clase_val[]`, '1');
+    }
+  });
+}
+
+function appendHorarioInput(name, value){
+  const hidden = document.getElementById('horario-hidden');
+  if (!hidden) return;
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = name;
+  input.value = value;
+  hidden.appendChild(input);
+}
+
+function getSelectedValues(sel){
+  return Array.from(sel.selectedOptions).map(o=>o.value);
+}
+
+function updateDeptsByPlantel(plantelSelId, deptSelId){
+  const plantelSel = document.getElementById(plantelSelId);
+  const deptSel = document.getElementById(deptSelId);
+  const selected = getSelectedValues(plantelSel);
+  const prevSelected = getSelectedValues(deptSel);
+  if (!selected.length) {
+    deptSel.innerHTML = '<option value="">-- Selecciona plantel --</option>';
+    return;
+  }
+
+  const optgroups = selected.map(pid => {
+    const list = deptsByPlantel[pid] || [];
+    const plantel = plantelesData.find(p => String(p.id) === String(pid));
+    const label = plantel ? plantel.nombre : `Plantel ${pid}`;
+    const options = list
+      .slice()
+      .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+      .map(d => {
+        const selectedAttr = prevSelected.includes(String(d.id)) ? ' selected' : '';
+        return `<option value="${d.id}"${selectedAttr}>${d.nombre}</option>`;
+      }).join('');
+    return `<optgroup label="${label}">${options}</optgroup>`;
+  });
+
+  deptSel.innerHTML = optgroups.join('') || '<option value="">Sin departamentos disponibles</option>';
 }
 
 let modalDepts = [];
 function openModalPlantel(){
-  document.getElementById('modal-plantel-title').textContent='Nuevo plantel';
-  document.getElementById('plantel-nombre').value='';
-  document.getElementById('plantel-clave').value='';
-  document.getElementById('plantel-dir').value='';
-  document.getElementById('plantel-tel').value='';
-  document.getElementById('plantel-email').value='';
-  document.getElementById('plantel-notas').value='';
-  modalDepts=[];
-  renderModalDepts();
-  switchModalTab('tab-info', document.querySelector('.modal-tab'));
   document.getElementById('modal-plantel').classList.add('open');
-}
-function openModalPlantelEdit(id){
-  const p = plantelesData.find(x=>String(x.id)===String(id));
-  if(!p)return;
-  document.getElementById('modal-plantel-title').textContent='Editar: '+p.nombre;
-  document.getElementById('plantel-nombre').value=p.nombre;
-  document.getElementById('plantel-dir').value=p.dir||'';
-  modalDepts = (p.depts || []).map(d=>d.nombre);
+  document.getElementById('plantel-nombre').value = '';
+  document.getElementById('plantel-dir').value = '';
+  modalDepts = [];
   renderModalDepts();
-  switchModalTab('tab-info', document.querySelector('.modal-tab'));
-  document.getElementById('modal-plantel').classList.add('open');
 }
+
 function addDeptToModal(){
   const input=document.getElementById('nuevo-dept-input');
   const val=input.value.trim();
-  if(!val)return;
-  modalDepts.push(val);
+  if(!val) return;
+  if (!modalDepts.includes(val)) modalDepts.push(val);
   input.value='';
   renderModalDepts();
 }
+
 function removeModalDept(i){
   modalDepts.splice(i,1);
   renderModalDepts();
 }
+
 function renderModalDepts(){
   const list=document.getElementById('depts-list');
+  const hidden=document.getElementById('departamentos-csv');
   if(!modalDepts.length){
     list.innerHTML='<div style="text-align:center;font-size:.82rem;color:var(--gray-400);padding:1rem 0;">Sin departamentos agregados aun</div>';
+    hidden.value = '';
     return;
   }
+  hidden.value = modalDepts.join(',');
   list.innerHTML=modalDepts.map((d,i)=>`
     <div style="display:flex;align-items:center;justify-content:space-between;background:var(--gray-100);border-radius:9px;padding:.6rem 1rem;">
-      <span style="font-size:.875rem;font-weight:500;color:var(--navy);">&#x1F3E2; ${d}</span>
-      <button onclick="removeModalDept(${i})" style="background:none;border:none;color:#c0392b;font-size:.85rem;cursor:pointer;padding:.1rem .3rem;border-radius:5px;" title="Eliminar">&#x2715;</button>
+      <span style="font-size:.875rem;font-weight:500;color:var(--navy);">${d}</span>
+      <button type="button" onclick="removeModalDept(${i})" style="background:none;border:none;color:#c0392b;font-size:.85rem;cursor:pointer;padding:.1rem .3rem;border-radius:5px;" title="Eliminar">&#x2715;</button>
     </div>`).join('');
 }
-function savePlantel(){
-  const nombre=document.getElementById('plantel-nombre').value.trim();
-  if(!nombre){showToast('&#x26A0;&#xFE0F; Ingresa un nombre para el plantel');return;}
-  document.getElementById('modal-plantel').classList.remove('open');
-  showToast('&#x2705; Plantel "'+nombre+'" guardado correctamente');
-}
-function switchModalTab(tabId, btn){
-  document.querySelectorAll('.modal-tab-content').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById(tabId).classList.add('active');
-  btn.classList.add('active');
+
+function openModalPlantelEdit(id){
+  const plantel = plantelesData.find(p => String(p.id) === String(id));
+  if (!plantel) return;
+  document.getElementById('plantel-edit-id').value = plantel.id;
+  document.getElementById('plantel-edit-nombre').value = plantel.nombre || '';
+  document.getElementById('plantel-edit-dir').value = plantel.dir || '';
+  document.getElementById('plantel-edit-activo').checked = !!plantel.activo;
+  document.getElementById('modal-plantel-edit').classList.add('open');
 }
 
-function updateDeptsByPlantel(plantelSelId, deptSelId){
-  const plantel=document.getElementById(plantelSelId).value;
-  const deptSel=document.getElementById(deptSelId);
-  const depts=deptsByPlantel[plantel]||[];
-  if(!depts.length){
-    deptSel.innerHTML='<option value="">&#x2014; Sin departamentos &#x2014;</option>';
-    return;
-  }
-  deptSel.innerHTML='<option value="">&#x2014; Todos los departamentos &#x2014;</option>'+
-    depts.map(d=>`<option value="${d}">${d}</option>`).join('');
+function openModalDeptCreate(plantelId){
+  const form = document.getElementById('dept-form');
+  form.action = form.dataset.createUrl;
+  document.getElementById('dept-modal-title').textContent = 'Nuevo departamento';
+  document.getElementById('dept-id').value = '';
+  document.getElementById('dept-nombre').value = '';
+  document.getElementById('dept-descripcion').value = '';
+  document.getElementById('dept-activo').checked = true;
+  document.getElementById('dept-plantel-id').value = plantelId;
+  const plantel = plantelesData.find(p => String(p.id) === String(plantelId));
+  document.getElementById('dept-plantel-label').textContent = plantel ? `Plantel: ${plantel.nombre}` : '';
+  renderJefesOptions(plantelId, '');
+  document.getElementById('dept-submit').textContent = 'Guardar departamento';
+  document.getElementById('modal-dept').classList.add('open');
+}
+
+function openModalDeptEdit(plantelId, deptId){
+  const form = document.getElementById('dept-form');
+  form.action = form.dataset.updateUrl;
+  const depto = deptIndex[String(deptId)];
+  if (!depto) return;
+  document.getElementById('dept-modal-title').textContent = 'Editar departamento';
+  document.getElementById('dept-id').value = depto.id;
+  document.getElementById('dept-nombre').value = depto.nombre || '';
+  document.getElementById('dept-descripcion').value = depto.descripcion || '';
+  document.getElementById('dept-activo').checked = !!depto.activo;
+  document.getElementById('dept-plantel-id').value = plantelId;
+  document.getElementById('dept-plantel-label').textContent = `Plantel: ${depto.plantel_nombre}`;
+  renderJefesOptions(plantelId, String(depto.id));
+  document.getElementById('dept-submit').textContent = 'Guardar cambios';
+  document.getElementById('modal-dept').classList.add('open');
+}
+
+function renderJefesOptions(plantelId, deptId){
+  const sel = document.getElementById('dept-jefe');
+  const opts = jefesData.filter(j => {
+    const assigned = j.dept_id ? String(j.dept_id) : '';
+    const sameDept = deptId && assigned === String(deptId);
+    const unassigned = !assigned;
+    const samePlantel = j.plantel_id ? String(j.plantel_id) === String(plantelId) : true;
+    return (unassigned || sameDept) && samePlantel;
+  });
+  sel.innerHTML = '<option value="">— Sin asignar —</option>' +
+    opts.map(j => `<option value="${j.id}"${j.dept_id && String(j.dept_id) === String(deptId) ? ' selected' : ''}>${j.nombre}</option>`).join('');
 }
 
 function showToast(msg){
@@ -565,6 +865,18 @@ function showToast(msg){
 }
 
 renderEmpleados();
+buildDeptIndex();
 renderPlanteles();
+updateDeptsByPlantel('usr-plantel','usr-dept');
+
+document.getElementById('user-form').addEventListener('submit', (e) => {
+  const role = document.getElementById('usr-rol').value;
+  if (role === 'profesor') {
+    buildHorarioHiddenInputs();
+  } else {
+    const hidden = document.getElementById('horario-hidden');
+    if (hidden) hidden.innerHTML = '';
+  }
+});
 </script>
 {% endblock %}

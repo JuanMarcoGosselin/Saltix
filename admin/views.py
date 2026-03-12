@@ -1,9 +1,13 @@
-from datetime import timedelta
+from datetime import date, timedelta
+import re
+from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
 
 from django.db.models import Count, Q
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.utils.timesince import timesince
+from django.urls import reverse
 
 from core.models import BitacoraAuditoria, Notificacion, Plantel
 from Profesores.models import Profesor
@@ -13,8 +17,8 @@ from users.models import Departamento, Rol, RolPermiso, Usuario
 def dashboard(request):
     now = timezone.localtime()
     profesores_qs = Profesor.objects.select_related(
-        "usuario", "departamento", "departamento__plantel"
-    ).prefetch_related("planteles")
+        "usuario"
+    ).prefetch_related("planteles", "departamentos")
     empleados_total = profesores_qs.count()
     empleados_activos = profesores_qs.filter(estado_laboral="ACTIVO").count()
     empleados_bajas = max(0, empleados_total - empleados_activos)
@@ -25,6 +29,8 @@ def dashboard(request):
     planteles_qs = Plantel.objects.all()
     planteles_total = planteles_qs.count()
     planteles_label = ", ".join(list(planteles_qs.values_list("nombre", flat=True)[:3]))
+    if not planteles_label:
+        planteles_label = "Sin planteles"
 
     departamentos_qs = Departamento.objects.select_related("plantel")
     departamentos_total = departamentos_qs.count()
@@ -94,46 +100,72 @@ def dashboard(request):
     profes_by_user = {
         p.usuario_id: p
         for p in Profesor.objects.filter(usuario_id__in=usuarios_ids)
-        .select_related("departamento", "departamento__plantel")
-        .prefetch_related("planteles")
+        .select_related("usuario")
+        .prefetch_related("planteles", "departamentos")
     }
     dept_by_jefe = {
         d.jefe_id: d
         for d in Departamento.objects.filter(jefe_id__in=usuarios_ids)
         .select_related("plantel")
     }
-
-    rol_style = {
-        "administrador": ("Admin", "chip-admin", "🛡️", "admin"),
-        "admin": ("Admin", "chip-admin", "🛡️", "admin"),
-        "jefatura": ("Jefatura", "chip-jefe", "👔", "jefatura"),
-        "contabilidad": ("Contabilidad", "chip-conta", "💼", "contabilidad"),
-        "profesor": ("Profesor", "chip-prof", "📚", "profesor"),
+    dept_by_jefe_all = {
+        d.jefe_id: d
+        for d in Departamento.objects.select_related("plantel", "jefe")
     }
-
+    rol_style = {
+        "administrador": ("Admin", "chip-admin", "Admin", "administrador"),
+        "admin": ("Admin", "chip-admin", "Admin", "administrador"),
+        "jefatura": ("Jefatura", "chip-jefe", "Jefatura", "jefatura"),
+        "contabilidad": ("Contabilidad", "chip-conta", "Contabilidad", "contabilidad"),
+        "profesor": ("Profesor", "chip-prof", "Profesor", "profesor"),
+    }
     usuarios = []
     for u in usuarios_qs:
         rol_nombre = (u.rol_id.nombre if u.rol_id else "Sin rol").lower()
         rol_label, rol_clase, rol_icono, rol_key = rol_style.get(
-            rol_nombre, ("Sin rol", "chip-prof", "👤", "sin-rol")
+            rol_nombre, ("Sin rol", "chip-prof", "Usuario", "sin-rol")
         )
 
         plantel_nombre = ""
         plantel_key = ""
-        if rol_key == "admin":
+        plantel_ids = []
+        depto_nombres = []
+        depto_ids = []
+        jef_plantel_id = ""
+        jef_depto_id = ""
+        prof_data = {}
+        if rol_key == "administrador":
             plantel_nombre = "Todos"
             plantel_key = "todos"
         else:
             profesor = profes_by_user.get(u.id)
-            if profesor and profesor.planteles.exists():
-                plantel = profesor.planteles.first()
-                plantel_nombre = plantel.nombre
-                plantel_key = plantel.nombre.lower().replace(" ", "-")
+            if profesor:
+                if profesor.planteles.exists():
+                    plantel = profesor.planteles.first()
+                    plantel_nombre = plantel.nombre
+                    plantel_key = plantel.nombre.lower().replace(" ", "-")
+                    plantel_ids = [str(p.id) for p in profesor.planteles.all()]
+                depto_ids = [str(d.id) for d in profesor.departamentos.all()]
+                depto_nombres = [d.nombre for d in profesor.departamentos.all()]
+                prof_data = {
+                    "rfc": profesor.rfc,
+                    "curp": profesor.curp,
+                    "telefono": profesor.telefono,
+                    "direccion": profesor.direccion,
+                    "fecha_ingreso": profesor.fecha_ingreso.isoformat(),
+                    "tipo_contrato": profesor.tipo_contrato,
+                    "salario": f"{profesor.costo_por_hora:.2f}",
+                }
             else:
                 depto = dept_by_jefe.get(u.id)
                 if depto:
                     plantel_nombre = depto.plantel.nombre
                     plantel_key = depto.plantel.nombre.lower().replace(" ", "-")
+                    plantel_ids = [str(depto.plantel_id)]
+                    depto_nombres = [depto.nombre]
+                    depto_ids = [str(depto.id)]
+                    jef_plantel_id = str(depto.plantel_id)
+                    jef_depto_id = str(depto.id)
 
         plantel_clase = "pill-gray" if plantel_nombre == "Todos" else "pill-blue"
         ultimo_acceso = (
@@ -146,8 +178,10 @@ def dashboard(request):
 
         usuarios.append(
             {
-                "username": u.email,
-                "nombre": f"{u.nombre} {u.apellido}",
+                "id": u.id,
+                "email": u.email,
+                "nombre": u.nombre,
+                "apellido": u.apellido,
                 "rol_label": rol_label,
                 "rol_clase": rol_clase,
                 "rol_icono": rol_icono,
@@ -158,6 +192,12 @@ def dashboard(request):
                 "estado_clase": estado_clase,
                 "rol": rol_key,
                 "plantel_key": plantel_key or "sin-plantel",
+                "plantel_ids": plantel_ids,
+                "departamento_nombres": depto_nombres,
+                "departamento_ids": depto_ids,
+                "jefatura_plantel_id": jef_plantel_id,
+                "jefatura_depto_id": jef_depto_id,
+                "profesor": prof_data,
             }
         )
 
@@ -166,12 +206,14 @@ def dashboard(request):
         plantel_nombre = (
             p.planteles.first().nombre if p.planteles.exists() else "Sin plantel"
         )
+        dept_names = [d.nombre for d in p.departamentos.all()]
+        dept_label = ", ".join(dept_names) if dept_names else "Sin departamento"
         empleados_data.append(
             {
                 "id": p.id,
                 "nombre": f"{p.usuario.nombre} {p.usuario.apellido}",
                 "plantel": plantel_nombre,
-                "dept": p.departamento.nombre,
+                "dept": dept_label,
                 "puesto": p.tipo_contrato,
                 "salario": f"${p.costo_por_hora:.2f}/h",
                 "estado": "activo" if p.estado_laboral == "ACTIVO" else "baja",
@@ -180,14 +222,21 @@ def dashboard(request):
 
     depts_by_plantel = {}
     for dept in departamentos_qs:
-        key = dept.plantel_id
-        depts_by_plantel.setdefault(key, []).append(dept.nombre)
+        key = str(dept.plantel_id)
+        depts_by_plantel.setdefault(key, []).append(
+            {
+                "id": dept.id,
+                "nombre": dept.nombre,
+                "plantel_id": dept.plantel_id,
+                "plantel_nombre": dept.plantel.nombre,
+            }
+        )
 
     dept_prof_counts = (
-        Profesor.objects.values("departamento_id")
+        Profesor.objects.values("departamentos")
         .annotate(total=Count("id"), activos=Count("id", filter=Q(estado_laboral="ACTIVO")))
     )
-    dept_counts = {d["departamento_id"]: d for d in dept_prof_counts}
+    dept_counts = {d["departamentos"]: d for d in dept_prof_counts if d["departamentos"]}
 
     color_cycle = ["bar-blue", "bar-teal", "bar-orange", "bar-red"]
     planteles_data = []
@@ -207,9 +256,12 @@ def dashboard(request):
             prog = int((activos / total) * 100) if total else 0
             depts_list.append(
                 {
+                    "id": dept.id,
                     "nombre": dept.nombre,
+                    "descripcion": dept.descripcion,
                     "empleados": total,
                     "prog": prog,
+                    "activo": dept.activo,
                 }
             )
 
@@ -222,12 +274,39 @@ def dashboard(request):
                 "empleados": profesores_qs.filter(planteles=plantel).count(),
                 "jefe": jefe_nombre,
                 "dir": plantel.direccion,
+                "activo": plantel.activo,
                 "depts": depts_list,
+            }
+        )
+
+    dias = [
+        ('LUN','Lunes'),
+        ('MAR','Martes'),
+        ('MIE','Miercoles'),
+        ('JUE','Jueves'),
+        ('VIE','Viernes'),
+        ('SAB','Sabado')
+    ]
+    horas = list(range(6, 24))
+
+    jefes_data = []
+    for u in Usuario.objects.select_related("rol_id").filter(
+        rol_id__nombre__iexact="jefatura"
+    ):
+        depto = dept_by_jefe_all.get(u.id)
+        jefes_data.append(
+            {
+                "id": u.id,
+                "nombre": f"{u.nombre} {u.apellido}",
+                "dept_id": depto.id if depto else None,
+                "plantel_id": depto.plantel_id if depto else None,
             }
         )
 
     context = {
         "fecha_actual": now.strftime("%B %Y").capitalize(),
+        "form_error": request.GET.get("error", ""),
+        "form_success": request.GET.get("ok", ""),
         "notificaciones_count": notificaciones_count,
         "stats": {
             "empleados_total": empleados_total,
@@ -248,5 +327,421 @@ def dashboard(request):
         "empleados_data": empleados_data,
         "depts_by_plantel": depts_by_plantel,
         "planteles_data": planteles_data,
+        "dias": dias,
+        "horas": horas,
+        "jefes_data": jefes_data,
     }
     return render(request, "admin/dashboard.html", context)
+
+
+def _redirect_with_message(ok=None, error=None):
+    base = reverse("admin_dashboard")
+    if ok:
+        return f"{base}?{urlencode({'ok': ok})}"
+    if error:
+        return f"{base}?{urlencode({'error': error})}"
+    return base
+
+
+def create_user(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    email = (request.POST.get("email") or "").strip().lower()
+    nombre = (request.POST.get("nombre") or "").strip()
+    apellido = (request.POST.get("apellido") or "").strip()
+    rol_nombre = (request.POST.get("rol") or "").strip()
+    password = request.POST.get("password") or ""
+    password2 = request.POST.get("password2") or ""
+
+    if not email or not nombre or not apellido or not rol_nombre:
+        return redirect(_redirect_with_message(error="Completa email, nombre, apellido y rol."))
+
+    if not password:
+        return redirect(_redirect_with_message(error="La contrasena es obligatoria."))
+    if password != password2:
+        return redirect(_redirect_with_message(error="Las contraseñas no coinciden."))
+
+    if Usuario.objects.filter(email=email).exists():
+        return redirect(_redirect_with_message(error="Ya existe un usuario con ese email."))
+
+    rol = Rol.objects.filter(nombre__iexact=rol_nombre).first()
+    if not rol:
+        return redirect(_redirect_with_message(error="Rol no valido."))
+
+    user = Usuario.objects.create_user(
+        email=email,
+        password=password,
+        nombre=nombre,
+        apellido=apellido,
+        rol_id=rol,
+        is_active=True,
+    )
+
+    rol_key = rol.nombre.lower()
+    if rol_key == "profesor":
+        prof_err = _upsert_profesor_from_request(request, user, is_new=True)
+        if prof_err:
+            user.delete()
+            return redirect(_redirect_with_message(error=prof_err))
+    elif rol_key == "jefatura":
+        jefe_err = _assign_jefatura_departamento(request, user)
+        if jefe_err:
+            user.delete()
+            return redirect(_redirect_with_message(error=jefe_err))
+
+    return redirect(_redirect_with_message(ok="Usuario creado."))
+
+
+def update_user(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    user_id = request.POST.get("user_id")
+    if not user_id:
+        return redirect(_redirect_with_message(error="Usuario no encontrado."))
+
+    user = Usuario.objects.filter(id=user_id).select_related("rol_id").first()
+    if not user:
+        return redirect(_redirect_with_message(error="Usuario no encontrado."))
+
+    email = (request.POST.get("email") or "").strip().lower()
+    nombre = (request.POST.get("nombre") or "").strip()
+    apellido = (request.POST.get("apellido") or "").strip()
+    rol_nombre = (request.POST.get("rol") or "").strip()
+    password = request.POST.get("password") or ""
+    password2 = request.POST.get("password2") or ""
+
+    if not email or not nombre or not apellido or not rol_nombre:
+        return redirect(_redirect_with_message(error="Completa email, nombre, apellido y rol."))
+
+    if password and password != password2:
+        return redirect(_redirect_with_message(error="Las contraseñas no coinciden."))
+
+    if Usuario.objects.exclude(id=user.id).filter(email=email).exists():
+        return redirect(_redirect_with_message(error="Ya existe un usuario con ese email."))
+
+    rol = Rol.objects.filter(nombre__iexact=rol_nombre).first()
+    if not rol:
+        return redirect(_redirect_with_message(error="Rol no valido."))
+
+    user.email = email
+    user.nombre = nombre
+    user.apellido = apellido
+    user.rol_id = rol
+    if password:
+        user.set_password(password)
+    user.save()
+
+    rol_key = rol.nombre.lower()
+    if rol_key == "profesor":
+        prof_err = _upsert_profesor_from_request(request, user, is_new=False)
+        if prof_err:
+            return redirect(_redirect_with_message(error=prof_err))
+        _clear_jefatura_if_needed(request, user)
+    elif rol_key == "jefatura":
+        jefe_err = _assign_jefatura_departamento(request, user)
+        if jefe_err:
+            return redirect(_redirect_with_message(error=jefe_err))
+    else:
+        _clear_jefatura_if_needed(request, user)
+
+    return redirect(_redirect_with_message(ok="Usuario actualizado."))
+
+
+def create_plantel(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    nombre = (request.POST.get("plantel_nombre") or "").strip()
+    direccion = (request.POST.get("plantel_direccion") or "").strip()
+    activo = request.POST.get("plantel_activo") == "on"
+    departamentos_raw = (request.POST.get("departamentos_csv") or "").strip()
+
+    if not nombre or not direccion:
+        return redirect(_redirect_with_message(error="Nombre y direccion del plantel son obligatorios."))
+
+    if Plantel.objects.filter(nombre__iexact=nombre).exists():
+        return redirect(_redirect_with_message(error="Ya existe un plantel con ese nombre."))
+
+    departamentos = [
+        d.strip() for d in departamentos_raw.replace(";", ",").split(",") if d.strip()
+    ]
+    if not departamentos:
+        return redirect(_redirect_with_message(error="Agrega al menos un departamento."))
+
+    plantel = Plantel.objects.create(nombre=nombre, direccion=direccion, activo=activo)
+    for dept in departamentos:
+        Departamento.objects.create(
+            nombre=dept,
+            descripcion=dept,
+            jefe=request.user,
+            plantel=plantel,
+            activo=True,
+        )
+
+    return redirect(_redirect_with_message(ok="Plantel creado."))
+
+
+def update_plantel(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    plantel_id = request.POST.get("plantel_id")
+    if not plantel_id:
+        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+
+    plantel = Plantel.objects.filter(id=plantel_id).first()
+    if not plantel:
+        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+
+    nombre = (request.POST.get("plantel_nombre") or "").strip()
+    direccion = (request.POST.get("plantel_direccion") or "").strip()
+    activo = request.POST.get("plantel_activo") == "on"
+
+    if not nombre or not direccion:
+        return redirect(_redirect_with_message(error="Nombre y direccion del plantel son obligatorios."))
+
+    if Plantel.objects.exclude(id=plantel.id).filter(nombre__iexact=nombre).exists():
+        return redirect(_redirect_with_message(error="Ya existe un plantel con ese nombre."))
+
+    plantel.nombre = nombre
+    plantel.direccion = direccion
+    plantel.activo = activo
+    plantel.save()
+
+    return redirect(_redirect_with_message(ok="Plantel actualizado."))
+
+
+def create_departamento(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    plantel_id = request.POST.get("dept_plantel_id")
+    nombre = (request.POST.get("dept_nombre") or "").strip()
+    descripcion = (request.POST.get("dept_descripcion") or "").strip()
+    activo = request.POST.get("dept_activo") == "on"
+    jefe_id = (request.POST.get("dept_jefe_id") or "").strip()
+
+    if not plantel_id or not nombre:
+        return redirect(_redirect_with_message(error="Plantel y nombre del departamento son obligatorios."))
+
+    plantel = Plantel.objects.filter(id=plantel_id).first()
+    if not plantel:
+        return redirect(_redirect_with_message(error="Plantel no encontrado."))
+
+    if Departamento.objects.filter(plantel=plantel, nombre__iexact=nombre).exists():
+        return redirect(_redirect_with_message(error="Ya existe un departamento con ese nombre en el plantel."))
+
+    jefe = None
+    if jefe_id:
+        jefe = Usuario.objects.select_related("rol_id").filter(id=jefe_id).first()
+        if not jefe or not jefe.rol_id or jefe.rol_id.nombre.lower() != "jefatura":
+            return redirect(_redirect_with_message(error="Jefe invalido para departamento."))
+        if Departamento.objects.filter(jefe=jefe).exists():
+            return redirect(_redirect_with_message(error="Ese jefe ya esta asignado a un plantel."))
+
+    Departamento.objects.create(
+        nombre=nombre,
+        descripcion=descripcion or nombre,
+        jefe=jefe or request.user,
+        plantel=plantel,
+        activo=activo,
+    )
+
+    return redirect(_redirect_with_message(ok="Departamento creado."))
+
+
+def update_departamento(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    dept_id = request.POST.get("dept_id")
+    if not dept_id:
+        return redirect(_redirect_with_message(error="Departamento no encontrado."))
+
+    depto = Departamento.objects.select_related("plantel").filter(id=dept_id).first()
+    if not depto:
+        return redirect(_redirect_with_message(error="Departamento no encontrado."))
+
+    nombre = (request.POST.get("dept_nombre") or "").strip()
+    descripcion = (request.POST.get("dept_descripcion") or "").strip()
+    activo = request.POST.get("dept_activo") == "on"
+    jefe_id = (request.POST.get("dept_jefe_id") or "").strip()
+
+    if not nombre:
+        return redirect(_redirect_with_message(error="Nombre del departamento es obligatorio."))
+
+    if Departamento.objects.filter(plantel=depto.plantel, nombre__iexact=nombre).exclude(id=depto.id).exists():
+        return redirect(_redirect_with_message(error="Ya existe un departamento con ese nombre en el plantel."))
+
+    jefe = None
+    if jefe_id:
+        jefe = Usuario.objects.select_related("rol_id").filter(id=jefe_id).first()
+        if not jefe or not jefe.rol_id or jefe.rol_id.nombre.lower() != "jefatura":
+            return redirect(_redirect_with_message(error="Jefe invalido para departamento."))
+        if Departamento.objects.filter(jefe=jefe).exclude(id=depto.id).exists():
+            return redirect(_redirect_with_message(error="Ese jefe ya esta asignado a un plantel."))
+
+    depto.nombre = nombre
+    depto.descripcion = descripcion or nombre
+    depto.activo = activo
+    if jefe:
+        depto.jefe = jefe
+    depto.save()
+
+    return redirect(_redirect_with_message(ok="Departamento actualizado."))
+
+
+def _upsert_profesor_from_request(request, user, is_new):
+    rfc = (request.POST.get("rfc") or "").strip()
+    curp = (request.POST.get("curp") or "").strip()
+    telefono = (request.POST.get("telefono") or "").strip()
+    direccion = (request.POST.get("direccion") or "").strip()
+    fecha_ingreso = (request.POST.get("fecha_ingreso") or "").strip()
+    tipo_contrato = (request.POST.get("tipo_contrato") or "").strip()
+    dept_ids = request.POST.getlist("departamentos")
+    plantel_ids = request.POST.getlist("planteles")
+    salario = (request.POST.get("salario") or "").strip()
+
+    if not all([rfc, curp, telefono, direccion, fecha_ingreso, tipo_contrato]):
+        return "Completa todos los campos de profesor."
+
+    if not plantel_ids:
+        return "Selecciona al menos un plantel para profesor."
+
+    if not dept_ids:
+        return "Selecciona al menos un departamento para profesor."
+
+    if not re.match(r"^\\d{1,4}\\.\\d{2}$", salario):
+        return "Salario invalido. Usa formato 0000.00."
+    try:
+        costo_por_hora = Decimal(salario)
+    except (InvalidOperation, TypeError):
+        return "Salario invalido. Usa formato 0000.00."
+
+    try:
+        fecha_ingreso_dt = date.fromisoformat(fecha_ingreso)
+    except ValueError:
+        return "Fecha de ingreso invalida."
+
+    planteles = list(Plantel.objects.filter(id__in=plantel_ids))
+    if len(planteles) != len(plantel_ids):
+        return "Plantel invalido."
+
+    departamentos = list(Departamento.objects.filter(id__in=dept_ids).select_related("plantel"))
+    if len(departamentos) != len(dept_ids):
+        return "Departamento invalido."
+
+    plantel_id_set = set([p.id for p in planteles])
+    for depto in departamentos:
+        if depto.plantel_id not in plantel_id_set:
+            return "Todos los departamentos deben pertenecer a los planteles seleccionados."
+
+    profesor, _ = Profesor.objects.get_or_create(usuario=user, defaults={
+        "rfc": rfc,
+        "curp": curp,
+        "telefono": telefono,
+        "direccion": direccion,
+        "fecha_ingreso": fecha_ingreso_dt,
+        "estado_laboral": "ACTIVO",
+        "costo_por_hora": costo_por_hora,
+        "tipo_contrato": tipo_contrato,
+    })
+
+    profesor.rfc = rfc
+    profesor.curp = curp
+    profesor.telefono = telefono
+    profesor.direccion = direccion
+    profesor.fecha_ingreso = fecha_ingreso_dt
+    profesor.costo_por_hora = costo_por_hora
+    profesor.tipo_contrato = tipo_contrato
+    profesor.save()
+    profesor.planteles.set(planteles)
+    profesor.departamentos.set(departamentos)
+
+    horario_error = _update_horarios(request, profesor)
+    if horario_error:
+        return horario_error
+    return None
+
+
+def _update_horarios(request, profesor):
+    dias = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB"]
+    any_data = False
+    entries = []
+
+    for dia in dias:
+        inicios = request.POST.getlist(f"horario_{dia}_inicio[]")
+        fines = request.POST.getlist(f"horario_{dia}_fin[]")
+        aulas = request.POST.getlist(f"horario_{dia}_aula[]")
+        clases = request.POST.getlist(f"horario_{dia}_clase_val[]")
+
+        max_len = max(len(inicios), len(fines), len(aulas), len(clases))
+        for i in range(max_len):
+            inicio = (inicios[i] if i < len(inicios) else "").strip()
+            fin = (fines[i] if i < len(fines) else "").strip()
+            aula = (aulas[i] if i < len(aulas) else "").strip()
+            clase_val = (clases[i] if i < len(clases) else "0").strip()
+            enabled = clase_val == "1"
+
+            if enabled or inicio or fin or aula:
+                any_data = True
+
+            if enabled and (not inicio or not fin):
+                return f"Completa horario de {dia} (inicio y fin)."
+
+            if enabled and inicio and fin:
+                entries.append(
+                    {
+                        "dia_semana": dia,
+                        "hora_inicio": inicio,
+                        "hora_fin": fin,
+                        "aula": aula,
+                        "es_hora_clase": True,
+                    }
+                )
+
+    if not any_data:
+        return None
+
+    if any_data and not entries:
+        return "Selecciona al menos un bloque con horario de clase."
+
+    profesor.horario_set.all().delete()
+    for item in entries:
+        profesor.horario_set.create(**item)
+    return None
+
+
+def _assign_jefatura_departamento(request, user):
+    plantel_id = (request.POST.get("jefatura_plantel") or "").strip()
+    dept_id = (request.POST.get("jefatura_departamento") or "").strip()
+
+    if not plantel_id or not dept_id:
+        return None
+
+    plantel = Plantel.objects.filter(id=plantel_id).first()
+    if not plantel:
+        return "Plantel invalido para jefatura."
+
+    depto = Departamento.objects.select_related("plantel").filter(id=dept_id).first()
+    if not depto:
+        return "Departamento invalido para jefatura."
+
+    if depto.plantel_id != plantel.id:
+        return "El departamento no pertenece al plantel seleccionado."
+
+    _clear_jefatura_if_needed(request, user, keep_id=depto.id)
+    depto.jefe = user
+    depto.save()
+    return None
+
+
+def _clear_jefatura_if_needed(request, user, keep_id=None):
+    qs = Departamento.objects.filter(jefe=user)
+    if keep_id:
+        qs = qs.exclude(id=keep_id)
+    for depto in qs:
+        depto.jefe = request.user
+        depto.save()

@@ -98,8 +98,9 @@
 .bar-orange { background: linear-gradient(90deg,#f7971e,#ffd200); }
 .bar-red { background: linear-gradient(90deg,#e17055,#fd79a8); }
 
-.modal-wide { max-width: 620px; }
+.modal-wide { max-width: 920px; }
 .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-select[multiple] { min-height: 120px; }
 
 .chip-perm {
   display: inline-flex;
@@ -238,6 +239,125 @@
 .plantel-toggle-icon { font-size: .8rem; color: var(--gray-400); transition: transform .25s; }
 .plantel-toggle-icon.open { transform: rotate(180deg); }
 .depts-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(210px,1fr)); gap: 1rem; padding-left: .5rem; margin-top: .25rem; animation: fadeUp .25s ease; }
+.dept-card-top { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.dept-status {
+  position: absolute;
+  bottom: .7rem;
+  right: .75rem;
+  font-size: .65rem;
+  font-weight: 700;
+  padding: .15rem .5rem;
+  border-radius: 999px;
+}
+.dept-active { background: #e6f9f4; color: #00916e; }
+.dept-inactive { background: #fdecea; color: #c0392b; }
+
+.modal-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.modal-left,
+.modal-right {
+  background: var(--gray-100);
+  border-radius: 14px;
+  padding: 1rem;
+  border: 1px solid var(--gray-200);
+}
+
+.role-panel {
+  display: block;
+}
+
+.role-note {
+  margin-top: .75rem;
+  font-size: .75rem;
+  color: var(--gray-400);
+}
+
+.profesor-main {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--gray-200);
+}
+
+.profesor-title {
+  font-weight: 700;
+  margin-bottom: .6rem;
+}
+
+.horario-wrap table th,
+.horario-wrap table td {
+  padding: .5rem .6rem;
+  font-size: .78rem;
+}
+
+.horario-wrap .btn-outline {
+  padding: .25rem .55rem;
+  font-size: .7rem;
+}
+
+.horario-wrap {
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.horario-wrap table {
+  width: 100%;
+  min-width: 720px;
+}
+
+.horario-grid-wrap {
+  overflow: auto;
+  border-radius: 12px;
+}
+
+.horario-grid th,
+.horario-grid td {
+  text-align: center;
+  padding: .4rem .5rem;
+  font-size: .72rem;
+}
+
+.horario-grid .hora-col {
+  font-weight: 700;
+  color: var(--gray-600);
+  text-align: right;
+  padding-right: .75rem;
+  background: #f7f9fc;
+}
+
+.hora-cell {
+  background: #fff;
+}
+
+.hora-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hora-check input {
+  display: none;
+}
+
+.hora-check span {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1.5px solid var(--gray-200);
+  background: #fff;
+  transition: all .15s ease;
+  display: inline-block;
+}
+
+.hora-check input:checked + span {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0,123,255,.12);
+}
 
 /* Modal de plantel */
 .modal-tabs { display: flex; gap: .25rem; background: var(--gray-100); border-radius: 10px; padding: .25rem; margin-bottom: 1.25rem; }
@@ -250,4 +370,6 @@
   .modal-grid { grid-template-columns: 1fr; }
   .welcome-chips { display: none; }
   .search-bar input { width: 130px; }
+  .modal-wide { max-width: 100%; }
+  .modal-split { grid-template-columns: 1fr; }
 }
