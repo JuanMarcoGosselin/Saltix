@@ -92,21 +92,21 @@
           </div>
           <nav>
             <div class="nav-label">Principal</div>
-            <button class="nav-item active" onclick="showPage('inicio',this)">
+            <button class="nav-item active" data-page="inicio" onclick="showPage('inicio',this)">
               <span class="icon">&#x1F3E0;</span> Inicio
             </button>
             <div class="nav-label">Gestion</div>
-            <button class="nav-item" onclick="showPage('empleados',this)">
-              <span class="icon">&#x1F465;</span> Empleados
+            <button class="nav-item" data-page="empleados" onclick="showPage('empleados',this)">
+              <span class="icon">&#x1F465;</span> Profesores
             </button>
-            <button class="nav-item" onclick="showPage('usuarios',this)">
+            <button class="nav-item" data-page="usuarios" onclick="showPage('usuarios',this)">
               <span class="icon">&#x1F511;</span> Usuarios
             </button>
-            <button class="nav-item" onclick="showPage('departamentos',this)">
+            <button class="nav-item" data-page="departamentos" onclick="showPage('departamentos',this)">
               <span class="icon">&#x1F3E2;</span> Planteles y Depts.
             </button>
             <div class="nav-label">Sistema</div>
-            <button class="nav-item" onclick="showPage('configuracion',this)">
+            <button class="nav-item" data-page="configuracion" onclick="showPage('configuracion',this)">
               <span class="icon">&#x2699;</span> Configuracion
             </button>
           </nav>

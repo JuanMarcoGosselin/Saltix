@@ -1,4 +1,39 @@
 const breadcrumbs={inicio:'Inicio',empleados:'Empleados',usuarios:'Usuarios',departamentos:'Planteles y Departamentos',configuracion:'Configuracion'};
+const PAGE_STORAGE_KEY = 'admin_active_page';
+
+function getNavButtons(){
+  return Array.from(document.querySelectorAll('.nav-item'));
+}
+
+function getPageFromButton(btn){
+  if (!btn) return '';
+  const dataPage = btn.dataset.page;
+  if (dataPage) return dataPage;
+  const onClick = btn.getAttribute('onclick') || '';
+  const match = onClick.match(/showPage\('([^']+)'\)/);
+  return match ? match[1] : '';
+}
+
+function findNavButton(pageId){
+  return getNavButtons().find(btn => getPageFromButton(btn) === pageId);
+}
+
+function saveActivePage(pageId){
+  if (!pageId) return;
+  try { localStorage.setItem(PAGE_STORAGE_KEY, pageId); } catch (e) {}
+}
+
+function restoreActivePage(){
+  let pageId = '';
+  try { pageId = localStorage.getItem(PAGE_STORAGE_KEY) || ''; } catch (e) {}
+  if (!pageId || !document.getElementById('page-' + pageId)) {
+    const defaultBtn = getNavButtons().find(btn => btn.classList.contains('active'));
+    pageId = getPageFromButton(defaultBtn) || 'inicio';
+  }
+  const btn = findNavButton(pageId);
+  showPage(pageId, btn || null);
+}
+
 function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -6,6 +41,7 @@ function showPage(id,btn){
   if(btn)btn.classList.add('active');
   document.getElementById('breadcrumb').innerHTML='<strong>'+breadcrumbs[id]+'</strong>';
   document.getElementById('sidebar').classList.remove('open');
+  saveActivePage(id);
 }
 
 const empleados = JSON.parse(document.getElementById('empleados-data').textContent || '[]');
@@ -105,6 +141,31 @@ function renderEmpleados(){
 }
 function filterEmpleados(f,btn){empFilter=f;document.querySelectorAll('#emp-tabs .tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderEmpleados();}
 function searchEmpleados(val){empSearch=val;renderEmpleados();}
+
+function searchUsuarios(val){
+  const tbody = document.getElementById('usuarios-tbody');
+  if (!tbody) return;
+  const term = (val || '').trim().toLowerCase();
+  const rows = Array.from(tbody.querySelectorAll('tr[data-search]'));
+  let any = false;
+  rows.forEach(row => {
+    const match = !term || (row.dataset.search || '').includes(term);
+    row.style.display = match ? '' : 'none';
+    if (match) any = true;
+  });
+  let emptyRow = tbody.querySelector('tr.usuarios-empty');
+  if (!rows.length) return;
+  if (!any) {
+    if (!emptyRow) {
+      emptyRow = document.createElement('tr');
+      emptyRow.className = 'usuarios-empty';
+      emptyRow.innerHTML = '<td colspan="7" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin resultados.</td>';
+      tbody.appendChild(emptyRow);
+    }
+  } else if (emptyRow) {
+    emptyRow.remove();
+  }
+}
 
 function openModalUsuario(){
   const form = document.getElementById('user-form');
@@ -473,10 +534,45 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'),3500);
 }
 
+function deletePlantel(plantelId){
+  const plantel = plantelesData.find(p => String(p.id) === String(plantelId));
+  const nombre = plantel ? plantel.nombre : 'este plantel';
+  const count = plantel ? plantel.depts.length : 0;
+  const msg = count
+    ? `¿Eliminar "${nombre}"? Se eliminarán ${count} departamento(s).`
+    : `¿Eliminar "${nombre}"?`;
+  if (!confirm(msg)) return;
+  const form = document.getElementById('plantel-delete-form');
+  document.getElementById('plantel-delete-id').value = plantelId;
+  form.submit();
+}
+
+function deleteDepartamento(deptId){
+  const depto = deptIndex[String(deptId)];
+  const nombre = depto ? depto.nombre : 'este departamento';
+  if (!confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  const form = document.getElementById('dept-delete-form');
+  document.getElementById('dept-delete-id').value = deptId;
+  form.submit();
+}
+
+function deletePlantelFromEdit(){
+  const plantelId = document.getElementById('plantel-edit-id').value;
+  if (!plantelId) return;
+  deletePlantel(plantelId);
+}
+
+function deleteDepartamentoFromEdit(){
+  const deptId = document.getElementById('dept-id').value;
+  if (!deptId) return;
+  deleteDepartamento(deptId);
+}
+
 renderEmpleados();
 buildDeptIndex();
 renderPlanteles();
 updateDeptsByPlantel('usr-plantel','usr-dept');
+restoreActivePage();
 
 document.getElementById('user-form').addEventListener('submit', (e) => {
   const role = document.getElementById('usr-rol').value;
@@ -488,10 +584,79 @@ document.getElementById('user-form').addEventListener('submit', (e) => {
   }
 });
 
-setTimeout(() => {
-  document.querySelectorAll('.table-wrap[style*="border-left"]').forEach(el => {
-    el.style.transition = 'opacity .4s ease';
-    el.style.opacity = '0';
-    setTimeout(() => el.remove(), 450);
+const notifBtn = document.getElementById('notif-btn');
+const notifPanel = document.getElementById('notif-panel');
+if (notifBtn && notifPanel) {
+  const readAllUrl = notifPanel.dataset.readAllUrl;
+  const readOneUrl = notifPanel.dataset.readOneUrl;
+  const markAllBtn = document.getElementById('notif-mark-read');
+
+  function getCsrfToken(){
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+  }
+
+  function clearNotifDot(){
+    const dot = notifBtn.querySelector('.notif-dot');
+    if (dot) dot.remove();
+  }
+
+  async function postNotif(url, body){
+    if (!url) return;
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': getCsrfToken()
+      },
+      body
+    });
+  }
+
+  async function markAllRead(){
+    await postNotif(readAllUrl, '');
+    clearNotifDot();
+    notifPanel.querySelectorAll('.notif-item').forEach(item => {
+      item.classList.remove('notif-unread');
+    });
+  }
+
+  notifBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    notifPanel.classList.toggle('open');
+    if (notifPanel.classList.contains('open')) {
+      markAllRead();
+    }
   });
-}, 10000);
+  document.addEventListener('click', (e) => {
+    if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
+      notifPanel.classList.remove('open');
+    }
+  });
+
+  if (markAllBtn) {
+    markAllBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      markAllRead();
+    });
+  }
+
+  notifPanel.querySelectorAll('.notif-dismiss').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const item = btn.closest('.notif-item');
+      const id = item ? item.dataset.id : '';
+      if (!id) return;
+      await postNotif(readOneUrl, `notif_id=${encodeURIComponent(id)}`);
+      item.remove();
+      const remaining = notifPanel.querySelectorAll('.notif-item').length;
+      if (!remaining) {
+        const empty = document.createElement('div');
+        empty.className = 'notif-empty';
+        empty.textContent = 'Sin notificaciones recientes.';
+        notifPanel.querySelector('.notif-list').appendChild(empty);
+      }
+      clearNotifDot();
+    });
+  });
+}
