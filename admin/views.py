@@ -39,7 +39,7 @@ def dashboard(request):
         if departamentos_total and departamentos_activos == departamentos_total
         else f"{departamentos_activos} activos"
     )
-
+    print("hola")
     usuarios_total = Usuario.objects.count()
     usuarios_roles_label = f"{Usuario.objects.values('rol_id').distinct().count()} roles"
 
