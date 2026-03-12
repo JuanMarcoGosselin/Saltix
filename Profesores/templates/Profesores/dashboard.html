@@ -1,0 +1,576 @@
+{% extends "core/layout.html" %}
+{% load static %}
+{% block title %}SALTIX - Profesor{% endblock %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard_base.css' %}">
+<link rel="stylesheet" href="{% static 'core/css/dashboard_profesor.css' %}">
+{% endblock %}
+
+{% block topbar %}
+<header class="topbar">
+    <div class="topbar-left">
+        <button class="hamburger-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <div class="breadcrumb" id="breadcrumb">
+            <strong>Inicio</strong>
+        </div>
+    </div>
+    <div class="topbar-date">{{ fecha_actual }}</div>
+</header>
+{% endblock %}
+
+{% block content %}
+
+
+            <!-- INICIO -->
+            <div class="page active" id="page-inicio">
+                <div class="welcome-banner">
+                    <div class="welcome-text">
+                        <h2>{{ saludo }}</h2>
+                        <p>{{ resumen_mes_label }}</p>
+                    </div>
+                    <div class="welcome-badge">
+                        <div class="amount">{{ salario_mensual }}</div>
+                        <div class="amount-label">Salario mensual</div>
+                    </div>
+                </div>
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-top">
+                            <div class="card-icon-wrap icon-blue">💰</div>
+                            <span class="card-trend trend-up">{{ salario_trend_label }}</span>
+                        </div>
+                        <div class="card-label">Mi salario</div>
+                        <div class="card-value">{{ salario_bruto }}</div>
+                        <div class="card-sub">{{ salario_bruto_label }}</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-top">
+                            <div class="card-icon-wrap icon-green">🕐</div>
+                            <span class="card-trend trend-same">{{ horas_trend_label }}</span>
+                        </div>
+                        <div class="card-label">Horas trabajadas</div>
+                        <div class="card-value">{{ horas_trabajadas }}</div>
+                        <div class="card-sub">{{ horas_trabajadas_label }}</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-top">
+                            <div class="card-icon-wrap icon-yellow">📆</div>
+                            <span class="card-trend trend-up">{{ proximo_pago_fecha }}</span>
+                        </div>
+                        <div class="card-label">Próximo pago</div>
+                        <div class="card-value">{{ proximo_pago }}</div>
+                        <div class="card-sub">{{ proximo_pago_label }}</div>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <div class="table-header">
+                        <h3>Desglose del recibo - {{ recibo_periodo_label }}</h3>
+                        <button class="btn-primary">⬇ Descargar PDF</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th>Tipo</th>
+                                <th>Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in recibo_detalle %}
+                            <tr>
+                                <td>{{ item.concepto }}</td>
+                                <td><span class="pill {{ item.tipo_clase }}">{{ item.tipo_label }}</span></td>
+                                <td>{{ item.importe }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="3">Sin conceptos registrados.</td></tr>
+                        {% endfor %}
+</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- RECIBOS -->
+            <div class="page" id="page-recibos">
+                <div style="margin-bottom:1.5rem">
+                    <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mis Recibos de Nómina</div>
+                    <div style="font-size:.82rem;color:var(--gray-400)">Descarga tus recibos en formato PDF</div>
+                </div>
+                <div class="table-wrap">
+                    <div class="table-header">
+                        <h3>Recibos disponibles</h3>
+                        <button class="btn-outline">Filtrar por año</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Periodo</th>
+                                <th>Fecha de pago</th>
+                                <th>Neto pagado</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for recibo in recibos %}
+                            <tr>
+                                <td>{{ recibo.periodo }}</td>
+                                <td>{{ recibo.fecha_pago }}</td>
+                                <td>{{ recibo.neto }}</td>
+                                <td><span class="pill {{ recibo.estado_clase }}">{{ recibo.estado_label }}</span></td>
+                                <td><button class="{{ recibo.accion_clase }}">{{ recibo.accion_label }}</button></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">Sin recibos disponibles.</td></tr>
+                        {% endfor %}
+</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- HISTORIAL -->
+            <div class="page" id="page-historial">
+                <div style="margin-bottom:1.5rem">
+                    <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Historial de Pagos</div>
+                    <div style="font-size:.82rem;color:var(--gray-400)">Resumen anual de tus percepciones</div>
+                </div>
+                <div class="cards-grid" style="margin-bottom:1.5rem">
+                    <div class="card">
+                        <div class="card-label">Acumulado {{ historial_anio }}</div>
+                        <div class="card-value" style="font-size:1.4rem">{{ acumulado_total }}</div>
+                        <div class="card-sub">{{ acumulado_periodo }}</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Deducciones {{ historial_anio }}</div>
+                        <div class="card-value" style="font-size:1.4rem;color:var(--red)">{{ deducciones_total }}</div>
+                        <div class="card-sub">{{ deducciones_label }}</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Bonos recibidos</div>
+                        <div class="card-value" style="font-size:1.4rem;color:var(--green)">{{ bonos_total }}</div>
+                        <div class="card-sub">{{ bonos_label }}</div>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <div class="table-header">
+                        <h3>Detalle mensual {{ historial_anio }}</h3>
+                        <button class="btn-outline">Exportar Excel</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>Percepciones</th>
+                                <th>Deducciones</th>
+                                <th>Bonos</th>
+                                <th>Neto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for mes in historial_mensual %}
+                            <tr>
+                                <td>{{ mes.nombre }}</td>
+                                <td>{{ mes.percepciones }}</td>
+                                <td>{{ mes.deducciones }}</td>
+                                <td>{{ mes.bonos }}</td>
+                                <td style="font-weight:700;color:var(--accent)">{{ mes.neto }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="5">Sin historial mensual.</td></tr>
+                        {% endfor %}
+</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ══ ASISTENCIAS (NUEVA) ══ -->
+            <div class="page" id="page-asistencias">
+                <div style="margin-bottom:1.25rem">
+                    <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mis Asistencias</div>
+                    <div style="font-size:.82rem;color:var(--gray-400)">Consulta tu registro mensual y justifica faltas pendientes</div>
+                </div>
+
+                <div class="month-selector">
+                    <button class="month-btn" onclick="changeMonth(-1)">‹</button>
+                    <span class="month-label" id="month-label">{{ mes_actual_label }}</span>
+                    <button class="month-btn" onclick="changeMonth(1)">›</button>
+                </div>
+
+                <div class="asist-summary">
+                    <div class="asist-stat">
+                        <div class="asist-stat-icon">✅</div>
+                        <div class="asist-stat-val" id="stat-asist">—</div>
+                        <div class="asist-stat-lbl">Asistencias</div>
+                    </div>
+                    <div class="asist-stat">
+                        <div class="asist-stat-icon">❌</div>
+                        <div class="asist-stat-val" id="stat-faltas" style="color:var(--red)">—</div>
+                        <div class="asist-stat-lbl">Faltas</div>
+                    </div>
+                    <div class="asist-stat">
+                        <div class="asist-stat-icon">📄</div>
+                        <div class="asist-stat-val" id="stat-justif" style="color:#b07d00">—</div>
+                        <div class="asist-stat-lbl">Justificadas</div>
+                    </div>
+                    <div class="asist-stat">
+                        <div class="asist-stat-icon">🏖️</div>
+                        <div class="asist-stat-val" id="stat-perm" style="color:#0062cc">—</div>
+                        <div class="asist-stat-lbl">Permisos</div>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot dot-green"></div>
+                         Asistencia
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-red"></div>
+                         Falta sin justificar
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-yellow"></div>
+                         Falta justificada / Permiso
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-blue"></div>
+                         Vacaciones
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-gray"></div>
+                         No laboral
+                    </div>
+                </div>
+
+                <div class="calendar-grid">
+                    <div class="cal-header">
+                        <div class="cal-day-name">Lun</div>
+                        <div class="cal-day-name">Mar</div>
+                        <div class="cal-day-name">Mié</div>
+                        <div class="cal-day-name">Jue</div>
+                        <div class="cal-day-name">Vie</div>
+                        <div class="cal-day-name weekend">Sáb</div>
+                        <div class="cal-day-name weekend">Dom</div>
+                    </div>
+                    <div class="cal-body" id="cal-body"></div>
+                </div>
+
+                <div class="faltas-pendientes">
+                    <div class="faltas-header">
+                        <h3>⚠️ Faltas sin justificar</h3>
+                        <span id="faltas-count" style="font-size:.78rem;color:var(--gray-400)"></span>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:var(--gray-100)">
+                                <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Fecha</th>
+                                <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Día</th>
+                                <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Estado</th>
+                                <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="faltas-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PERFIL -->
+            <div class="page" id="page-perfil">
+                <div style="margin-bottom:1.5rem">
+                    <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mi Perfil</div>
+                    <div style="font-size:.82rem;color:var(--gray-400)">Tus datos personales y laborales</div>
+                </div>
+                <div class="perfil-wrap">
+                    <div class="perfil-card">
+                        <div class="perfil-avatar">{{ perfil_iniciales }}</div>
+                        <div class="perfil-name">{{ perfil_nombre }}</div>
+                        <div class="perfil-role">{{ perfil_puesto }}</div>
+                        <span class="pill pill-green" style="margin-top:.25rem">{{ perfil_estado }}</span>
+                        <div class="perfil-stats">
+                            <div class="pstat">
+                                <div class="pstat-val">{{ perfil_anios_institucion }}</div>
+                                <div class="pstat-lbl">Años en inst.</div>
+                            </div>
+                            <div class="pstat">
+                                <div class="pstat-val">{{ perfil_jornada_semanal }}</div>
+                                <div class="pstat-lbl">Jornada sem.</div>
+                            </div>
+                            <div class="pstat">
+                                <div class="pstat-val">{{ perfil_grupos }}</div>
+                                <div class="pstat-lbl">Grupos</div>
+                            </div>
+                            <div class="pstat">
+                                <div class="pstat-val">{{ perfil_anios_experiencia }}</div>
+                                <div class="pstat-lbl">Años exp.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="perfil-data-card">
+                        <h3>Datos personales y laborales</h3>
+
+                        {% for dato in perfil_datos %}
+                        <div class="data-row">
+                            <span class="data-label">{{ dato.label }}</span>
+                            <span class="data-value">{{ dato.value }}</span>
+                        </div>
+                        {% empty %}
+                        <div class="data-row">
+                            <span class="data-label">Sin datos</span>
+                            <span class="data-value">?</span>
+                        </div>
+                        {% endfor %}
+</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra %}
+<!-- MODAL JUSTIFICAR -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">Justificar falta</div>
+                    <div class="modal-sub" id="modal-fecha-label"></div>
+                </div>
+                <button class="modal-close" onclick="closeModalDirect()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Motivo de la falta</label>
+                    <select class="form-select" id="motivo-select">
+                        <option value="">— Selecciona un motivo —</option>
+                        <option value="medico">Cita médica / Enfermedad</option>
+                        <option value="familiar">Asunto familiar urgente</option>
+                        <option value="tramite">Trámite oficial</option>
+                        <option value="duelo">Duelo familiar</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción (opcional)</label>
+                    <textarea class="form-textarea" id="motivo-desc" placeholder="Describe brevemente el motivo de tu ausencia..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Documento de respaldo</label>
+                    <label class="file-upload" id="file-label">
+                        <input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">
+
+                                📎 Adjunta un comprobante (PDF, JPG, PNG)
+                                
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModalDirect()">Cancelar</button>
+                <button class="btn-submit" onclick="submitJustificacion()">Enviar justificación ›</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+{% if months_data %}{{ months_data|json_script:"months-data" }}{% else %}<script id="months-data" type="application/json">[]</script>{% endif %}
+{% endblock %}
+
+{% block page_js %}
+<script>
+    const breadcrumbs = {
+        inicio: 'Inicio',
+        recibos: 'Mis Recibos',
+        historial: 'Historial de Pagos',
+        asistencias: 'Mis Asistencias',
+        perfil: 'Mi Perfil'
+    };
+    function showPage(id, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('page-' + id).classList.add('active');
+        btn.classList.add('active');
+        document.getElementById('breadcrumb').innerHTML = '<strong>' + breadcrumbs[id] + '</strong>';
+        document.getElementById('sidebar').classList.remove('open');
+    }
+
+    const months = JSON.parse(document.getElementById('months-data').textContent || '[]');
+
+    let currentMonthIdx = months.length ? Math.max(0, months.length - 1) : 0;
+    let activeFaltaDay = null;
+    let justifiedDays = new Set();
+
+    function renderCalendar() {
+        if (!months.length) {
+            return;
+        }
+        const m = months[currentMonthIdx];
+        document.getElementById('month-label').textContent = m.label;
+        const firstDay = new Date(m.year, m.month, 1).getDay();
+        const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+        const daysInMonth = new Date(m.year, m.month + 1, 0).getDate();
+        const body = document.getElementById('cal-body');
+        body.innerHTML = '';
+        for (let i = 0; i < startOffset; i++) {
+            const c = document.createElement('div');
+            c.className = 'cal-cell empty';
+            body.appendChild(c);
+        }
+        let asist = 0,
+            faltas = 0,
+            justif = 0,
+            perm = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dow = new Date(m.year, m.month, d).getDay();
+            const isWe = dow === 0 || dow === 6;
+            let status = m.data[d] || (isWe ? 'X' : null);
+            if (justifiedDays.has(m.month + '-' + d))
+                status = 'FJ';
+            if (status === 'A')
+                asist++;
+            else if (status === 'F')
+                faltas++;
+            else if (status === 'FJ')
+                justif++;
+            else if (status === 'P')
+                perm++;
+            const cell = document.createElement('div');
+            cell.className = 'cal-cell' + (isWe ? ' weekend' : '');
+            const dn = document.createElement('div');
+            dn.className = 'day-num';
+            dn.textContent = d;
+            cell.appendChild(dn);
+            if (status) {
+                const ds = document.createElement('div');
+                const map = {
+                    A: 'status-a',
+                    F: 'status-f',
+                    FJ: 'status-fj',
+                    P: 'status-p',
+                    V: 'status-v',
+                    X: 'status-x'
+                };
+                const ico = {
+                    A: '✓',
+                    F: '✗',
+                    FJ: '!',
+                    P: 'P',
+                    V: 'V',
+                    X: '—'
+                };
+                ds.className = 'day-status ' + (map[status] || 'status-x');
+                ds.textContent = ico[status] || '?';
+                cell.appendChild(ds);
+                if (status === 'F') {
+                    cell.classList.add('has-falta');
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-j-cell';
+                    btn.textContent = 'Justificar';
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        openModal(d, m.label, m.month);
+                    };
+                    cell.appendChild(btn);
+                    cell.onclick = () => openModal(d, m.label, m.month);
+                }
+            }
+            body.appendChild(cell);
+        }
+        document.getElementById('stat-asist').textContent = asist;
+        document.getElementById('stat-faltas').textContent = faltas;
+        document.getElementById('stat-justif').textContent = justif;
+        document.getElementById('stat-perm').textContent = perm;
+        renderFaltasTable(m);
+    }
+
+    function renderFaltasTable(m) {
+        const tbody = document.getElementById('faltas-tbody');
+        tbody.innerHTML = '';
+        const daysInMonth = new Date(m.year, m.month + 1, 0).getDate();
+        const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        let count = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+            if (m.data[d] === 'F' && !justifiedDays.has(m.month + '-' + d)) {
+                count++;
+                const dow = new Date(m.year, m.month, d).getDay();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">${d} de ${meses[m.month]} de ${m.year}</td><td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">${dias[dow]}</td><td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)"><span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#fdecea;color:#c0392b">Sin justificar</span></td><td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)"><button onclick="openModal(${d},'${m.label}',${m.month})" style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:8px;padding:.4rem 1rem;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer">Justificar</button></td>`;
+                tbody.appendChild(tr);
+            }
+        }
+        if (count === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="4" style="padding:1.5rem;text-align:center;font-size:.85rem;color:var(--gray-400)">✅ Sin faltas pendientes de justificación</td>`;
+            tbody.appendChild(tr);
+        }
+        document.getElementById('faltas-count').textContent = count > 0 ? count + ' pendiente' + (count > 1 ? 's' : '') : 'Sin pendientes';
+    }
+
+    function changeMonth(dir) {
+        currentMonthIdx = Math.max(0, Math.min(months.length - 1, currentMonthIdx + dir));
+        renderCalendar();
+    }
+
+    function openModal(day, monthLabel, monthIdx) {
+        activeFaltaDay = {
+            day,
+            monthIdx
+        };
+        const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const m = months[monthIdx];
+        const dow = new Date(m.year, m.month, day).getDay();
+        const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        document.getElementById('modal-fecha-label').textContent = `${dias[dow]} ${day} de ${meses[m.month]} de ${m.year}`;
+        document.getElementById('motivo-select').value = '';
+        document.getElementById('motivo-desc').value = '';
+        document.getElementById('file-label').innerHTML = '<input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">📎 Adjunta un comprobante (PDF, JPG, PNG)';
+        document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function closeModal(e) {
+        if (e.target === document.getElementById('modal-overlay'))
+            closeModalDirect();
+    }
+    function closeModalDirect() {
+        document.getElementById('modal-overlay').classList.remove('open');
+        activeFaltaDay = null;
+    }
+
+    function handleFile(input) {
+        if (input.files.length > 0) {
+            document.getElementById('file-label').innerHTML = `<input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">✅ <strong>${input.files[0].name}</strong> adjunto`;
+        }
+    }
+
+    function submitJustificacion() {
+        const motivo = document.getElementById('motivo-select').value;
+        if (!motivo) {
+            document.getElementById('motivo-select').style.borderColor = 'var(--red)';
+            document.getElementById('motivo-select').focus();
+            return;
+        }
+        document.getElementById('motivo-select').style.borderColor = '';
+        if (activeFaltaDay)
+            justifiedDays.add(activeFaltaDay.monthIdx + '-' + activeFaltaDay.day);
+        closeModalDirect();
+        renderCalendar();
+        showToast('✅ Justificación enviada correctamente');
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    renderCalendar();
+    </script>
+{% endblock %}

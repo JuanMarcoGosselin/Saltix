@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SALTIX{% endblock %}</title>
+  {% block fonts %}{% endblock %}
+  {% block page_css %}{% endblock %}
+</head>
+<body>
+  {% if user.is_authenticated %}
+    {% with role=user.rol_id.nombre|default:""|lower %}
+      {% if role == "jefatura" %}
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-logo">
+            <div class="logo-mark">SX</div>
+            <h1>SALTIX</h1>
+            <span class="role-tag">Panel de Jefatura</span>
+          </div>
+          <nav>
+            <button class="nav-item active" onclick="showPage('equipo', this)">
+              <span class="icon">&#x1F465;</span> Mi equipo
+            </button>
+            <button class="nav-item" onclick="showPage('asistencia', this)">
+              <span class="icon">&#x1F550;</span> Asistencia
+            </button>
+            <button class="nav-item" onclick="showPage('solicitudes', this)">
+              <span class="icon">&#x1F4CB;</span> Solicitudes
+              <span class="badge" id="badge-sol" style="position:relative;top:0;right:0;margin-left:auto;background:#e74c3c;color:#fff;border-radius:999px;padding:1px 7px;font-size:0.68rem;">{{ solicitudes_pendientes_total }}</span>
+            </button>
+            <button class="nav-item" onclick="showPage('reportes', this)">
+              <span class="icon">&#x1F4CA;</span> Reportes
+            </button>
+          </nav>
+          <div class="sidebar-profile">
+            <div class="avatar">{{ user.nombre|default:"U"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}</div>
+            <div class="profile-info">
+              <div class="profile-name">{{ user.nombre }} {{ user.apellido }}</div>
+              <div class="profile-role">{{ user.rol_id.nombre|default:"" }}</div>
+            </div>
+            <button class="logout-btn" title="Cerrar sesion">&#x23FB;</button>
+          </div>
+        </aside>
+      {% elif role == "profesor"%}
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-logo">
+            <div class="logo-mark">SX</div>
+            <h1>SALTIX</h1>
+            <span class="role-tag">Profesor</span>
+          </div>
+          <nav>
+            <div class="nav-label">Principal</div>
+            <button class="nav-item active" onclick="showPage('inicio',this)">
+              <span class="icon">&#x1F3E0;</span>
+              Inicio
+            </button>
+            <div class="nav-label">Nomina</div>
+            <button class="nav-item" onclick="showPage('recibos',this)">
+              <span class="icon">&#x1F9FE;</span>
+              Mis recibos
+            </button>
+            <button class="nav-item" onclick="showPage('historial',this)">
+              <span class="icon">&#x1F4C5;</span>
+              Historial de pagos
+            </button>
+            <button class="nav-item" onclick="showPage('asistencias',this)">
+              <span class="icon">&#x1F4CB;</span>
+              Mis asistencias
+            </button>
+            <div class="nav-label">Cuenta</div>
+            <button class="nav-item" onclick="showPage('perfil',this)">
+              <span class="icon">&#x1F464;</span>
+              Mi perfil
+            </button>
+          </nav>
+          <div class="sidebar-profile">
+            <div class="avatar">{{ user.nombre|default:"U"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}</div>
+            <div class="profile-info">
+              <div class="profile-name">{{ user.nombre }} {{ user.apellido }}</div>
+              <div class="profile-role">{{ user.rol_id.nombre|default:"" }}</div>
+            </div>
+            <button class="logout-btn" title="Cerrar sesion">&#x23FB;</button>
+          </div>
+        </aside>
+      {% elif role == "administrador" or role == "admin" %}
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-logo">
+            <div class="logo-mark">SX</div>
+            <h1>SALTIX</h1>
+            <span class="role-tag role-admin">Administrador</span>
+          </div>
+          <nav>
+            <div class="nav-label">Principal</div>
+            <button class="nav-item active" onclick="showPage('inicio',this)">
+              <span class="icon">&#x1F3E0;</span> Inicio
+            </button>
+            <div class="nav-label">Gestion</div>
+            <button class="nav-item" onclick="showPage('empleados',this)">
+              <span class="icon">&#x1F465;</span> Empleados
+            </button>
+            <button class="nav-item" onclick="showPage('usuarios',this)">
+              <span class="icon">&#x1F511;</span> Usuarios
+            </button>
+            <button class="nav-item" onclick="showPage('departamentos',this)">
+              <span class="icon">&#x1F3E2;</span> Planteles y Depts.
+            </button>
+            <div class="nav-label">Sistema</div>
+            <button class="nav-item" onclick="showPage('configuracion',this)">
+              <span class="icon">&#x2699;</span> Configuracion
+            </button>
+          </nav>
+          <div class="sidebar-profile">
+            <div class="avatar">{{ user.nombre|default:"U"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}</div>
+            <div class="profile-info">
+              <div class="profile-name">{{ user.nombre }} {{ user.apellido }}</div>
+              <div class="profile-role">{{ user.rol_id.nombre|default:"" }}</div>
+            </div>
+            <button class="logout-btn" title="Cerrar sesion">&#x23FB;</button>
+          </div>
+        </aside>
+      {% endif %}
+    {% endwith %}
+  {% endif %}
+
+  <div class="main">
+    {% block topbar %}{% endblock %}
+    <div class="content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+  {% block extra %}{% endblock %}
+  {% block page_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SALTIX – Profesor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/dashboard_profesor.css">
+  
+</head>
+<body>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-mark">SX</div>
+            <h1>SALTIX</h1>
+            <span class="role-tag">Profesor</span>
+        </div>
+        <nav>
+            <div class="nav-label">Principal</div>
+            <button class="nav-item active" onclick="showPage('inicio',this)">
+                <span class="icon">🏠</span>
+                 Inicio
+            </button>
+            <div class="nav-label">Nómina</div>
+            <button class="nav-item" onclick="showPage('recibos',this)">
+                <span class="icon">🧾</span>
+                 Mis recibos
+            </button>
+            <button class="nav-item" onclick="showPage('historial',this)">
+                <span class="icon">📅</span>
+                 Historial de pagos
+            </button>
+            <button class="nav-item" onclick="showPage('asistencias',this)">
+                <span class="icon">📋</span>
+                 Mis asistencias
+            </button>
+            <div class="nav-label">Cuenta</div>
+            <button class="nav-item" onclick="showPage('perfil',this)">
+                <span class="icon">👤</span>
+                 Mi perfil
+            </button>
+        </nav>
+        <div class="sidebar-profile">
+            <div class="avatar">IG</div>
+            <div class="profile-info">
+                <div class="profile-name">Iván Gosseline</div>
+                <div class="profile-role">Profesor — Mat.</div>
+            </div>
+            <button class="logout-btn" title="Cerrar sesión">⎋</button>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="hamburger-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+                <div class="breadcrumb" id="breadcrumb">
+                    <strong>Inicio</strong>
+                </div>
+            </div>
+            <div class="topbar-date">📅 Julio 2025</div>
+        </header>
+
+        <div class="content">
+
+            <!-- INICIO -->
+            <div class="page active" id="page-inicio">
+                <div class="welcome-banner">
+                    <div class="welcome-text">
+                        <h2>¡Buen día, Iván! 👋</h2>
+                        <p>Aquí está tu resumen del mes de julio 2025</p>
+                    </div>
+                    <div class="welcome-badge">
+                        <div class="amount">$18,500</div>
+                        <div class="amount-label">Salario mensual</div>
+                    </div>
+                </div>
+                <div class="cards-grid">
+                    <div class="card">
+                        <div class="card-top">
+                            <div class="card-icon-wrap icon-blue">💰</div>
+                            <span class="card-trend trend-up">↑ 3%</span>
+                        </div>
+                        <div class="card-label">Mi salario</div>
+                        <div class="card-value">$18,500</div>
+                        <div class="card-sub">Bruto mensual</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-top">
+                            <div class="card-icon-wrap icon-green">🕐</div>
+                            <span class="card-trend trend-same">Este mes</span>
+                        </div>
+                        <div class="card-label">Horas trabajadas</div>
+                        <div class="card-value">152</div>
+                        <div class="card-sub">de 160 h esperadas</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-top">
+                            <div class="card-icon-wrap icon-yellow">📆</div>
+                            <span class="card-trend trend-up">15 jul</span>
+                        </div>
+                        <div class="card-label">Próximo pago</div>
+                        <div class="card-value">$16,800</div>
+                        <div class="card-sub">Neto estimado</div>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <div class="table-header">
+                        <h3>Desglose del recibo — Julio 2025</h3>
+                        <button class="btn-primary">⬇ Descargar PDF</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Concepto</th>
+                                <th>Tipo</th>
+                                <th>Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Salario base</td>
+                                <td>
+                                    <span class="pill pill-blue">Percepción</span>
+                                </td>
+                                <td>$15,000</td>
+                            </tr>
+                            <tr>
+                                <td>Horas extra</td>
+                                <td>
+                                    <span class="pill pill-blue">Percepción</span>
+                                </td>
+                                <td>$2,000</td>
+                            </tr>
+                            <tr>
+                                <td>Bono de puntualidad</td>
+                                <td>
+                                    <span class="pill pill-green">Bono</span>
+                                </td>
+                                <td>$1,500</td>
+                            </tr>
+                            <tr>
+                                <td>IMSS</td>
+                                <td>
+                                    <span class="pill pill-yellow">Deducción</span>
+                                </td>
+                                <td>-$980</td>
+                            </tr>
+                            <tr>
+                                <td>ISR</td>
+                                <td>
+                                    <span class="pill pill-yellow">Deducción</span>
+                                </td>
+                                <td>-$1,220</td>
+                            </tr>
+                            <tr style="font-weight:700">
+                                <td>NETO A PAGAR</td>
+                                <td></td>
+                                <td style="color:var(--accent);font-weight:800">$16,300</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- RECIBOS -->
+            <div class="page" id="page-recibos">
+                <div style="margin-bottom:1.5rem">
+                    <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mis Recibos de Nómina</div>
+                    <div style="font-size:.82rem;color:var(--gray-400)">Descarga tus recibos en formato PDF</div>
+                </div>
+                <div class="table-wrap">
+                    <div class="table-header">
+                        <h3>Recibos disponibles</h3>
+                        <button class="btn-outline">Filtrar por año</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Periodo</th>
+                                <th>Fecha de pago</th>
+                                <th>Neto pagado</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Julio 2025 (1ª quincena)</td>
+                                <td>15 jul 2025</td>
+                                <td>$8,150</td>
+                                <td>
+                                    <span class="pill pill-yellow">Pendiente</span>
+                                </td>
+                                <td>
+                                    <button class="btn-outline">Ver</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Junio 2025 (2ª quincena)</td>
+                                <td>30 jun 2025</td>
+                                <td>$8,150</td>
+                                <td>
+                                    <span class="pill pill-green">Pagado</span>
+                                </td>
+                                <td>
+                                    <button class="btn-primary">⬇ PDF</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Junio 2025 (1ª quincena)</td>
+                                <td>15 jun 2025</td>
+                                <td>$8,150</td>
+                                <td>
+                                    <span class="pill pill-green">Pagado</span>
+                                </td>
+                                <td>
+                                    <button class="btn-primary">⬇ PDF</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Mayo 2025 (2ª quincena)</td>
+                                <td>31 may 2025</td>
+                                <td>$7,900</td>
+                                <td>
+                                    <span class="pill pill-green">Pagado</span>
+                                </td>
+                                <td>
+                                    <button class="btn-primary">⬇ PDF</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Mayo 2025 (1ª quincena)</td>
+                                <td>15 may 2025</td>
+                                <td>$7,900</td>
+                                <td>
+                                    <span class="pill pill-green">Pagado</span>
+                                </td>
+                                <td>
+                                    <button class="btn-primary">⬇ PDF</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- HISTORIAL -->
+            <div class="page" id="page-historial">
+                <div style="margin-bottom:1.5rem">
+                    <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Historial de Pagos</div>
+                    <div style="font-size:.82rem;color:var(--gray-400)">Resumen anual de tus percepciones</div>
+                </div>
+                <div class="cards-grid" style="margin-bottom:1.5rem">
+                    <div class="card">
+                        <div class="card-label">Acumulado 2025</div>
+                        <div class="card-value" style="font-size:1.4rem">$97,800</div>
+                        <div class="card-sub">Enero – Julio</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Deducciones 2025</div>
+                        <div class="card-value" style="font-size:1.4rem;color:var(--red)">$13,100</div>
+                        <div class="card-sub">IMSS + ISR</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Bonos recibidos</div>
+                        <div class="card-value" style="font-size:1.4rem;color:var(--green)">$8,500</div>
+                        <div class="card-sub">Puntualidad + desempeño</div>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <div class="table-header">
+                        <h3>Detalle mensual 2025</h3>
+                        <button class="btn-outline">Exportar Excel</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th>Percepciones</th>
+                                <th>Deducciones</th>
+                                <th>Bonos</th>
+                                <th>Neto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Julio</td>
+                                <td>$18,500</td>
+                                <td>-$2,200</td>
+                                <td>$1,500</td>
+                                <td style="font-weight:700;color:var(--accent)">$17,800</td>
+                            </tr>
+                            <tr>
+                                <td>Junio</td>
+                                <td>$18,500</td>
+                                <td>-$2,200</td>
+                                <td>$1,000</td>
+                                <td style="font-weight:700;color:var(--accent)">$17,300</td>
+                            </tr>
+                            <tr>
+                                <td>Mayo</td>
+                                <td>$17,500</td>
+                                <td>-$2,100</td>
+                                <td>$1,500</td>
+                                <td style="font-weight:700;color:var(--accent)">$16,900</td>
+                            </tr>
+                            <tr>
+                                <td>Abril</td>
+                                <td>$17,500</td>
+                                <td>-$2,100</td>
+                                <td>$500</td>
+                                <td style="font-weight:700;color:var(--accent)">$15,900</td>
+                            </tr>
+                            <tr>
+                                <td>Marzo</td>
+                                <td>$16,000</td>
+                                <td>-$2,000</td>
+                                <td>$2,000</td>
+                                <td style="font-weight:700;color:var(--accent)">$16,000</td>
+                            </tr>
+                            <tr>
+                                <td>Febrero</td>
+                                <td>$16,000</td>
+                                <td>-$2,000</td>
+                                <td>$1,000</td>
+                                <td style="font-weight:700;color:var(--accent)">$15,000</td>
+                            </tr>
+                            <tr>
+                                <td>Enero</td>
+                                <td>$16,000</td>
+                                <td>-$2,000</td>
+                                <td>$1,000</td>
+                                <td style="font-weight:700;color:var(--accent)">$15,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ══ ASISTENCIAS (NUEVA) ══ -->
+            <div class="page" id="page-asistencias">
+                <div style="margin-bottom:1.25rem">
+                    <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mis Asistencias</div>
+                    <div style="font-size:.82rem;color:var(--gray-400)">Consulta tu registro mensual y justifica faltas pendientes</div>
+                </div>
+
+                <div class="month-selector">
+                    <button class="month-btn" onclick="changeMonth(-1)">‹</button>
+                    <span class="month-label" id="month-label">Julio 2025</span>
+                    <button class="month-btn" onclick="changeMonth(1)">›</button>
+                </div>
+
+                <div class="asist-summary">
+                    <div class="asist-stat">
+                        <div class="asist-stat-icon">✅</div>
+                        <div class="asist-stat-val" id="stat-asist">—</div>
+                        <div class="asist-stat-lbl">Asistencias</div>
+                    </div>
+                    <div class="asist-stat">
+                        <div class="asist-stat-icon">❌</div>
+                        <div class="asist-stat-val" id="stat-faltas" style="color:var(--red)">—</div>
+                        <div class="asist-stat-lbl">Faltas</div>
+                    </div>
+                    <div class="asist-stat">
+                        <div class="asist-stat-icon">📄</div>
+                        <div class="asist-stat-val" id="stat-justif" style="color:#b07d00">—</div>
+                        <div class="asist-stat-lbl">Justificadas</div>
+                    </div>
+                    <div class="asist-stat">
+                        <div class="asist-stat-icon">🏖️</div>
+                        <div class="asist-stat-val" id="stat-perm" style="color:#0062cc">—</div>
+                        <div class="asist-stat-lbl">Permisos</div>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-dot dot-green"></div>
+                         Asistencia
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-red"></div>
+                         Falta sin justificar
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-yellow"></div>
+                         Falta justificada / Permiso
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-blue"></div>
+                         Vacaciones
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot dot-gray"></div>
+                         No laboral
+                    </div>
+                </div>
+
+                <div class="calendar-grid">
+                    <div class="cal-header">
+                        <div class="cal-day-name">Lun</div>
+                        <div class="cal-day-name">Mar</div>
+                        <div class="cal-day-name">Mié</div>
+                        <div class="cal-day-name">Jue</div>
+                        <div class="cal-day-name">Vie</div>
+                        <div class="cal-day-name weekend">Sáb</div>
+                        <div class="cal-day-name weekend">Dom</div>
+                    </div>
+                    <div class="cal-body" id="cal-body"></div>
+                </div>
+
+                <div class="faltas-pendientes">
+                    <div class="faltas-header">
+                        <h3>⚠️ Faltas sin justificar</h3>
+                        <span id="faltas-count" style="font-size:.78rem;color:var(--gray-400)"></span>
+                    </div>
+                    <table style="width:100%;border-collapse:collapse">
+                        <thead>
+                            <tr style="background:var(--gray-100)">
+                                <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Fecha</th>
+                                <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Día</th>
+                                <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Estado</th>
+                                <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="faltas-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PERFIL -->
+            <div class="page" id="page-perfil">
+                <div style="margin-bottom:1.5rem">
+                    <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mi Perfil</div>
+                    <div style="font-size:.82rem;color:var(--gray-400)">Tus datos personales y laborales</div>
+                </div>
+                <div class="perfil-wrap">
+                    <div class="perfil-card">
+                        <div class="perfil-avatar">IG</div>
+                        <div class="perfil-name">Iván Gosseline</div>
+                        <div class="perfil-role">Profesor de Matemáticas</div>
+                        <span class="pill pill-green" style="margin-top:.25rem">Activo</span>
+                        <div class="perfil-stats">
+                            <div class="pstat">
+                                <div class="pstat-val">5</div>
+                                <div class="pstat-lbl">Años en inst.</div>
+                            </div>
+                            <div class="pstat">
+                                <div class="pstat-val">40h</div>
+                                <div class="pstat-lbl">Jornada sem.</div>
+                            </div>
+                            <div class="pstat">
+                                <div class="pstat-val">3</div>
+                                <div class="pstat-lbl">Grupos</div>
+                            </div>
+                            <div class="pstat">
+                                <div class="pstat-val">12</div>
+                                <div class="pstat-lbl">Años exp.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="perfil-data-card">
+                        <h3>Datos personales y laborales</h3>
+                        <div class="data-row">
+                            <span class="data-label">Nombre completo</span>
+                            <span class="data-value">Iván Gosseline de la Torre</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">CURP</span>
+                            <span class="data-value">RISC840315HDFXXX01</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">RFC</span>
+                            <span class="data-value">RISC840315AB9</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">NSS (IMSS)</span>
+                            <span class="data-value">12345678900</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Departamento</span>
+                            <span class="data-value">Ciencias Exactas</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Puesto</span>
+                            <span class="data-value">Profesor de Tiempo Completo</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Fecha de ingreso</span>
+                            <span class="data-value">1 de agosto, 2020</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Cuenta bancaria</span>
+                            <span class="data-value">•••• •••• •••• 4892</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="data-label">Correo</span>
+                            <span class="data-value">i.gosseline@saltix.edu.mx</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL JUSTIFICAR -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">Justificar falta</div>
+                    <div class="modal-sub" id="modal-fecha-label"></div>
+                </div>
+                <button class="modal-close" onclick="closeModalDirect()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Motivo de la falta</label>
+                    <select class="form-select" id="motivo-select">
+                        <option value="">— Selecciona un motivo —</option>
+                        <option value="medico">Cita médica / Enfermedad</option>
+                        <option value="familiar">Asunto familiar urgente</option>
+                        <option value="tramite">Trámite oficial</option>
+                        <option value="duelo">Duelo familiar</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción (opcional)</label>
+                    <textarea class="form-textarea" id="motivo-desc" placeholder="Describe brevemente el motivo de tu ausencia..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Documento de respaldo</label>
+                    <label class="file-upload" id="file-label">
+                        <input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">
+
+                                  📎 Adjunta un comprobante (PDF, JPG, PNG)
+                                
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModalDirect()">Cancelar</button>
+                <button class="btn-submit" onclick="submitJustificacion()">Enviar justificación ›</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    const breadcrumbs = {
+        inicio: 'Inicio',
+        recibos: 'Mis Recibos',
+        historial: 'Historial de Pagos',
+        asistencias: 'Mis Asistencias',
+        perfil: 'Mi Perfil'
+    };
+    function showPage(id, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('page-' + id).classList.add('active');
+        btn.classList.add('active');
+        document.getElementById('breadcrumb').innerHTML = '<strong>' + breadcrumbs[id] + '</strong>';
+        document.getElementById('sidebar').classList.remove('open');
+    }
+
+    const months = [
+    {
+        label: 'Enero 2025',
+        year: 2025,
+        month: 0,
+        data: {
+            2: 'A',
+            3: 'A',
+            6: 'A',
+            7: 'A',
+            8: 'A',
+            9: 'A',
+            10: 'A',
+            13: 'A',
+            14: 'A',
+            15: 'F',
+            16: 'A',
+            17: 'A',
+            20: 'A',
+            21: 'A',
+            22: 'A',
+            23: 'A',
+            24: 'A',
+            27: 'A',
+            28: 'A',
+            29: 'A',
+            30: 'A',
+            31: 'A'
+        }
+    },
+    {
+        label: 'Febrero 2025',
+        year: 2025,
+        month: 1,
+        data: {
+            3: 'A',
+            4: 'A',
+            5: 'A',
+            6: 'A',
+            7: 'A',
+            10: 'A',
+            11: 'A',
+            12: 'F',
+            13: 'A',
+            14: 'A',
+            17: 'A',
+            18: 'A',
+            19: 'A',
+            20: 'A',
+            21: 'A',
+            24: 'A',
+            25: 'A',
+            26: 'A',
+            27: 'A',
+            28: 'A'
+        }
+    },
+    {
+        label: 'Marzo 2025',
+        year: 2025,
+        month: 2,
+        data: {
+            3: 'A',
+            4: 'A',
+            5: 'A',
+            6: 'A',
+            7: 'A',
+            10: 'A',
+            11: 'A',
+            12: 'A',
+            13: 'A',
+            14: 'A',
+            17: 'A',
+            18: 'A',
+            19: 'A',
+            20: 'A',
+            21: 'A',
+            24: 'A',
+            25: 'A',
+            26: 'FJ',
+            27: 'A',
+            28: 'A',
+            31: 'A'
+        }
+    },
+    {
+        label: 'Abril 2025',
+        year: 2025,
+        month: 3,
+        data: {
+            1: 'A',
+            2: 'A',
+            3: 'A',
+            4: 'A',
+            7: 'A',
+            8: 'A',
+            9: 'A',
+            10: 'A',
+            11: 'A',
+            14: 'A',
+            15: 'A',
+            16: 'A',
+            17: 'A',
+            22: 'A',
+            23: 'A',
+            24: 'A',
+            25: 'A',
+            28: 'A',
+            29: 'A',
+            30: 'A'
+        }
+    },
+    {
+        label: 'Mayo 2025',
+        year: 2025,
+        month: 4,
+        data: {
+            2: 'A',
+            5: 'A',
+            6: 'A',
+            7: 'A',
+            8: 'A',
+            9: 'A',
+            12: 'A',
+            13: 'A',
+            14: 'A',
+            15: 'P',
+            16: 'A',
+            19: 'A',
+            20: 'A',
+            21: 'A',
+            22: 'A',
+            23: 'A',
+            26: 'A',
+            27: 'A',
+            28: 'A',
+            29: 'A',
+            30: 'A'
+        }
+    },
+    {
+        label: 'Junio 2025',
+        year: 2025,
+        month: 5,
+        data: {
+            2: 'A',
+            3: 'A',
+            4: 'A',
+            5: 'A',
+            6: 'A',
+            9: 'A',
+            10: 'A',
+            11: 'A',
+            12: 'A',
+            13: 'A',
+            16: 'A',
+            17: 'A',
+            18: 'F',
+            19: 'A',
+            20: 'A',
+            23: 'A',
+            24: 'A',
+            25: 'A',
+            26: 'A',
+            27: 'A',
+            30: 'A'
+        }
+    },
+    {
+        label: 'Julio 2025',
+        year: 2025,
+        month: 6,
+        data: {
+            1: 'A',
+            2: 'A',
+            3: 'A',
+            4: 'A',
+            7: 'A',
+            8: 'A',
+            9: 'F',
+            10: 'A',
+            11: 'A',
+            14: 'A',
+            15: 'A',
+            16: 'A',
+            17: 'A',
+            18: 'F',
+            21: 'A',
+            22: 'A',
+            23: 'A',
+            24: 'A',
+            25: 'A'
+        }
+    },
+    ];
+
+    let currentMonthIdx = 6;
+    let activeFaltaDay = null;
+    let justifiedDays = new Set();
+
+    function renderCalendar() {
+        const m = months[currentMonthIdx];
+        document.getElementById('month-label').textContent = m.label;
+        const firstDay = new Date(m.year, m.month, 1).getDay();
+        const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+        const daysInMonth = new Date(m.year, m.month + 1, 0).getDate();
+        const body = document.getElementById('cal-body');
+        body.innerHTML = '';
+        for (let i = 0; i < startOffset; i++) {
+            const c = document.createElement('div');
+            c.className = 'cal-cell empty';
+            body.appendChild(c);
+        }
+        let asist = 0,
+            faltas = 0,
+            justif = 0,
+            perm = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dow = new Date(m.year, m.month, d).getDay();
+            const isWe = dow === 0 || dow === 6;
+            let status = m.data[d] || (isWe ? 'X' : null);
+            if (justifiedDays.has(m.month + '-' + d))
+                status = 'FJ';
+            if (status === 'A')
+                asist++;
+            else if (status === 'F')
+                faltas++;
+            else if (status === 'FJ')
+                justif++;
+            else if (status === 'P')
+                perm++;
+            const cell = document.createElement('div');
+            cell.className = 'cal-cell' + (isWe ? ' weekend' : '');
+            const dn = document.createElement('div');
+            dn.className = 'day-num';
+            dn.textContent = d;
+            cell.appendChild(dn);
+            if (status) {
+                const ds = document.createElement('div');
+                const map = {
+                    A: 'status-a',
+                    F: 'status-f',
+                    FJ: 'status-fj',
+                    P: 'status-p',
+                    V: 'status-v',
+                    X: 'status-x'
+                };
+                const ico = {
+                    A: '✓',
+                    F: '✗',
+                    FJ: '!',
+                    P: 'P',
+                    V: 'V',
+                    X: '—'
+                };
+                ds.className = 'day-status ' + (map[status] || 'status-x');
+                ds.textContent = ico[status] || '?';
+                cell.appendChild(ds);
+                if (status === 'F') {
+                    cell.classList.add('has-falta');
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-j-cell';
+                    btn.textContent = 'Justificar';
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        openModal(d, m.label, m.month);
+                    };
+                    cell.appendChild(btn);
+                    cell.onclick = () => openModal(d, m.label, m.month);
+                }
+            }
+            body.appendChild(cell);
+        }
+        document.getElementById('stat-asist').textContent = asist;
+        document.getElementById('stat-faltas').textContent = faltas;
+        document.getElementById('stat-justif').textContent = justif;
+        document.getElementById('stat-perm').textContent = perm;
+        renderFaltasTable(m);
+    }
+
+    function renderFaltasTable(m) {
+        const tbody = document.getElementById('faltas-tbody');
+        tbody.innerHTML = '';
+        const daysInMonth = new Date(m.year, m.month + 1, 0).getDate();
+        const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        let count = 0;
+        for (let d = 1; d <= daysInMonth; d++) {
+            if (m.data[d] === 'F' && !justifiedDays.has(m.month + '-' + d)) {
+                count++;
+                const dow = new Date(m.year, m.month, d).getDay();
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">${d} de ${meses[m.month]} de ${m.year}</td><td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">${dias[dow]}</td><td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)"><span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#fdecea;color:#c0392b">Sin justificar</span></td><td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)"><button onclick="openModal(${d},'${m.label}',${m.month})" style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:8px;padding:.4rem 1rem;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer">Justificar</button></td>`;
+                tbody.appendChild(tr);
+            }
+        }
+        if (count === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="4" style="padding:1.5rem;text-align:center;font-size:.85rem;color:var(--gray-400)">✅ Sin faltas pendientes de justificación</td>`;
+            tbody.appendChild(tr);
+        }
+        document.getElementById('faltas-count').textContent = count > 0 ? count + ' pendiente' + (count > 1 ? 's' : '') : 'Sin pendientes';
+    }
+
+    function changeMonth(dir) {
+        currentMonthIdx = Math.max(0, Math.min(months.length - 1, currentMonthIdx + dir));
+        renderCalendar();
+    }
+
+    function openModal(day, monthLabel, monthIdx) {
+        activeFaltaDay = {
+            day,
+            monthIdx
+        };
+        const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+        const m = months[monthIdx];
+        const dow = new Date(m.year, m.month, day).getDay();
+        const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+        document.getElementById('modal-fecha-label').textContent = `${dias[dow]} ${day} de ${meses[m.month]} de ${m.year}`;
+        document.getElementById('motivo-select').value = '';
+        document.getElementById('motivo-desc').value = '';
+        document.getElementById('file-label').innerHTML = '<input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">📎 Adjunta un comprobante (PDF, JPG, PNG)';
+        document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function closeModal(e) {
+        if (e.target === document.getElementById('modal-overlay'))
+            closeModalDirect();
+    }
+    function closeModalDirect() {
+        document.getElementById('modal-overlay').classList.remove('open');
+        activeFaltaDay = null;
+    }
+
+    function handleFile(input) {
+        if (input.files.length > 0) {
+            document.getElementById('file-label').innerHTML = `<input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">✅ <strong>${input.files[0].name}</strong> adjunto`;
+        }
+    }
+
+    function submitJustificacion() {
+        const motivo = document.getElementById('motivo-select').value;
+        if (!motivo) {
+            document.getElementById('motivo-select').style.borderColor = 'var(--red)';
+            document.getElementById('motivo-select').focus();
+            return;
+        }
+        document.getElementById('motivo-select').style.borderColor = '';
+        if (activeFaltaDay)
+            justifiedDays.add(activeFaltaDay.monthIdx + '-' + activeFaltaDay.day);
+        closeModalDirect();
+        renderCalendar();
+        showToast('✅ Justificación enviada correctamente');
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    renderCalendar();
+    </script>
+</body>
+</html>

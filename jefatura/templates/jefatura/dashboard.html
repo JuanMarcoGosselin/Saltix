@@ -1,0 +1,306 @@
+{% extends "core/layout.html" %}
+{% load static %}
+{% block title %}SALTIX - Jefatura{% endblock %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard_base.css' %}">
+<link rel="stylesheet" href="{% static 'core/css/dashboard_jefatura.css' %}">
+{% endblock %}
+
+{% block topbar %}
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:.75rem;">
+    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">&#x2630;</button>
+    <span class="breadcrumb"><strong id="breadcrumb-text">Mi equipo</strong></span>
+  </div>
+  <div class="topbar-date">{{ fecha_actual }}</div>
+</header>
+{% endblock %}
+
+{% block content %}
+
+  <div class="page active" id="page-equipo">
+    <div style="margin-bottom:1.5rem">
+      <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mi Equipo</div>
+      <div style="font-size:.82rem;color:var(--gray-400);">{{ departamento_nombre }} - {{ ciclo_label }}</div>
+    </div>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-top">
+          <div class="card-icon-wrap icon-blue">&#x1F465;</div>
+        </div>
+        <div class="card-label">Empleados a cargo</div>
+        <div class="card-value">{{ equipo_total }}</div>
+        <div class="card-sub">{{ equipo_variacion }}</div>
+      </div>
+      <div class="card">
+        <div class="card-top">
+          <div class="card-icon-wrap icon-green">&#x1F550;</div>
+        </div>
+        <div class="card-label">Horas trabajadas</div>
+        <div class="card-value">{{ horas_trabajadas_total }}</div>
+        <div class="card-sub">{{ horas_trabajadas_promedio }}</div>
+      </div>
+      <div class="card">
+        <div class="card-top">
+          <div class="card-icon-wrap icon-yellow">&#x1F4CB;</div>
+          <span class="card-trend pill-red" id="card-sol-badge">{{ solicitudes_pendientes_total }}</span>
+        </div>
+        <div class="card-label">Solicitudes pendientes</div>
+        <div class="card-value" id="card-sol-val">{{ solicitudes_pendientes_total }}</div>
+        <div class="card-sub">{{ solicitudes_pendientes_label }}</div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Empleados del departamento</h3>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Puesto</th>
+            <th>Horas sem.</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for empleado in equipo_empleados %}
+            <tr>
+              <td>{{ empleado.nombre }}</td>
+              <td>{{ empleado.puesto }}</td>
+              <td>{{ empleado.horas_semana }}</td>
+              <td><span class="pill {{ empleado.estado_clase }}">{{ empleado.estado_label }}</span></td>
+              <td><button class="btn-primary btn-sm">Ver</button></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5">Sin empleados registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page" id="page-asistencia">
+    <div style="margin-bottom:1.5rem">
+      <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Control de Asistencia</div>
+      <div style="font-size:.82rem;color:var(--gray-400);">{{ semana_label }}</div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Registro semanal</h3>
+        <button class="btn-primary btn-sm">Exportar</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Lunes</th>
+            <th>Martes</th>
+            <th>Miércoles</th>
+            <th>Jueves</th>
+            <th>Viernes</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for registro in asistencia_semanal %}
+            <tr>
+              <td>{{ registro.empleado }}</td>
+              <td><span class="pill {{ registro.lunes_clase }}">{{ registro.lunes_label }}</span></td>
+              <td><span class="pill {{ registro.martes_clase }}">{{ registro.martes_label }}</span></td>
+              <td><span class="pill {{ registro.miercoles_clase }}">{{ registro.miercoles_label }}</span></td>
+              <td><span class="pill {{ registro.jueves_clase }}">{{ registro.jueves_label }}</span></td>
+              <td><span class="pill {{ registro.viernes_clase }}">{{ registro.viernes_label }}</span></td>
+              <td>{{ registro.total }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7">Sin registros de asistencia.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page" id="page-solicitudes">
+    <div style="margin-bottom:1.5rem">
+      <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Solicitudes Pendientes</div>
+      <div style="font-size:.82rem;color:var(--gray-400);" id="sol-subtitle">{{ solicitudes_pendientes_label }}</div>
+    </div>
+    <div class="solicitudes-list" id="solicitudes-list">
+      {% for solicitud in solicitudes %}
+        <div class="solicitud-card">
+          <div class="sol-icon">{{ solicitud.icono }}</div>
+          <div class="sol-info">
+            <div class="sol-name">{{ solicitud.titulo }}</div>
+            <div class="sol-desc">{{ solicitud.descripcion }}</div>
+          </div>
+          <div class="sol-actions">
+            <button class="btn-approve" onclick="resolverSolicitud(this,'aprobar')">Aprobar</button>
+            <button class="btn-reject" onclick="resolverSolicitud(this,'rechazar')">Rechazar</button>
+          </div>
+        </div>
+      {% empty %}
+        <div class="solicitud-card">
+          <div class="sol-info">
+            <div class="sol-name">Sin solicitudes pendientes</div>
+            <div class="sol-desc">No hay solicitudes por revisar.</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="page" id="page-reportes">
+    <div style="margin-bottom:1.5rem">
+      <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Reportes del Departamento</div>
+      <div style="font-size:.82rem;color:var(--gray-400);">Genera y descarga informes de tu equipo</div>
+    </div>
+    <div class="report-grid">
+      <div class="report-card">
+        <div class="report-icon">&#x1F4CA;</div>
+        <div class="report-title">Asistencia mensual</div>
+        <div class="report-desc">Resumen de asistencias, faltas y permisos del mes.</div>
+        <button class="btn-primary btn-sm">Generar</button>
+      </div>
+      <div class="report-card">
+        <div class="report-icon">&#x1F550;</div>
+        <div class="report-title">Horas trabajadas</div>
+        <div class="report-desc">Total de horas por empleado en el periodo seleccionado.</div>
+        <button class="btn-primary btn-sm">Generar</button>
+      </div>
+      <div class="report-card">
+        <div class="report-icon">&#x1F4CB;</div>
+        <div class="report-title">Solicitudes procesadas</div>
+        <div class="report-desc">Historial de solicitudes aprobadas y rechazadas.</div>
+        <button class="btn-primary btn-sm">Generar</button>
+      </div>
+      <div class="report-card">
+        <div class="report-icon">&#x1F465;</div>
+        <div class="report-title">Plantilla del equipo</div>
+        <div class="report-desc">Listado completo de empleados activos en el departamento.</div>
+        <button class="btn-primary btn-sm">Generar</button>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block extra %}
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  const breadcrumbs = {
+    equipo: 'Mi equipo',
+    asistencia: 'Asistencia',
+    solicitudes: 'Solicitudes',
+    reportes: 'Reportes'
+  };
+
+  let pendientes = parseInt('{{ solicitudes_pendientes_total|default:"0" }}', 10);
+  if (isNaN(pendientes)) pendientes = 0;
+
+  function showPage(id, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    if (btn) btn.classList.add('active');
+    document.getElementById('breadcrumb-text').textContent = breadcrumbs[id] || id;
+    closeSidebar();
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const isOpen = sidebar.classList.contains('open');
+    isOpen ? closeSidebar() : openSidebar();
+  }
+
+  function openSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const hamburger = document.getElementById('hamburger-btn');
+    sidebar.classList.add('open');
+    if (overlay) overlay.classList.add('visible');
+    if (hamburger) hamburger.textContent = 'X';
+  }
+
+  function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const hamburger = document.getElementById('hamburger-btn');
+    sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('visible');
+    if (hamburger) hamburger.textContent = '\u2630';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeSidebar();
+  });
+
+  function syncSolicitudesUI() {
+    const badge = document.getElementById('badge-sol');
+    const cardBadge = document.getElementById('card-sol-badge');
+    const cardVal = document.getElementById('card-sol-val');
+    const subtitle = document.getElementById('sol-subtitle');
+    const list = document.getElementById('solicitudes-list');
+
+    if (badge) {
+      if (pendientes > 0) {
+        badge.style.display = 'inline-flex';
+        badge.textContent = pendientes;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    if (cardBadge) {
+      if (pendientes > 0) {
+        cardBadge.style.display = 'inline-block';
+        cardBadge.textContent = pendientes;
+      } else {
+        cardBadge.style.display = 'none';
+      }
+    }
+
+    if (cardVal) cardVal.textContent = pendientes;
+
+    if (subtitle) {
+      subtitle.textContent = pendientes > 0
+        ? (pendientes + ' solicitud' + (pendientes > 1 ? 'es' : '') + ' esperan tu aprobacion')
+        : 'Sin solicitudes pendientes';
+    }
+
+    if (list && pendientes === 0 && !list.querySelector('.solicitud-card')) {
+      const empty = document.createElement('div');
+      empty.className = 'solicitud-card';
+      empty.innerHTML = '<div class="sol-info"><div class="sol-name">Sin solicitudes pendientes</div><div class="sol-desc">No hay solicitudes por revisar.</div></div>';
+      list.appendChild(empty);
+    }
+  }
+
+  function resolverSolicitud(btn, accion) {
+    const card = btn.closest('.solicitud-card');
+    card.style.transition = 'opacity .3s, transform .3s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(30px)';
+
+    setTimeout(() => {
+      card.remove();
+      pendientes = Math.max(0, pendientes - 1);
+      syncSolicitudesUI();
+    }, 300);
+  }
+
+  syncSolicitudesUI();
+</script>
+{% endblock %}
+
+
+
+
