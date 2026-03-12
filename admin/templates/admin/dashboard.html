@@ -1,0 +1,570 @@
+
+{% extends "core/layout.html" %}
+{% load static %}
+{% block title %}SALTIX - Administrador{% endblock %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'core/css/dashboard_base.css' %}">
+<link rel="stylesheet" href="{% static 'core/css/dashboard_admin.css' %}">
+{% endblock %}
+
+{% block topbar %}
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">&#x2630;</button>
+    <div class="breadcrumb" id="breadcrumb"><strong>Inicio</strong></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:.75rem;">
+    <div class="search-bar">
+      <span class="search-icon">&#x1F50D;</span>
+      <input type="text" placeholder="Buscar empleado, usuario...">
+    </div>
+    <div class="topbar-notif">&#x1F514;<span class="notif-dot">{{ notificaciones_count }}</span></div>
+    <div class="avatar" style="width:34px;height:34px;font-size:.8rem;background:linear-gradient(135deg,#7c3aed,#a78bfa);">{{ user.nombre|default:"U"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}</div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+
+  <div class="page active" id="page-inicio">
+    <div class="welcome-banner">
+      <div class="welcome-text">
+        <h2>Panel de Administracion &#x1F6E1;</h2>
+        <p>Resumen general del sistema &#x00B7; {{ fecha_actual }}</p>
+      </div>
+      <div class="welcome-chips">
+        <div class="welcome-chip"><div class="chip-val">{{ stats.empleados_total }}</div><div class="chip-label">Empleados</div></div>
+        <div class="welcome-chip"><div class="chip-val">{{ stats.planteles_total }}</div><div class="chip-label">Planteles</div></div>
+        <div class="welcome-chip"><div class="chip-val">{{ stats.departamentos_total }}</div><div class="chip-label">Departamentos</div></div>
+        <div class="welcome-chip"><div class="chip-val">{{ stats.usuarios_total }}</div><div class="chip-label">Usuarios</div></div>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem;">
+        <div class="card-bar bar-blue"></div>
+        <div class="card-top"><div class="card-icon-wrap icon-blue">&#x1F465;</div><span class="card-trend trend-up">{{ stats.empleados_trend }}</span></div>
+        <div class="card-label">Total empleados</div>
+        <div class="card-value">{{ stats.empleados_total }}</div>
+        <div class="card-sub">{{ stats.empleados_activos }} activos &#x00B7; {{ stats.empleados_bajas }} bajas</div>
+      </div>
+      <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem;">
+        <div class="card-bar bar-teal"></div>
+        <div class="card-top"><div class="card-icon-wrap icon-green">&#x1F3EB;</div><span class="card-trend trend-same">&#x2014;</span></div>
+        <div class="card-label">Planteles</div>
+        <div class="card-value">{{ stats.planteles_total }}</div>
+        <div class="card-sub">{{ stats.planteles_label }}</div>
+      </div>
+      <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem;">
+        <div class="card-bar bar-orange"></div>
+        <div class="card-top"><div class="card-icon-wrap icon-yellow">&#x1F3E2;</div><span class="card-trend trend-same">&#x2014;</span></div>
+        <div class="card-label">Departamentos</div>
+        <div class="card-value">{{ stats.departamentos_total }}</div>
+        <div class="card-sub">{{ stats.departamentos_label }}</div>
+      </div>
+      <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem;">
+        <div class="card-bar bar-red"></div>
+        <div class="card-top"><div class="card-icon-wrap" style="background:#fdecea;">&#x1F511;</div><span class="card-trend" style="background:#fdecea;color:#c0392b;">{{ stats.usuarios_total }}</span></div>
+        <div class="card-label">Usuarios activos</div>
+        <div class="card-value">{{ stats.usuarios_total }}</div>
+        <div class="card-sub">{{ stats.usuarios_roles_label }}</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header"><h3>Actividad reciente del sistema</h3></div>
+      <table>
+        <thead><tr><th>Hora</th><th>Usuario</th><th>Accion</th><th>Modulo</th></tr></thead>
+        <tbody>
+          {% for item in recent_activity %}
+            <tr>
+              <td style="color:var(--gray-400);font-size:.78rem;">{{ item.cuando }}</td>
+              <td>{{ item.usuario }}</td>
+              <td>{{ item.accion }}</td>
+              <td><span class="pill {{ item.modulo_clase }}">{{ item.modulo }}</span></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin actividad reciente.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page" id="page-empleados">
+    <div class="section-title">Gestion de Empleados</div>
+    <div class="section-sub">{{ stats.empleados_total }} empleados registrados &#x00B7; {{ stats.empleados_activos }} activos</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+      <div class="tabs" id="emp-tabs">
+        <button class="tab-btn active" onclick="filterEmpleados('todos',this)">Todos</button>
+        <button class="tab-btn" onclick="filterEmpleados('activo',this)">Activos</button>
+        <button class="tab-btn" onclick="filterEmpleados('baja',this)">Bajas</button>
+      </div>
+      <button class="btn-primary" onclick="openModalEmpleado()">+ Nuevo empleado</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Lista de empleados</h3>
+        <div class="search-bar" style="border:1.5px solid var(--gray-200);">
+          <span class="search-icon">&#x1F50D;</span>
+          <input type="text" placeholder="Buscar..." oninput="searchEmpleados(this.value)" style="width:160px;">
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Nombre</th><th>Plantel</th><th>Departamento</th><th>Puesto</th><th>Salario</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="emp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="page" id="page-usuarios">
+    <div class="section-title">Gestion de Usuarios</div>
+    <div class="section-sub">Controla el acceso al sistema por rol y plantel</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:1.25rem;">
+      <button class="btn-primary" onclick="openModalUsuario()">+ Nuevo usuario</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><h3>Usuarios del sistema</h3></div>
+      <table>
+        <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Plantel</th><th>Ultimo acceso</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for u in usuarios %}
+            <tr>
+              <td><code style="font-size:.8rem;background:var(--gray-100);padding:.1rem .45rem;border-radius:5px;">{{ u.username }}</code></td>
+              <td>{{ u.nombre }}</td>
+              <td><span class="chip-perm {{ u.rol_clase }}">{{ u.rol_icono }} {{ u.rol_label }}</span></td>
+              <td><span class="pill {{ u.plantel_clase }}" style="font-size:.7rem;">{{ u.plantel }}</span></td>
+              <td style="font-size:.8rem;color:var(--gray-400);">{{ u.ultimo_acceso }}</td>
+              <td><span class="pill {{ u.estado_clase }}">{{ u.estado_label }}</span></td>
+              <td><button class="btn-outline" style="padding:.3rem .75rem;font-size:.75rem;" onclick="openModalUsuarioEdit('{{ u.username }}','{{ u.nombre }}','{{ u.rol }}','{{ u.plantel_key }}')">Editar</button></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin usuarios registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-wrap" style="margin-top:1.5rem;">
+      <div class="table-header"><h3>Permisos por rol</h3></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Modulo</th>
+            {% for role in roles_permisos %}
+              <th>{{ role.nombre }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in permisos_resumen %}
+            <tr>
+              <td>{{ row.modulo }}</td>
+              {% for val in row.valores %}
+                <td>{{ val }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="page" id="page-departamentos">
+    <div class="section-title">Planteles y Departamentos</div>
+    <div class="section-sub">Administra la estructura academica por plantel</div>
+    <div id="planteles-container"></div>
+  </div>
+
+  <div class="page" id="page-configuracion">
+    <div class="section-title">Configuracion</div>
+    <div class="section-sub">Ajustes generales del sistema</div>
+    <div class="table-wrap" style="padding:1.25rem 1.5rem;">
+      <div class="toggle-wrap">
+        <div class="toggle-info">
+          <div class="tgl-title">Notificaciones por correo</div>
+          <div class="tgl-sub">Enviar resumen diario de eventos importantes</div>
+        </div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="toggle-wrap">
+        <div class="toggle-info">
+          <div class="tgl-title">Backups automaticos</div>
+          <div class="tgl-sub">Crear respaldo semanal de base de datos</div>
+        </div>
+        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+      </div>
+      <div class="toggle-wrap">
+        <div class="toggle-info">
+          <div class="tgl-title">Modo mantenimiento</div>
+          <div class="tgl-sub">Desactiva temporalmente el acceso general</div>
+        </div>
+        <div class="toggle" onclick="this.classList.toggle('on')"></div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block extra %}
+{% if empleados_data %}{{ empleados_data|json_script:"empleados-data" }}{% else %}<script id="empleados-data" type="application/json">[]</script>{% endif %}
+{% if planteles_data %}{{ planteles_data|json_script:"planteles-data" }}{% else %}<script id="planteles-data" type="application/json">[]</script>{% endif %}
+{% if depts_by_plantel %}{{ depts_by_plantel|json_script:"depts-by-plantel" }}{% else %}<script id="depts-by-plantel" type="application/json">{}</script>{% endif %}
+
+<div class="modal-overlay" id="modal-emp" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div><div class="modal-title" id="modal-emp-title">Nuevo empleado</div><div class="modal-sub">Completa la informacion del empleado</div></div>
+      <button class="modal-close" onclick="document.getElementById('modal-emp').classList.remove('open')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" type="text" placeholder="Nombre y apellido"></div>
+        <div class="form-group"><label class="form-label">Puesto</label><input class="form-input" type="text" placeholder="Ej. Profesor TC"></div>
+        <div class="form-group"><label class="form-label">Plantel</label>
+          <select class="form-select" id="emp-plantel-sel" onchange="updateDeptsByPlantel('emp-plantel-sel','emp-dept-sel')">
+            <option value="">&#x2014; Seleccionar &#x2014;</option>
+            {% for plantel in planteles_data %}
+              <option value="{{ plantel.id }}">{{ plantel.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Departamento</label>
+          <select class="form-select" id="emp-dept-sel"><option value="">&#x2014; Primero selecciona un plantel &#x2014;</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Salario mensual</label><input class="form-input" type="text" placeholder="$0.00"></div>
+        <div class="form-group"><label class="form-label">Estado</label><select class="form-select"><option>Activo</option><option>Baja</option></select></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="document.getElementById('modal-emp').classList.remove('open')">Cancelar</button>
+      <button class="btn-submit" onclick="showToast('&#x2705; Empleado guardado')">Guardar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal-usr" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div><div class="modal-title" id="modal-usr-title">Nuevo usuario</div><div class="modal-sub">Configura el acceso y permisos</div></div>
+      <button class="modal-close" onclick="document.getElementById('modal-usr').classList.remove('open')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="form-group"><label class="form-label">Usuario</label><input class="form-input" id="usr-username" type="text" placeholder="usuario"></div>
+        <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="usr-name" type="text" placeholder="Nombre y apellido"></div>
+        <div class="form-group"><label class="form-label">Rol</label>
+          <select class="form-select" id="usr-rol" onchange="togglePlantelField()">
+            <option value="">&#x2014; Seleccionar &#x2014;</option>
+            {% for role in roles_permisos %}
+              <option value="{{ role.nombre|lower }}">{{ role.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" id="usr-plantel-wrap"><label class="form-label">Plantel</label>
+          <select class="form-select" id="usr-plantel" onchange="updateDeptsByPlantel('usr-plantel','usr-dept')">
+            <option value="todos">Todos</option>
+            {% for plantel in planteles_data %}
+              <option value="{{ plantel.id }}">{{ plantel.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" id="usr-dept-wrap"><label class="form-label">Departamento</label>
+          <select class="form-select" id="usr-dept"><option value="">&#x2014; Primero selecciona un plantel &#x2014;</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Contrasena</label><input class="form-input" id="usr-pass" type="password" placeholder="********"></div>
+        <div class="form-group"><label class="form-label">Confirmar contrasena</label><input class="form-input" id="usr-pass2" type="password" placeholder="********"></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Correo de contacto</label>
+          <input class="form-input" id="usr-email" type="email" placeholder="correo@saltix.edu.mx">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="document.getElementById('modal-usr').classList.remove('open')">Cancelar</button>
+      <button class="btn-submit" onclick="saveUsuario()">Guardar usuario</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-plantel" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div><div class="modal-title" id="modal-plantel-title">Nuevo plantel</div><div class="modal-sub">Configura el plantel y sus departamentos</div></div>
+      <button class="modal-close" onclick="document.getElementById('modal-plantel').classList.remove('open')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-tabs">
+        <button class="modal-tab active" onclick="switchModalTab('tab-info',this)">&#x1F4CB; Informacion</button>
+        <button class="modal-tab" onclick="switchModalTab('tab-depts',this)">&#x1F3E2; Departamentos</button>
+        <button class="modal-tab" onclick="switchModalTab('tab-resp',this)">&#x1F464; Responsable</button>
+      </div>
+      <div class="modal-tab-content active" id="tab-info">
+        <div class="modal-grid">
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Nombre del plantel</label><input class="form-input" id="plantel-nombre" type="text" placeholder="Ej. Plantel Oriente"></div>
+          <div class="form-group"><label class="form-label">Clave / Codigo</label><input class="form-input" id="plantel-clave" type="text" placeholder="Ej. PLT-04"></div>
+          <div class="form-group"><label class="form-label">Estado</label><select class="form-select" id="plantel-estado"><option>Activo</option><option>Inactivo</option></select></div>
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Direccion</label><input class="form-input" id="plantel-dir" type="text" placeholder="Calle, numero, colonia, ciudad"></div>
+          <div class="form-group"><label class="form-label">Telefono</label><input class="form-input" id="plantel-tel" type="tel" placeholder="55 0000 0000"></div>
+          <div class="form-group"><label class="form-label">Correo de contacto</label><input class="form-input" id="plantel-email" type="email" placeholder="plantel@saltix.edu.mx"></div>
+        </div>
+      </div>
+      <div class="modal-tab-content" id="tab-depts">
+        <div id="depts-list" style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1rem;"></div>
+        <div style="display:flex;gap:.6rem;">
+          <input class="form-input" id="nuevo-dept-input" type="text" placeholder="Nombre del departamento..." style="flex:1;">
+          <button class="btn-primary" style="white-space:nowrap;padding:.6rem 1rem;" onclick="addDeptToModal()">+ Agregar</button>
+        </div>
+        <div style="font-size:.75rem;color:var(--gray-400);margin-top:.6rem;">&#x1F4A1; Agrega los departamentos que perteneceran a este plantel.</div>
+      </div>
+      <div class="modal-tab-content" id="tab-resp">
+        <div class="modal-grid">
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Responsable del plantel</label>
+            <select class="form-select" id="plantel-resp">
+              <option value="">&#x2014; Seleccionar usuario &#x2014;</option>
+              {% for u in usuarios %}
+                <option>{{ u.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas internas</label><textarea class="form-textarea" id="plantel-notas" placeholder="Notas adicionales sobre este plantel..."></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="document.getElementById('modal-plantel').classList.remove('open')">Cancelar</button>
+      <button class="btn-submit" onclick="savePlantel()">Guardar plantel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+const breadcrumbs={inicio:'Inicio',empleados:'Empleados',usuarios:'Usuarios',departamentos:'Planteles y Departamentos',configuracion:'Configuracion'};
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  document.getElementById('breadcrumb').innerHTML='<strong>'+breadcrumbs[id]+'</strong>';
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+const empleados = JSON.parse(document.getElementById('empleados-data').textContent || '[]');
+const plantelesData = JSON.parse(document.getElementById('planteles-data').textContent || '[]');
+const deptsByPlantel = JSON.parse(document.getElementById('depts-by-plantel').textContent || '{}');
+
+function renderPlanteles(){
+  const container = document.getElementById('planteles-container');
+  container.innerHTML = '';
+  plantelesData.forEach(p => {
+    const block = document.createElement('div');
+    block.className = 'plantel-block';
+    block.innerHTML = `
+      <div class="plantel-header" onclick="togglePlantel('depts-${p.id}', this)">
+        <div class="plantel-header-left">
+          <div class="plantel-icon" style="background:var(--gray-100)">${p.icon}</div>
+          <div>
+            <div class="plantel-name">${p.nombre}</div>
+            <div class="plantel-meta">${p.empleados} empleados &#x00B7; ${p.depts.length} departamentos &#x00B7; Responsable: ${p.jefe}</div>
+          </div>
+        </div>
+        <div class="plantel-actions">
+          <button class="btn-outline" style="padding:.3rem .8rem;font-size:.75rem;" onclick="event.stopPropagation();openModalPlantelEdit('${p.id}')">Editar</button>
+          <button style="background:#fdecea;color:#c0392b;border:1px solid #f5c6c2;border-radius:7px;padding:.3rem .8rem;font-size:.75rem;cursor:pointer;" onclick="event.stopPropagation();showToast('&#x1F5D1;&#xFE0F; Plantel eliminado')">Eliminar</button>
+          <span class="plantel-toggle-icon open" id="arrow-${p.id}">&#x25BC;</span>
+        </div>
+      </div>
+      <div class="depts-grid" id="depts-${p.id}">
+        ${p.depts.map(d => `
+          <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem;">
+            <div class="card-bar ${p.color}"></div>
+            <div style="font-size:.8rem;font-weight:700;color:var(--gray-400);margin-bottom:.2rem;">${p.nombre}</div>
+            <div style="font-weight:800;font-size:.9rem;margin-bottom:.2rem;">${d.nombre}</div>
+            <div style="font-size:.75rem;color:var(--gray-400);margin-bottom:.5rem;">${d.empleados} empleados</div>
+            <div class="progress-wrap">
+              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${d.prog}%"></div></div>
+              <div class="progress-label"><span>Nomina</span><span>${d.prog === 0 ? 'Pendiente' : d.prog+'%'}</span></div>
+            </div>
+            <div style="display:flex;gap:.4rem;margin-top:.75rem;">
+              <button class="btn-outline" style="flex:1;padding:.35rem;font-size:.75rem;" onclick="showToast('&#x2699;&#xFE0F; Editando ${d.nombre}')">Editar</button>
+              <button style="flex:1;background:#fdecea;color:#c0392b;border:1px solid #f5c6c2;border-radius:7px;padding:.35rem;font-size:.75rem;cursor:pointer;" onclick="showToast('&#x1F5D1;&#xFE0F; Departamento eliminado')">Eliminar</button>
+            </div>
+          </div>`).join('')}
+        <div class="card" style="border:2px dashed var(--gray-200);background:transparent;display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer;transition:border-color .2s,background .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.background='#f4f9ff'" onmouseout="this.style.borderColor='var(--gray-200)';this.style.background='transparent'" onclick="showToast('&#x2795; Agregar departamento a ${p.nombre}')">
+          <div style="text-align:center;color:var(--gray-400);">
+            <div style="font-size:1.4rem;">&#x2795;</div>
+            <div style="font-size:.78rem;font-weight:600;margin-top:.35rem;">Nuevo depto.</div>
+          </div>
+        </div>
+      </div>`;
+    container.appendChild(block);
+  });
+}
+
+function togglePlantel(id){
+  const el = document.getElementById(id);
+  const arrow = document.getElementById('arrow-' + id.replace('depts-',''));
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'grid';
+  if (arrow) arrow.classList.toggle('open', !isOpen);
+}
+
+let empFilter='todos', empSearch='';
+
+function renderEmpleados(){
+  const tbody=document.getElementById('emp-tbody');
+  tbody.innerHTML='';
+  const filtered=empleados.filter(e=>{
+    const mf=empFilter==='todos'||(e.estado===empFilter);
+    const ms=empSearch===''||e.nombre.toLowerCase().includes(empSearch.toLowerCase())||e.dept.toLowerCase().includes(empSearch.toLowerCase())||e.plantel.toLowerCase().includes(empSearch.toLowerCase());
+    return mf&&ms;
+  });
+  if(!filtered.length){tbody.innerHTML='<tr><td colspan="8" style="padding:1.5rem;text-align:center;font-size:.85rem;color:var(--gray-400)">Sin resultados</td></tr>';return;}
+  filtered.forEach(e=>{
+    const pill=e.estado==='activo'?'<span class="pill pill-green">Activo</span>':'<span class="pill pill-gray">Baja</span>';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="font-size:.8rem;color:var(--gray-400)">${e.id}</td><td>${e.nombre}</td><td><span class="pill pill-blue" style="font-size:.7rem;">${e.plantel}</span></td><td>${e.dept}</td><td>${e.puesto}</td><td>${e.salario}</td><td>${pill}</td><td style="display:flex;gap:.4rem;padding:.85rem 1.5rem"><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem;" onclick="openModalEmpleadoEdit('${e.nombre}')">Editar</button><button style="background:#fdecea;color:#c0392b;border:1px solid #f5c6c2;border-radius:7px;padding:.3rem .7rem;font-size:.75rem;cursor:pointer;" onclick="showToast('&#x1F5D1;&#xFE0F; Empleado eliminado')">Eliminar</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function filterEmpleados(f,btn){empFilter=f;document.querySelectorAll('#emp-tabs .tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderEmpleados();}
+function searchEmpleados(val){empSearch=val;renderEmpleados();}
+
+function openModalEmpleado(){
+  document.getElementById('modal-emp-title').textContent='Nuevo empleado';
+  document.getElementById('emp-plantel-sel').value='';
+  document.getElementById('emp-dept-sel').innerHTML='<option value="">&#x2014; Primero selecciona un plantel &#x2014;</option>';
+  document.getElementById('modal-emp').classList.add('open');
+}
+function openModalEmpleadoEdit(nombre){
+  document.getElementById('modal-emp-title').textContent='Editar: '+nombre;
+  document.getElementById('modal-emp').classList.add('open');
+}
+
+function openModalUsuario(){
+  document.getElementById('modal-usr-title').textContent='Nuevo usuario';
+  document.getElementById('usr-username').value='';
+  document.getElementById('usr-rol').value='';
+  document.getElementById('usr-plantel').value='';
+  document.getElementById('usr-dept').innerHTML='<option value="">&#x2014; Primero selecciona un plantel &#x2014;</option>';
+  document.getElementById('usr-pass').value='';
+  document.getElementById('usr-pass2').value='';
+  document.getElementById('usr-email').value='';
+  togglePlantelField();
+  document.getElementById('modal-usr').classList.add('open');
+}
+function openModalUsuarioEdit(username, nombre, rol, plantel){
+  document.getElementById('modal-usr-title').textContent='Editar: '+nombre;
+  document.getElementById('usr-username').value=username;
+  document.getElementById('usr-rol').value=rol;
+  document.getElementById('usr-plantel').value=plantel;
+  updateDeptsByPlantel('usr-plantel','usr-dept');
+  togglePlantelField();
+  document.getElementById('modal-usr').classList.add('open');
+}
+function togglePlantelField(){
+  const rol=document.getElementById('usr-rol').value;
+  const wrap=document.getElementById('usr-plantel-wrap');
+  const dwrap=document.getElementById('usr-dept-wrap');
+  if(rol==='administrador'||rol==='admin'){
+    wrap.style.opacity='.5';wrap.style.pointerEvents='none';
+    dwrap.style.opacity='.5';dwrap.style.pointerEvents='none';
+    document.getElementById('usr-plantel').value='todos';
+  } else {
+    wrap.style.opacity='1';wrap.style.pointerEvents='auto';
+    dwrap.style.opacity='1';dwrap.style.pointerEvents='auto';
+  }
+}
+function saveUsuario(){
+  document.getElementById('modal-usr').classList.remove('open');
+  showToast('Usuario guardado.');
+}
+
+let modalDepts = [];
+function openModalPlantel(){
+  document.getElementById('modal-plantel-title').textContent='Nuevo plantel';
+  document.getElementById('plantel-nombre').value='';
+  document.getElementById('plantel-clave').value='';
+  document.getElementById('plantel-dir').value='';
+  document.getElementById('plantel-tel').value='';
+  document.getElementById('plantel-email').value='';
+  document.getElementById('plantel-notas').value='';
+  modalDepts=[];
+  renderModalDepts();
+  switchModalTab('tab-info', document.querySelector('.modal-tab'));
+  document.getElementById('modal-plantel').classList.add('open');
+}
+function openModalPlantelEdit(id){
+  const p = plantelesData.find(x=>String(x.id)===String(id));
+  if(!p)return;
+  document.getElementById('modal-plantel-title').textContent='Editar: '+p.nombre;
+  document.getElementById('plantel-nombre').value=p.nombre;
+  document.getElementById('plantel-dir').value=p.dir||'';
+  modalDepts = (p.depts || []).map(d=>d.nombre);
+  renderModalDepts();
+  switchModalTab('tab-info', document.querySelector('.modal-tab'));
+  document.getElementById('modal-plantel').classList.add('open');
+}
+function addDeptToModal(){
+  const input=document.getElementById('nuevo-dept-input');
+  const val=input.value.trim();
+  if(!val)return;
+  modalDepts.push(val);
+  input.value='';
+  renderModalDepts();
+}
+function removeModalDept(i){
+  modalDepts.splice(i,1);
+  renderModalDepts();
+}
+function renderModalDepts(){
+  const list=document.getElementById('depts-list');
+  if(!modalDepts.length){
+    list.innerHTML='<div style="text-align:center;font-size:.82rem;color:var(--gray-400);padding:1rem 0;">Sin departamentos agregados aun</div>';
+    return;
+  }
+  list.innerHTML=modalDepts.map((d,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--gray-100);border-radius:9px;padding:.6rem 1rem;">
+      <span style="font-size:.875rem;font-weight:500;color:var(--navy);">&#x1F3E2; ${d}</span>
+      <button onclick="removeModalDept(${i})" style="background:none;border:none;color:#c0392b;font-size:.85rem;cursor:pointer;padding:.1rem .3rem;border-radius:5px;" title="Eliminar">&#x2715;</button>
+    </div>`).join('');
+}
+function savePlantel(){
+  const nombre=document.getElementById('plantel-nombre').value.trim();
+  if(!nombre){showToast('&#x26A0;&#xFE0F; Ingresa un nombre para el plantel');return;}
+  document.getElementById('modal-plantel').classList.remove('open');
+  showToast('&#x2705; Plantel "'+nombre+'" guardado correctamente');
+}
+function switchModalTab(tabId, btn){
+  document.querySelectorAll('.modal-tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btn.classList.add('active');
+}
+
+function updateDeptsByPlantel(plantelSelId, deptSelId){
+  const plantel=document.getElementById(plantelSelId).value;
+  const deptSel=document.getElementById(deptSelId);
+  const depts=deptsByPlantel[plantel]||[];
+  if(!depts.length){
+    deptSel.innerHTML='<option value="">&#x2014; Sin departamentos &#x2014;</option>';
+    return;
+  }
+  deptSel.innerHTML='<option value="">&#x2014; Todos los departamentos &#x2014;</option>'+
+    depts.map(d=>`<option value="${d}">${d}</option>`).join('');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+renderEmpleados();
+renderPlanteles();
+</script>
+{% endblock %}

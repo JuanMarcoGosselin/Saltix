@@ -28,5 +28,7 @@ def _redirect_for_role(user):
         return "jefatura_dashboard"
     if role == "profesor":
         return "profesores_dashboard"
+    if role in {"administrador", "admin"}:
+        return "admin_dashboard"
 
     return "admin:index"
