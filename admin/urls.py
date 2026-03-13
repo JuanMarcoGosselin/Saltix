@@ -7,6 +7,7 @@ urlpatterns = [
     path("", views.dashboard, name="admin_dashboard"),
     path("usuarios/crear/", views.create_user, name="admin_create_user"),
     path("usuarios/editar/", views.update_user, name="admin_update_user"),
+    path("usuarios/permisos/", views.update_role_permissions, name="admin_update_role_perms"),
     path("planteles/crear/", views.create_plantel, name="admin_create_plantel"),
     path("planteles/editar/", views.update_plantel, name="admin_update_plantel"),
     path("planteles/eliminar/", views.delete_plantel, name="admin_delete_plantel"),

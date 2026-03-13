@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from core.models import BitacoraAuditoria, Notificacion, Plantel
 from Profesores.models import Profesor, Horario, TransferenciaDepartamento
-from users.models import Departamento, Rol, RolPermiso, Usuario
+from users.models import Departamento, Permiso, Rol, RolPermiso, Usuario
 
 from core.decorators import requiere_rol, requiere_permiso
 
@@ -88,6 +88,20 @@ def dashboard(request):
     usuarios_por_rol = {
         role.id: Usuario.objects.filter(rol_id=role).count() for role in roles
     }
+    permisos_catalogo = list(Permiso.objects.all().order_by("codigo"))
+    rol_perm_map = {role.id: set() for role in roles}
+    for rp in RolPermiso.objects.filter(rol__in=roles, permiso__in=permisos_catalogo):
+        rol_perm_map.setdefault(rp.rol_id, set()).add(rp.permiso_id)
+    roles_detalle = [
+        {
+            "id": role.id,
+            "nombre": role.nombre,
+            "perm_ids": sorted(list(rol_perm_map.get(role.id, set()))),
+            "usuarios": usuarios_por_rol.get(role.id, 0),
+            "permisos": permisos_por_rol.get(role.id, 0),
+        }
+        for role in roles
+    ]
 
     permisos_resumen = [
         {
@@ -367,6 +381,8 @@ def dashboard(request):
         "usuarios": usuarios,
         "horarios_by_user": horarios_by_user,
         "roles_permisos": roles,
+        "roles_detalle": roles_detalle,
+        "permisos_catalogo": permisos_catalogo,
         "permisos_resumen": permisos_resumen,
         "empleados_data": empleados_data,
         "depts_by_plantel": depts_by_plantel,
@@ -495,6 +511,44 @@ def update_user(request):
         _clear_jefatura_if_needed(request, user)
 
     return redirect(_redirect_with_message(request, ok="Usuario actualizado."))
+
+
+@requiere_rol("administrador")
+@requiere_permiso("users.manage_roles")
+def update_role_permissions(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    roles = list(Rol.objects.all())
+    permisos = list(Permiso.objects.all())
+    permisos_ids = {p.id for p in permisos}
+
+    for role in roles:
+        selected_ids = set()
+        for val in request.POST.getlist(f"perms_{role.id}"):
+            try:
+                selected_ids.add(int(val))
+            except (TypeError, ValueError):
+                continue
+        selected_ids &= permisos_ids
+
+        existing_ids = set(
+            RolPermiso.objects.filter(rol=role, permiso_id__in=permisos_ids)
+            .values_list("permiso_id", flat=True)
+        )
+
+        to_add = selected_ids - existing_ids
+        if to_add:
+            RolPermiso.objects.bulk_create(
+                [RolPermiso(rol=role, permiso_id=pid) for pid in to_add],
+                ignore_conflicts=True,
+            )
+
+        to_remove = existing_ids - selected_ids
+        if to_remove:
+            RolPermiso.objects.filter(rol=role, permiso_id__in=to_remove).delete()
+
+    return redirect(_redirect_with_message(request, ok="Permisos por rol actualizados."))
 
 
 @requiere_rol("administrador")
