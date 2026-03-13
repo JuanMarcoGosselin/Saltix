@@ -12,7 +12,17 @@ from core.models import BitacoraAuditoria, Notificacion, Plantel
 from Profesores.models import Profesor, Horario, TransferenciaDepartamento
 from users.models import Departamento, Rol, RolPermiso, Usuario
 
+# Importa los decoradores desde el mismo paquete/app donde los ubiques.
+# Ajusta el import path según tu estructura de proyecto.
+from core.decorators import requiere_rol, requiere_permiso
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DASHBOARD
+# ─────────────────────────────────────────────────────────────────────────────
+
+@requiere_rol("administrador")
+@requiere_permiso("ver_dashboard")
 def dashboard(request):
     now = timezone.localtime()
     profesores_qs = Profesor.objects.select_related(
@@ -374,6 +384,10 @@ def dashboard(request):
     return render(request, "admin/dashboard.html", context)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPERS INTERNOS (sin decoradores – no son vistas públicas)
+# ─────────────────────────────────────────────────────────────────────────────
+
 def _redirect_with_message(request, ok=None, error=None):
     base = reverse("admin_dashboard")
     msg = ok or error
@@ -383,6 +397,12 @@ def _redirect_with_message(request, ok=None, error=None):
     return base
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# USUARIOS
+# ─────────────────────────────────────────────────────────────────────────────
+
+@requiere_rol("administrador")
+@requiere_permiso("crear_usuario")
 def create_user(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -433,6 +453,8 @@ def create_user(request):
     return redirect(_redirect_with_message(request, ok="Usuario creado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("editar_usuario")
 def update_user(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -489,6 +511,12 @@ def update_user(request):
     return redirect(_redirect_with_message(request, ok="Usuario actualizado."))
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# PLANTELES
+# ─────────────────────────────────────────────────────────────────────────────
+
+@requiere_rol("administrador")
+@requiere_permiso("crear_plantel")
 def create_plantel(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -523,6 +551,8 @@ def create_plantel(request):
     return redirect(_redirect_with_message(request, ok="Plantel creado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("editar_plantel")
 def update_plantel(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -553,6 +583,45 @@ def update_plantel(request):
     return redirect(_redirect_with_message(request, ok="Plantel actualizado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("eliminar_plantel")
+def delete_plantel(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    plantel_id = request.POST.get("plantel_id")
+    if not plantel_id:
+        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
+
+    plantel = Plantel.objects.filter(id=plantel_id).first()
+    if not plantel:
+        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
+
+    if plantel.profesores.exists():
+        return redirect(_redirect_with_message(request, error="No puedes eliminar el plantel porque tiene profesores asignados."))
+
+    departamentos = list(Departamento.objects.filter(plantel=plantel))
+    for depto in departamentos:
+        if depto.profesores.exists():
+            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene profesores asignados."))
+        if TransferenciaDepartamento.objects.filter(
+            Q(departamento_origen=depto) | Q(departamento_destino=depto)
+        ).exists():
+            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene historial de transferencias."))
+
+    for depto in departamentos:
+        depto.delete()
+
+    plantel.delete()
+    return redirect(_redirect_with_message(request, ok="Plantel eliminado."))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DEPARTAMENTOS
+# ─────────────────────────────────────────────────────────────────────────────
+
+@requiere_rol("administrador")
+@requiere_permiso("crear_departamento")
 def create_departamento(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -592,6 +661,8 @@ def create_departamento(request):
     return redirect(_redirect_with_message(request, ok="Departamento creado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("editar_departamento")
 def update_departamento(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -623,7 +694,6 @@ def update_departamento(request):
         if Departamento.objects.filter(jefe=jefe).exclude(id=depto.id).exists():
             return redirect(_redirect_with_message(request, error="Ese jefe ya esta asignado a un plantel."))
     else:
-        # Sin asignar: reasigna al administrador actual
         jefe = request.user
 
     depto.nombre = nombre
@@ -636,37 +706,8 @@ def update_departamento(request):
     return redirect(_redirect_with_message(request, ok="Departamento actualizado."))
 
 
-def delete_plantel(request):
-    if request.method != "POST":
-        return redirect("admin_dashboard")
-
-    plantel_id = request.POST.get("plantel_id")
-    if not plantel_id:
-        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
-
-    plantel = Plantel.objects.filter(id=plantel_id).first()
-    if not plantel:
-        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
-
-    if plantel.profesores.exists():
-        return redirect(_redirect_with_message(request, error="No puedes eliminar el plantel porque tiene profesores asignados."))
-
-    departamentos = list(Departamento.objects.filter(plantel=plantel))
-    for depto in departamentos:
-        if depto.profesores.exists():
-            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene profesores asignados."))
-        if TransferenciaDepartamento.objects.filter(
-            Q(departamento_origen=depto) | Q(departamento_destino=depto)
-        ).exists():
-            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene historial de transferencias."))
-
-    for depto in departamentos:
-        depto.delete()
-
-    plantel.delete()
-    return redirect(_redirect_with_message(request, ok="Plantel eliminado."))
-
-
+@requiere_rol("administrador")
+@requiere_permiso("eliminar_departamento")
 def delete_departamento(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -691,6 +732,12 @@ def delete_departamento(request):
     return redirect(_redirect_with_message(request, ok="Departamento eliminado."))
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# NOTIFICACIONES
+# ─────────────────────────────────────────────────────────────────────────────
+
+@requiere_rol("administrador")
+@requiere_permiso("gestionar_notificaciones")
 def marcar_notificacion_leida(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -703,6 +750,8 @@ def marcar_notificacion_leida(request):
     return redirect("admin_dashboard")
 
 
+@requiere_rol("administrador")
+@requiere_permiso("gestionar_notificaciones")
 def marcar_notificaciones_leidas(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -715,6 +764,10 @@ def marcar_notificaciones_leidas(request):
     ).update(leida=True)
     return redirect("admin_dashboard")
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HELPERS PRIVADOS (lógica de negocio reutilizable, sin decoradores)
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _upsert_profesor_from_request(request, user, is_new):
     rfc = (request.POST.get("rfc") or "").strip()
