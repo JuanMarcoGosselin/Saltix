@@ -5,20 +5,12 @@ from django.http import HttpResponseForbidden
 from users.models import RolPermiso
 
 
-# ─────────────────────────────────────────────
-# Respuesta 403 centralizada
-# ─────────────────────────────────────────────
-
 def _forbid(mensaje: str = "No tienes permiso para realizar esta acción."):
     return HttpResponseForbidden(
         f"<h2>403 – Acceso denegado</h2><p>{mensaje}</p>",
         content_type="text/html; charset=utf-8",
     )
 
-
-# ─────────────────────────────────────────────
-# Decorador 1 – Filtro por rol
-# ─────────────────────────────────────────────
 
 def requiere_rol(*roles_permitidos: str):
     """
@@ -52,10 +44,6 @@ def requiere_rol(*roles_permitidos: str):
     return decorator
 
 
-# ─────────────────────────────────────────────
-# Decorador 2 – Filtro por permiso (RolPermiso)
-# ─────────────────────────────────────────────
-
 def requiere_permiso(codigo_permiso: str):
     """
     Verifica que el rol del usuario tenga asignado el permiso indicado
@@ -65,8 +53,6 @@ def requiere_permiso(codigo_permiso: str):
         @requiere_permiso("crear_usuario")
         @requiere_permiso("eliminar_plantel")
 
-    Los códigos de permiso sugeridos para este módulo están listados
-    al final del archivo.
     """
     def decorator(view_func):
         @wraps(view_func)
@@ -95,33 +81,3 @@ def requiere_permiso(codigo_permiso: str):
 
         return wrapper
     return decorator
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# CÓDIGOS DE PERMISO SUGERIDOS
-# Agrégalos en la tabla Permiso (o en un fixture/migration inicial).
-#
-#   Módulo Usuarios
-#     ver_usuarios          – Acceder al listado de usuarios
-#     crear_usuario         – Crear un nuevo usuario
-#     editar_usuario        – Editar datos de un usuario existente
-#
-#   Módulo Planteles
-#     ver_planteles         – Acceder al listado de planteles
-#     crear_plantel         – Crear un nuevo plantel
-#     editar_plantel        – Editar un plantel existente
-#     eliminar_plantel      – Eliminar un plantel
-#
-#   Módulo Departamentos
-#     ver_departamentos     – Acceder al listado de departamentos
-#     crear_departamento    – Crear un nuevo departamento
-#     editar_departamento   – Editar un departamento existente
-#     eliminar_departamento – Eliminar un departamento
-#
-#   Módulo Notificaciones
-#     gestionar_notificaciones – Marcar notificaciones como leídas
-#
-#   Dashboard general
-#     ver_dashboard         – Acceder al dashboard de administración
-# ─────────────────────────────────────────────────────────────────────────────
-

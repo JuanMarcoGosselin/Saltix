@@ -12,17 +12,11 @@ from core.models import BitacoraAuditoria, Notificacion, Plantel
 from Profesores.models import Profesor, Horario, TransferenciaDepartamento
 from users.models import Departamento, Rol, RolPermiso, Usuario
 
-# Importa los decoradores desde el mismo paquete/app donde los ubiques.
-# Ajusta el import path según tu estructura de proyecto.
 from core.decorators import requiere_rol, requiere_permiso
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DASHBOARD
-# ─────────────────────────────────────────────────────────────────────────────
-
 @requiere_rol("administrador")
-@requiere_permiso("ver_dashboard")
+@requiere_permiso("auditoria.ver_bitacora")
 def dashboard(request):
     now = timezone.localtime()
     profesores_qs = Profesor.objects.select_related(
@@ -384,10 +378,6 @@ def dashboard(request):
     return render(request, "admin/dashboard.html", context)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# HELPERS INTERNOS (sin decoradores – no son vistas públicas)
-# ─────────────────────────────────────────────────────────────────────────────
-
 def _redirect_with_message(request, ok=None, error=None):
     base = reverse("admin_dashboard")
     msg = ok or error
@@ -397,12 +387,8 @@ def _redirect_with_message(request, ok=None, error=None):
     return base
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# USUARIOS
-# ─────────────────────────────────────────────────────────────────────────────
-
 @requiere_rol("administrador")
-@requiere_permiso("crear_usuario")
+@requiere_permiso("users.manage_users")
 def create_user(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -454,7 +440,7 @@ def create_user(request):
 
 
 @requiere_rol("administrador")
-@requiere_permiso("editar_usuario")
+@requiere_permiso("users.manage_users")
 def update_user(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -511,12 +497,8 @@ def update_user(request):
     return redirect(_redirect_with_message(request, ok="Usuario actualizado."))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PLANTELES
-# ─────────────────────────────────────────────────────────────────────────────
-
 @requiere_rol("administrador")
-@requiere_permiso("crear_plantel")
+@requiere_permiso("admin.manage_plantel")
 def create_plantel(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -552,7 +534,7 @@ def create_plantel(request):
 
 
 @requiere_rol("administrador")
-@requiere_permiso("editar_plantel")
+@requiere_permiso("admin.manage_plantel")
 def update_plantel(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -584,7 +566,7 @@ def update_plantel(request):
 
 
 @requiere_rol("administrador")
-@requiere_permiso("eliminar_plantel")
+@requiere_permiso("admin.manage_plantel")
 def delete_plantel(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -616,12 +598,8 @@ def delete_plantel(request):
     return redirect(_redirect_with_message(request, ok="Plantel eliminado."))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DEPARTAMENTOS
-# ─────────────────────────────────────────────────────────────────────────────
-
 @requiere_rol("administrador")
-@requiere_permiso("crear_departamento")
+@requiere_permiso("admin.manage_departamento")
 def create_departamento(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -662,7 +640,7 @@ def create_departamento(request):
 
 
 @requiere_rol("administrador")
-@requiere_permiso("editar_departamento")
+@requiere_permiso("admin.manage_departamento")
 def update_departamento(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -707,7 +685,7 @@ def update_departamento(request):
 
 
 @requiere_rol("administrador")
-@requiere_permiso("eliminar_departamento")
+@requiere_permiso("admin.manage_departamento")
 def delete_departamento(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -732,12 +710,8 @@ def delete_departamento(request):
     return redirect(_redirect_with_message(request, ok="Departamento eliminado."))
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# NOTIFICACIONES
-# ─────────────────────────────────────────────────────────────────────────────
-
 @requiere_rol("administrador")
-@requiere_permiso("gestionar_notificaciones")
+@requiere_permiso("notificaciones.manage_notificacion")
 def marcar_notificacion_leida(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -751,7 +725,7 @@ def marcar_notificacion_leida(request):
 
 
 @requiere_rol("administrador")
-@requiere_permiso("gestionar_notificaciones")
+@requiere_permiso("notificaciones.manage_notificacion")
 def marcar_notificaciones_leidas(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -764,10 +738,6 @@ def marcar_notificaciones_leidas(request):
     ).update(leida=True)
     return redirect("admin_dashboard")
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# HELPERS PRIVADOS (lógica de negocio reutilizable, sin decoradores)
-# ─────────────────────────────────────────────────────────────────────────────
 
 def _upsert_profesor_from_request(request, user, is_new):
     rfc = (request.POST.get("rfc") or "").strip()
