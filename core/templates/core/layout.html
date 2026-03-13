@@ -116,7 +116,7 @@
               <div class="profile-name">{{ user.nombre }} {{ user.apellido }}</div>
               <div class="profile-role">{{ user.rol_id.nombre|default:"" }}</div>
             </div>
-            <button class="logout-btn" title="Cerrar sesion">&#x23FB;</button>
+            <button class="logout-btn" title="Cerrar sesion" onclick="window.location.href='http://127.0.0.1:8000/logout/';" >&#x23FB;</button>
           </div>
         </aside>
       {% endif %}
