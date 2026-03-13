@@ -54,7 +54,6 @@
         </div>
       </div>
     </div>
-    <div class="avatar" style="width:34px;height:34px;font-size:.8rem;background:linear-gradient(135deg,#7c3aed,#a78bfa);">{{ user.nombre|default:"U"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}</div>
   </div>
 </header>
 {% endblock %}
@@ -124,6 +123,30 @@
         </tbody>
       </table>
     </div>
+
+    <div class="table-wrap" style="margin-top:1.5rem;">
+      <div class="table-header"><h3>Roles y accesos</h3></div>
+      <div class="roles-grid">
+        {% for r in roles_detalle %}
+          <div class="role-card">
+            <div class="role-name">{{ r.nombre }}</div>
+            <div class="role-meta">Resumen de acceso por rol</div>
+            <div class="role-metrics">
+              <div class="role-metric">
+                <div class="metric-val">{{ r.usuarios }}</div>
+                <div class="metric-label">Usuarios</div>
+              </div>
+              <div class="role-metric">
+                <div class="metric-val">{{ r.permisos }}</div>
+                <div class="metric-label">Permisos</div>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin roles registrados.</div>
+        {% endfor %}
+      </div>
+    </div>
   </div>
 
   <div class="page" id="page-empleados">
@@ -150,6 +173,7 @@
       </table>
     </div>
   </div>
+
   <div class="page" id="page-usuarios">
     <div class="section-title">Gestion de Usuarios</div>
     <div class="section-sub">Controla el acceso al sistema por rol y plantel</div>
@@ -206,28 +230,46 @@
       </table>
     </div>
 
-    <div class="table-wrap" style="margin-top:1.5rem;">
-      <div class="table-header"><h3>Permisos por rol</h3></div>
-      <table>
-        <thead>
-          <tr>
-            <th>Modulo</th>
-            {% for role in roles_permisos %}
-              <th>{{ role.nombre }}</th>
-            {% endfor %}
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in permisos_resumen %}
-            <tr>
-              <td>{{ row.modulo }}</td>
-              {% for val in row.valores %}
-                <td>{{ val }}</td>
+    <div class="table-wrap" style="margin-top:1.5rem; max-height: 60vh; overflow-y:scroll">
+      <div class="table-header">
+        <h3>Editor de permisos por rol</h3>
+        <button class="btn-primary btn-sm" type="submit" form="roles-perm-form">Guardar cambios</button>
+      </div>
+      <form method="post" id="roles-perm-form" action="{% url 'admin_update_role_perms' %}">
+        {% csrf_token %}
+        <div class="perm-grid-wrap">
+          <table class="perm-grid">
+            <thead>
+              <tr>
+                <th>Permiso</th>
+                {% for role in roles_detalle %}
+                  <th>{{ role.nombre }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for perm in permisos_catalogo %}
+                <tr>
+                  <td>
+                    <div class="perm-code">{{ perm.codigo }}</div>
+                    <div class="perm-desc">{{ perm.descripcion }}</div>
+                  </td>
+                  {% for role in roles_detalle %}
+                    <td>
+                      <label class="perm-check">
+                        <input type="checkbox" name="perms_{{ role.id }}" value="{{ perm.id }}"{% if perm.id in role.perm_ids %} checked{% endif %}>
+                        <span></span>
+                      </label>
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% empty %}
+                <tr><td colspan="{{ roles_detalle|length|add:1 }}" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin permisos registrados.</td></tr>
               {% endfor %}
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+            </tbody>
+          </table>
+        </div>
+      </form>
     </div>
   </div>
 
