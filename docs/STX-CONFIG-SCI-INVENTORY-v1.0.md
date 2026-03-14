@@ -30,6 +30,7 @@ Saltix/
 └── docs/
 ├── gestion/
 │   └── STX-CORE-RSK-MATRIZ-RIESGOS-v1.0.md
+│   └── STX-CORE-DOC-SCI-FASE3-v1.0.docx
 ├── planning/
 │   └── STX-CORE-REQ-BACKLOG-v1.0.md
 └── diseno/

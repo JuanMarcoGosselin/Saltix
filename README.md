@@ -1,119 +1,88 @@
 # Saltix — Sistema de Control de Asistencia y Cálculo de Nómina
 
-Sistema administrativo-financiero para la gestión de asistencia del personal docente y generación automática de nómina, aplicando normas laborales e impuestos vigentes.
+**Stack:** Python 3.12 / Django 6.0.3 / SQLite  
+**Plan de Proyecto:** 🔗 [Link al Trello](https://trello.com/b/ZWz953Fq/saltix)
 
 ---
 
-## Descripción del Sistema
+## Instalación
 
-Saltix transforma registros de asistencia en pagos legales de nómina. El sistema cubre tres dominios:
+### Requisitos previos
 
-- **Administrativo:** gestión del personal docente (altas, horarios, asistencias, incidencias).
-- **Financiero:** generación de pagos, impuestos, deducciones y reportes contables.
-- **Precisión matemática:** cálculos monetarios exactos y auditables.
-
----
-
-## Stack Tecnológico
-
-| Componente | Tecnología |
+| Requisito | Versión |
 |---|---|
-| Backend | Python 3.12 / Django 6.0.3 |
-| Base de datos | SQLite (desarrollo) |
-| Frontend | HTML + CSS + JS (sin framework) |
-| Control de versiones | Git |
+| Python | 3.12+ |
+| pip | 24.x |
+| Git | 2.x |
+| Base de datos | SQLite (incluida en Python) |
 
----
-
-## Estructura del Proyecto
-
-```
-Saltix/
-├── core/               # Planteles, bitácora de auditoría, notificaciones
-├── users/              # Usuarios, roles, permisos, departamentos
-├── Profesores/         # Profesores, horarios, transferencias
-├── Asistencias/        # Asistencias, incidencias, correcciones
-├── Contabilidad/       # Nómina, periodos, conceptos, recibos
-├── admin/              # Dashboard administrador
-├── jefatura/           # Dashboard jefatura
-├── Saltix/             # Configuración del proyecto Django
-├── docs/               # Documentación del proyecto (ver abajo)
-└── manage.py
-```
-
----
-
-## Documentación del Proyecto
-
-```
-Saltix/
-└── docs/
-├── gestion/
-│   └── STX-CORE-RSK-MATRIZ-RIESGOS-v1.0.md
-├── planning/
-│   └── STX-CORE-REQ-BACKLOG-v1.0.md
-└── diseno/
-    ├── STX-DB-DER-MODELO-v1.0.md
-    ├── STX-CORE-ARC-COMPONENTES-v1.0.md
-    └── wireframes/
-        ├── STX-UI-DOC-WIREFRAMES-dashboard-v1.0.jpeg
-        └── STX-UI-DOC-WIREFRAMES-dashboard-nomina-v1.0.jpeg
-```
-
----
-
-## Plan de Proyecto
-
-El plan de proyecto vive en Trello:  
-🔗 **[https://trello.com/b/ZWz953Fq/saltix]**
-
----
-
-## Instalación y Ejecución Local
+### Pasos
 
 ```bash
-# 1. Clonar el repositorio
-git clone <https://github.com/JuanMarcoGosselin/Saltix>
+# 1. Clonar
+git clone https://github.com/JuanMarcoGosselin/Saltix
 cd Saltix
 
-# 2. Crear y activar entorno virtual
+# 2. Entorno virtual
 python -m venv venv
-source venv/bin/activate        # Linux/Mac
-venv\Scripts\activate           # Windows
+source venv/bin/activate      # Linux/macOS
+venv\Scripts\activate         # Windows
 
-# 3. Instalar dependencias
+# 3. Dependencias
 pip install -r requirements.txt
 
-# 4. Aplicar migraciones
+# 4. Base de datos
 python manage.py migrate
 
-# 5. Crear superusuario
+# 5. Superusuario
 python manage.py createsuperuser
 
-# 6. Correr el servidor
+# 6. Servidor
 python manage.py runserver
+
+Acceder en http://127.0.0.1:8000/
 ```
 
----
 
-## Convención de Nombres de Artefactos
+### Problemas comunes
 
-```
-[PROYECTO]-[MODULO]-[TIPO]-[NOMBRE]-v[VERSION].[EXT]
-```
-
-Ver el detalle completo en [`contributing.md`](contributing.md).
-
----
-
-## Módulos del Sistema
-
-| Módulo | Descripción |
+| Error | Solución |
 |---|---|
-| `core` | Planteles, bitácora de auditoría, notificaciones |
-| `users` | Autenticación, roles, permisos, departamentos |
-| `Profesores` | Alta de profesores, horarios, transferencias entre departamentos |
-| `Asistencias` | Registro de asistencias, incidencias, solicitudes de corrección |
-| `Contabilidad` | Periodos de nómina, cálculo, conceptos fiscales, recibos PDF |
-| `admin` | Panel del administrador del sistema |
-| `jefatura` | Panel de jefatura de departamento |
+| `No module named 'django'` | Activar el entorno virtual |
+| `OperationalError` al iniciar | Ejecutar `python manage.py migrate` |
+| `That port is already in use` | Usar `python manage.py runserver 8001` |
+| `ALLOWED_HOSTS` error | Agregar el dominio en `settings.py` |
+
+---
+
+## Estructura del proyecto
+
+```
+Saltix/
+├── core/            # Planteles, bitácora, notificaciones
+├── users/           # Usuarios, roles, permisos, departamentos
+├── Profesores/      # Profesores, horarios, transferencias
+├── Asistencias/     # Asistencias, incidencias, correcciones
+├── Contabilidad/    # Nómina, periodos, conceptos, recibos
+├── admin/           # Panel administrador
+├── jefatura/        # Panel jefatura
+├── docs/            # Toda la documentación del proyecto
+├── requirements.txt
+└── contributing.md  # Convención de nombres y abreviaturas
+```
+
+---
+
+## Documentación
+
+| Documento | Ubicación |
+|---|---|
+| Convención de nombres y abreviaturas | [`contributing.md`](contributing.md) |
+| Backlog de requisitos (24 RF / 6 RNF) | [`docs/planning/STX-CORE-REQ-BACKLOG-v1.0.md`](docs/planning/STX-CORE-REQ-BACKLOG-v1.0.md) |
+| Matriz de riesgos | [`docs/gestion/STX-CORE-RSK-MATRIZ-RIESGOS-v1.0.md`](docs/gestion/STX-CORE-RSK-MATRIZ-RIESGOS-v1.0.md) |
+| Diagrama Entidad-Relación | [`docs/diseno/STX-DB-DER-MODELO-v1.0.md`](docs/diseno/STX-DB-DER-MODELO-v1.0.md) |
+| Diagrama de componentes | [`docs/diseno/STX-CORE-ARC-COMPONENTES-v1.0.md`](docs/diseno/STX-CORE-ARC-COMPONENTES-v1.0.md) |
+| Wireframes | [`docs/diseno/wireframes/`](docs/diseno/wireframes/) |
+| SCM Plan Fase 3 (branching, árbol, BD) | [`docs/gestion/STX-CORE-DOC-SCI-FASE3-v1.0.docx`](docs/gestion/STX-CORE-DOC-SCI-FASE3-v1.0.docx) |
+| SCM Plan Fase 4 (pruebas, despliegue) | [`docs/gestion/STX-CORE-DOC-SCI-FASE4-v1.0.docx`](docs/gestion/STX-CORE-DOC-SCI-FASE4-v1.0.docx) |
+| Casos de prueba | [`docs/gestion/STX-CORE-DOC-CASOS-PRUEBA-v1.0.xlsx`](docs/gestion/STX-CORE-DOC-CASOS-PRUEBA-v1.0.xlsx) |
