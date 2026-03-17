@@ -1,0 +1,401 @@
+{% extends "core/layout.html" %}
+{% load static %}
+{% block title %}SALTIX - Contabilidad{% endblock %}
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard_base.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard_shared.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard_contabilidad.css' %}">
+{% endblock %}
+
+{% block topbar %}
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">&#x2630;</button>
+    <div class="breadcrumb"><strong id="breadcrumb-text">Inicio</strong></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:.75rem;">
+    <div class="topbar-notif" title="Notificaciones">
+      &#128276;
+      {% if notificaciones_count %}
+        <span class="notif-dot">{{ notificaciones_count }}</span>
+      {% endif %}
+    </div>
+    <div class="avatar" style="width:34px;height:34px;font-size:.8rem;background:linear-gradient(135deg,#00b894,#00e5c9);">
+      {{ user.nombre|default:"C"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}
+    </div>
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="page active" id="page-inicio">
+  <div class="welcome-banner welcome-banner-conta">
+    <div class="welcome-text">
+      <h2>Panel de Contabilidad</h2>
+      <p>Resumen financiero{% if periodo_label %} · {{ periodo_label }}{% endif %}</p>
+    </div>
+    <div class="welcome-chips">
+      <div class="welcome-chip">
+        <div class="chip-val">{% firstof nomina_bruta_display "--" %}</div>
+        <div class="chip-label">Nomina bruta</div>
+      </div>
+      <div class="welcome-chip">
+        <div class="chip-val">{% firstof deducciones_total_display "--" %}</div>
+        <div class="chip-label">Deducciones</div>
+      </div>
+      <div class="welcome-chip">
+        <div class="chip-val">{% firstof neto_pagar_display "--" %}</div>
+        <div class="chip-label">Neto a pagar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <div class="card card-kpi" style="position:relative;overflow:hidden;padding-top:1.6rem;">
+      <div class="card-bar bar-teal"></div>
+      <div class="card-top"><div class="card-icon-wrap icon-green">&#128181;</div></div>
+      <div class="card-label">Nomina del periodo</div>
+      <div class="card-value" style="font-size:1.5rem;">{% firstof nomina_mes_display "--" %}</div>
+      <div class="card-sub">{% firstof nomina_mes_subtitle "Sin informacion cargada" %}</div>
+    </div>
+    <div class="card card-kpi" style="position:relative;overflow:hidden;padding-top:1.6rem;">
+      <div class="card-bar bar-orange"></div>
+      <div class="card-top"><div class="card-icon-wrap icon-yellow">&#9203;</div></div>
+      <div class="card-label">Pagos pendientes</div>
+      <div class="card-value" style="font-size:1.5rem;">{% firstof pagos_pendientes_display "--" %}</div>
+      <div class="card-sub">{% firstof pagos_pendientes_subtitle "Sin informacion cargada" %}</div>
+    </div>
+    <div class="card card-kpi" style="position:relative;overflow:hidden;padding-top:1.6rem;">
+      <div class="card-bar bar-blue"></div>
+      <div class="card-top"><div class="card-icon-wrap icon-blue">&#127873;</div></div>
+      <div class="card-label">Bonos del periodo</div>
+      <div class="card-value" style="font-size:1.5rem;">{% firstof bonos_mes_display "--" %}</div>
+      <div class="card-sub">{% firstof bonos_mes_subtitle "Sin informacion cargada" %}</div>
+    </div>
+    <div class="card card-kpi" style="position:relative;overflow:hidden;padding-top:1.6rem;">
+      <div class="card-bar bar-red"></div>
+      <div class="card-top"><div class="card-icon-wrap" style="background:#fdecea;">&#128201;</div></div>
+      <div class="card-label">Deducciones totales</div>
+      <div class="card-value amount-neg" style="font-size:1.5rem;">{% firstof deducciones_mes_display "--" %}</div>
+      <div class="card-sub">{% firstof deducciones_mes_subtitle "Sin informacion cargada" %}</div>
+    </div>
+  </div>
+
+  <div class="table-wrap" style="margin-bottom:1.5rem;">
+    <div class="table-header">
+      <h3>Estado de nomina{% if periodo_label %} - {{ periodo_label }}{% endif %}</h3>
+      <button class="btn-primary" type="button" onclick="showPage('nomina', document.querySelector('.nav-item[onclick*=nomina]'))">Ver detalle</button>
+    </div>
+    <table>
+      <thead><tr><th>Departamento</th><th>Empleados</th><th>Bruto</th><th>Deducciones</th><th>Neto</th><th>Avance</th><th>Estado</th></tr></thead>
+      <tbody>
+        {% for row in resumen_nomina %}
+          <tr>
+            <td>{{ row.departamento }}</td>
+            <td>{{ row.empleados }}</td>
+            <td>{{ row.bruto }}</td>
+            <td class="amount-neg">{{ row.deducciones }}</td>
+            <td class="amount-neu">{{ row.neto }}</td>
+            <td style="min-width:120px;">
+              <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:{{ row.avance|default:'0' }}%"></div></div>
+            </td>
+            <td><span class="pill {{ row.estado_clase|default:'pill-gray' }}">{{ row.estado_label|default:'Sin estado' }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin informacion de nomina disponible.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header"><h3>Ultimos movimientos</h3></div>
+    <div class="timeline" style="padding:1rem 1.25rem;">
+      {% for movimiento in movimientos_recientes %}
+        <div class="tl-item">
+          <div class="tl-dot" style="background:{{ movimiento.color|default:'#cbd5e1' }}"></div>
+          <div class="tl-content">
+            <div class="tl-title">{{ movimiento.titulo }}</div>
+            <div class="tl-meta">{{ movimiento.meta }}</div>
+          </div>
+          <div class="tl-amount {{ movimiento.amount_class|default:'amount-neu' }}">{{ movimiento.monto }}</div>
+        </div>
+      {% empty %}
+        <div class="tl-item">
+          <div class="tl-content">
+            <div class="tl-title">Sin movimientos recientes</div>
+            <div class="tl-meta">La actividad aparecera aqui cuando exista informacion financiera.</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-nomina">
+  <div class="section-title">Procesar Nomina</div>
+  <div class="section-sub">{% firstof periodo_label "Sin periodo seleccionado" %}</div>
+  <div class="tabs" id="nomina-tabs">
+    <button class="tab-btn active" type="button" data-filter="todos" onclick="filterNomina('todos',this)">Todos</button>
+    <button class="tab-btn" type="button" data-filter="pendiente" onclick="filterNomina('pendiente',this)">Pendientes</button>
+    <button class="tab-btn" type="button" data-filter="proceso" onclick="filterNomina('proceso',this)">En proceso</button>
+    <button class="tab-btn" type="button" data-filter="pagada" onclick="filterNomina('pagada',this)">Pagadas</button>
+  </div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Nomina por departamento</h3>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Departamento</th><th>Plantel</th><th>Empleados</th><th>Bruto</th><th>IMSS</th><th>ISR</th><th>Bonos</th><th>Neto</th><th>Estado</th><th>Accion</th></tr>
+      </thead>
+      <tbody id="nomina-tbody">
+        {% for row in nomina_rows %}
+          <tr data-status="{{ row.estado|default:'sin-estado' }}">
+            <td>{{ row.departamento }}</td>
+            <td><span class="pill pill-blue" style="font-size:.7rem;">{{ row.plantel }}</span></td>
+            <td>{{ row.empleados }}</td>
+            <td>{{ row.bruto }}</td>
+            <td class="amount-neg">{{ row.imss }}</td>
+            <td class="amount-neg">{{ row.isr }}</td>
+            <td class="amount-pos">{{ row.bonos }}</td>
+            <td class="amount-neu">{{ row.neto }}</td>
+            <td><span class="pill {{ row.estado_clase|default:'pill-gray' }}">{{ row.estado_label|default:'Sin estado' }}</span></td>
+            <td>
+              {% if row.accion_url %}
+                <a class="btn-outline btn-sm" href="{{ row.accion_url }}">Ver</a>
+              {% else %}
+                <span class="pill pill-gray">Sin accion</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr class="nomina-empty-row"><td colspan="10" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin registros de nomina para mostrar.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="page" id="page-historial">
+  <div class="section-title">Historial de Pagos</div>
+  <div class="section-sub">Registro completo de dispersiones realizadas</div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Registro de dispersiones</h3>
+      <div class="search-bar">
+        <span style="color:var(--gray-400)">&#128269;</span>
+        <input type="text" placeholder="Buscar..." oninput="searchHistorial(this.value)">
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Folio</th><th>Fecha</th><th>Departamento</th><th>Empleados</th><th>Neto dispersado</th><th>Metodo</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody id="historial-tbody">
+        {% for row in historial_rows %}
+          <tr data-search="{{ row.folio|lower }} {{ row.departamento|lower }}">
+            <td><code style="font-size:.78rem;background:var(--gray-100);padding:.1rem .45rem;border-radius:5px;">{{ row.folio }}</code></td>
+            <td style="font-size:.82rem;color:var(--gray-400)">{{ row.fecha }}</td>
+            <td>{{ row.departamento }}</td>
+            <td>{{ row.empleados }}</td>
+            <td class="amount-pos">{{ row.neto }}</td>
+            <td>{{ row.metodo }}</td>
+            <td><span class="pill {{ row.estado_clase|default:'pill-gray' }}">{{ row.estado_label|default:'Sin estado' }}</span></td>
+            <td>
+              {% if row.comprobante_url %}
+                <a class="btn-outline btn-sm" href="{{ row.comprobante_url }}">Ver</a>
+              {% else %}
+                <span class="pill pill-gray">Sin archivo</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr class="historial-empty-row"><td colspan="8" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin historial de pagos disponible.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="page" id="page-deducciones">
+  <div class="section-title">Deducciones</div>
+  <div class="section-sub">Gestion de descuentos obligatorios y voluntarios</div>
+  <div class="ded-cards">
+    {% for card in deducciones_cards %}
+      <div class="ded-card">
+        <div class="card-bar {{ card.bar_class|default:'bar-red' }}"></div>
+        <div class="card-label">{{ card.label }}</div>
+        <div class="card-value {{ card.amount_class|default:'amount-neu' }}" style="font-size:1.4rem;">{{ card.monto }}</div>
+        <div class="card-sub">{{ card.sub }}</div>
+      </div>
+    {% empty %}
+      <div class="table-wrap" style="grid-column:1/-1;padding:1.25rem 1.5rem;color:var(--gray-400);">Sin deducciones registradas.</div>
+    {% endfor %}
+  </div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Acciones de deducciones</h3>
+      <button class="btn-primary" type="button" onclick="openModalDeduccion()">Nueva deduccion</button>
+    </div>
+    <div style="padding:1.25rem 1.5rem;color:var(--gray-600);font-size:.88rem;">Controla descuentos obligatorios, prestamos y ajustes por periodo.</div>
+  </div>
+</div>
+
+<div class="page" id="page-bonos">
+  <div class="section-title">Bonos</div>
+  <div class="section-sub">Percepciones extraordinarias y recompensas</div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Bonos del periodo</h3>
+      <button class="btn-primary" type="button" onclick="openModalBono()">Asignar bono</button>
+    </div>
+    <table>
+      <thead><tr><th>Empleado</th><th>Tipo</th><th>Monto</th><th>Periodo</th><th>Estado</th></tr></thead>
+      <tbody>
+        {% for bono in bonos_rows %}
+          <tr>
+            <td>{{ bono.empleado }}</td>
+            <td>{{ bono.tipo }}</td>
+            <td class="amount-pos">{{ bono.monto }}</td>
+            <td>{{ bono.periodo }}</td>
+            <td><span class="pill {{ bono.estado_clase|default:'pill-gray' }}">{{ bono.estado_label|default:'Sin estado' }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin bonos registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="page" id="page-planteles">
+  <div class="section-title">Planteles</div>
+  <div class="section-sub">Revision financiera por plantel y departamento</div>
+  {% for plantel in planteles_rows %}
+    <div class="plantel-block" id="plantel-{{ plantel.slug }}">
+      <div class="plantel-header" onclick="togglePlantel('{{ plantel.slug }}')">
+        <div class="plantel-header-left">
+          <div class="plantel-badge" style="{% if plantel.badge_style %}{{ plantel.badge_style }}{% endif %}">{{ plantel.badge|default:"P" }}</div>
+          <div>
+            <div class="plantel-name">{{ plantel.nombre }}</div>
+            <div class="plantel-meta">{{ plantel.meta }}</div>
+          </div>
+        </div>
+        <div class="plantel-header-right">
+          <div class="plantel-kpi"><span class="plantel-kpi-val">{{ plantel.bruto }}</span><span class="plantel-kpi-lbl">Bruto</span></div>
+          <div class="plantel-kpi"><span class="plantel-kpi-val amount-neg">{{ plantel.deducciones }}</span><span class="plantel-kpi-lbl">Deducciones</span></div>
+          <div class="plantel-kpi"><span class="plantel-kpi-val amount-pos">{{ plantel.neto }}</span><span class="plantel-kpi-lbl">Neto</span></div>
+          <div class="plantel-kpi"><span class="pill {{ plantel.estado_clase|default:'pill-gray' }}">{{ plantel.estado_label|default:'Sin estado' }}</span></div>
+          <div class="plantel-chevron" id="chevron-{{ plantel.slug }}">&#9662;</div>
+        </div>
+      </div>
+      <div class="plantel-body {% if plantel.open %}open{% endif %}" id="body-{{ plantel.slug }}">
+        <div class="dept-table-wrap">
+          <table class="dept-table">
+            <thead><tr><th>Departamento</th><th>Responsable</th><th>Empleados</th><th>Bruto</th><th>IMSS</th><th>ISR</th><th>Bonos</th><th>Neto</th><th>Avance</th><th>Estado</th></tr></thead>
+            <tbody>
+              {% for depto in plantel.departamentos %}
+                <tr>
+                  <td><span class="dept-dot" style="{% if depto.dot_style %}{{ depto.dot_style }}{% endif %}"></span>{{ depto.nombre }}</td>
+                  <td style="font-size:.8rem;color:var(--gray-400)">{{ depto.responsable }}</td>
+                  <td>{{ depto.empleados }}</td>
+                  <td>{{ depto.bruto }}</td>
+                  <td class="amount-neg">{{ depto.imss }}</td>
+                  <td class="amount-neg">{{ depto.isr }}</td>
+                  <td class="amount-pos">{{ depto.bonos }}</td>
+                  <td class="amount-neu">{{ depto.neto }}</td>
+                  <td>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:{{ depto.avance|default:'0' }}%"></div></div>
+                    <div class="progress-label"><span>{{ depto.avance|default:'0' }}%</span></div>
+                  </td>
+                  <td><span class="pill {{ depto.estado_clase|default:'pill-gray' }}">{{ depto.estado_label|default:'Sin estado' }}</span></td>
+                </tr>
+              {% empty %}
+                <tr><td colspan="10" style="text-align:center;color:var(--gray-400);padding:1.25rem;">Sin departamentos registrados para este plantel.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <div class="table-wrap" style="padding:1.25rem 1.5rem;color:var(--gray-400);">Sin informacion por plantel disponible.</div>
+  {% endfor %}
+</div>
+
+<div class="page" id="page-reportes">
+  <div class="section-title">Reportes Financieros</div>
+  <div class="section-sub">Genera salidas para auditoria, conciliacion y seguimiento</div>
+  <div class="report-grid">
+    {% for reporte in reportes_rows %}
+      <div class="report-card">
+        <div class="report-icon">{{ reporte.icono }}</div>
+        <div class="report-title">{{ reporte.titulo }}</div>
+        <div class="report-desc">{{ reporte.descripcion }}</div>
+        {% if reporte.url %}
+          <a class="btn-primary btn-sm" href="{{ reporte.url }}">Abrir</a>
+        {% else %}
+          <span class="pill pill-gray">No disponible</span>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="table-wrap" style="grid-column:1/-1;padding:1.25rem 1.5rem;color:var(--gray-400);">Sin reportes configurados.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra %}
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<div class="modal-overlay" id="modal-ded" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div><div class="modal-title">Nueva deduccion</div><div class="modal-sub">Aplica un descuento a un empleado</div></div>
+      <button type="button" class="modal-close" onclick="document.getElementById('modal-ded').classList.remove('open')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="form-group"><label class="form-label">Empleado</label><input class="form-input" type="text" placeholder="Nombre del empleado"></div>
+        <div class="form-group"><label class="form-label">Tipo</label><input class="form-input" type="text" placeholder="ISR, IMSS, prestamo..."></div>
+        <div class="form-group"><label class="form-label">Monto</label><input class="form-input" type="number" placeholder="0.00"></div>
+        <div class="form-group"><label class="form-label">Periodo</label><input class="form-input" type="text" placeholder="Periodo"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" onclick="document.getElementById('modal-ded').classList.remove('open')">Cancelar</button>
+      <button type="button" class="btn-submit" onclick="document.getElementById('modal-ded').classList.remove('open');showToast('Deduccion registrada')">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-bono" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div><div class="modal-title">Asignar bono</div><div class="modal-sub">Agrega una percepcion adicional al empleado</div></div>
+      <button type="button" class="modal-close" onclick="document.getElementById('modal-bono').classList.remove('open')">&#x2715;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="form-group"><label class="form-label">Empleado</label><input class="form-input" type="text" placeholder="Nombre del empleado"></div>
+        <div class="form-group"><label class="form-label">Tipo</label><input class="form-input" type="text" placeholder="Puntualidad, desempeno..."></div>
+        <div class="form-group"><label class="form-label">Monto</label><input class="form-input" type="number" placeholder="0.00"></div>
+        <div class="form-group"><label class="form-label">Periodo</label><input class="form-input" type="text" placeholder="Periodo"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-cancel" onclick="document.getElementById('modal-bono').classList.remove('open')">Cancelar</button>
+      <button type="button" class="btn-submit" onclick="document.getElementById('modal-bono').classList.remove('open');showToast('Bono registrado')">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'js/contabilidad_dashboard.js' %}"></script>
+{% endblock %}

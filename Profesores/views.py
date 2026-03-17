@@ -1,5 +1,10 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from .models import Profesor 
+from django.utils import timezone
+
+from Asistencias.models import Asistencia
+from .models import Horario, Profesor 
+from .utils import obtener_horario_hoy
 
 def dashboard(request):
     usuario = request.user
@@ -16,4 +21,27 @@ def dashboard(request):
 
     return render(request, "Profesores/dashboard.html", context)
 
+
+@login_required
+def registro_asistencia(request):
+    profesor = Profesor.objects.select_related("usuario").get(usuario=request.user.id)
+    hoy = timezone.localdate()
+
+    horarios_hoy = obtener_horario_hoy(profesor).order_by("hora_inicio")
+    asistencias_hoy_ids = set(
+        Asistencia.objects.filter(profesor=profesor, fecha=hoy, horario__in=horarios_hoy).values_list(
+            "horario_id", flat=True
+        )
+    )
+    for horario in horarios_hoy:
+        horario.ya_registrada = horario.id in asistencias_hoy_ids
+
+    context = {
+        "profesor_nombre": f"{profesor.usuario.nombre} {profesor.usuario.apellido}".strip(),
+        "profesor_iniciales": f"{(profesor.usuario.nombre or 'U')[:1]}{(profesor.usuario.apellido or '')[:1]}".upper(),
+        "profesor_rol": "Profesor",
+        "horarios_hoy": horarios_hoy,
+        "fecha_hoy": hoy,
+    }
+    return render(request, "Profesores/registro_asistencia.html", context)
 

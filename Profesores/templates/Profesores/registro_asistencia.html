@@ -1,0 +1,73 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SALTIX | Registro de Asistencia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/registro_asistencia_profesor.css' %}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-left">
+                <a href="{% url 'profesores_dashboard' %}" class="back-btn">
+                    <span aria-hidden="true">&#x2190;</span>
+                    Volver
+                </a>
+                <h1 class="page-title">Registro de Asistencia</h1>
+            </div>
+            <div class="header-right">
+                <div class="profile-info">
+                    <div class="avatar">{{ profesor_iniciales }}</div>
+                    <div>
+                        <div class="profile-name">{{ profesor_nombre }}</div>
+                        <div class="profile-role">{{ profesor_rol }}</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+		<main class="main">
+			<div class="schedule-container">
+				<div class="schedule-header">
+					<div class="date">Hoy</div>
+					<div class="time">Jornada activa</div>
+				</div>
+				<div class="schedule-body">
+					{% if horarios_hoy %}
+						{% for horario in horarios_hoy %}
+							<div class="schedule-item">
+								<div class="schedule-meta">
+									<div class="schedule-time">{{ horario.hora_inicio|time:"g:i A" }} - {{ horario.hora_fin|time:"g:i A" }}</div>
+									<div class="schedule-class">{% if horario.es_hora_clase %}Clase{% else %}Actividad{% endif %}</div>
+									<div class="schedule-room">Aula {{ horario.aula }}</div>
+								</div>
+								<button
+									class="btn-register{% if horario.ya_registrada %} is-done{% endif %}"
+									type="button"
+									data-horario-id="{{ horario.id }}"
+									onclick="markAttendance(this)"
+								>
+									{% if horario.ya_registrada %}Asistencia registrada{% else %}Registrar asistencia{% endif %}
+								</button>
+							</div>
+						{% endfor %}
+					{% else %}
+						<div class="schedule-item">
+							<div class="schedule-meta">
+								<div class="schedule-class">No tienes clases programadas para hoy.</div>
+							</div>
+						</div>
+					{% endif %}
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<div class="toast" id="toast"></div>
+	<script src="{% static 'js/asistencia_profesor.js' %}"></script>
+	</body>
+	</html>
