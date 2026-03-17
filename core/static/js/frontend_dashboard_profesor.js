@@ -335,7 +335,6 @@ const breadcrumbs = {
         document.getElementById('modal-fecha-label').textContent = `${dias[dow]} ${day} de ${meses[m.month]} de ${m.year}`;
         document.getElementById('motivo-select').value = '';
         document.getElementById('motivo-desc').value = '';
-        document.getElementById('file-label').innerHTML = '<input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">📎 Adjunta un comprobante (PDF, JPG, PNG)';
         document.getElementById('modal-overlay').classList.add('open');
     }
 

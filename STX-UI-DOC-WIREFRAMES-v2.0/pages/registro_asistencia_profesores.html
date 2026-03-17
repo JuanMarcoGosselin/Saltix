@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SALTIX – Registro de Asistencia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/registro_asistencia_profesores.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-left">
+                <a href="#" class="back-btn">
+                    <i class="icon-arrow-left"></i>
+                    Volver
+                </a>
+                <h1 class="page-title">Registro de Asistencia</h1>
+            </div>
+            <div class="header-right">
+                <div class="profile-info">
+                    <div class="avatar">IG</div>
+                    <div class="profile-name">Iván Gosseline</div>
+                    <div class="profile-role">Profesor de Matemáticas</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="schedule-container">
+                <div class="schedule-header">
+                    <div class="date">Lunes, 17 de julio de 2025</div>
+                    <div class="time">8:00 AM - 6:00 PM</div>
+                </div>
+                <div class="schedule-body">
+                    <div class="schedule-item">
+                        <div class="schedule-time">8:00 AM - 9:30 AM</div>
+                        <div class="schedule-class">Matemáticas I</div>
+                        <div class="schedule-room">Salón 302</div>
+                        <button class="btn-register" onclick="markAttendance(this)">
+                            <i class="icon-check"></i>
+                            Registrar asistencia
+                        </button>
+                    </div>
+                    <div class="schedule-item">
+                        <div class="schedule-time">10:00 AM - 11:30 AM</div>
+                        <div class="schedule-class">Matemáticas II</div>
+                        <div class="schedule-room">Salón 305</div>
+                        <button class="btn-register" onclick="markAttendance(this)">
+                            <i class="icon-check"></i>
+                            Registrar asistencia
+                        </button>
+                    </div>
+                    <div class="schedule-item">
+                        <div class="schedule-time">2:00 PM - 3:30 PM</div>
+                        <div class="schedule-class">Matemáticas III</div>
+                        <div class="schedule-room">Salón 310</div>
+                        <button class="btn-register" onclick="markAttendance(this)">
+                            <i class="icon-check"></i>
+                            Registrar asistencia
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="../../core/static/js/asistencia_profesor.js"></script>
+</body>
+</html>

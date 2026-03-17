@@ -1,0 +1,104 @@
+  /* ══ EXTRAS CONTABILIDAD ══ */
+
+  /* Sidebar overlay móvil */
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(13,31,60,.35);z-index:99;backdrop-filter:blur(1px)}
+  .sidebar-overlay.visible{display:block}
+
+  /* Role tag verde contabilidad */
+  .role-tag-conta{background:#e6f9f4;color:#00916e}
+
+  /* Pills extra */
+  .pill-red{background:#fdecea;color:#c0392b}
+
+  /* Barra de color top de card */
+  .card-bar{height:3px;border-radius:16px 16px 0 0;position:absolute;top:0;left:0;right:0}
+  .bar-blue  {background:linear-gradient(90deg,#007BFF,#00c6ff)}
+  .bar-teal  {background:linear-gradient(90deg,#00b894,#00e5c9)}
+  .bar-orange{background:linear-gradient(90deg,#f7971e,#ffd200)}
+  .bar-red   {background:linear-gradient(90deg,#e17055,#fd79a8)}
+
+  /* Welcome banner */
+  .welcome-banner{background:linear-gradient(135deg,#0d2a1f 0%,#0a5c3a 50%,#00b894 100%);border-radius:18px;padding:1.75rem 2rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.75rem;position:relative;overflow:hidden}
+  .welcome-banner::before{content:'';position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.05)}
+  .welcome-banner::after{content:'';position:absolute;right:60px;bottom:-50px;width:120px;height:120px;border-radius:50%;background:rgba(0,229,201,.08)}
+  .welcome-text h2{font-size:1.25rem;font-weight:800;color:#fff;margin-bottom:.25rem}
+  .welcome-text p{font-size:.82rem;color:rgba(255,255,255,.6)}
+  .welcome-chips{display:flex;gap:.6rem;z-index:1;flex-wrap:wrap}
+  .welcome-chip{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:.6rem 1rem;text-align:center;min-width:100px}
+  .chip-val{font-size:1.35rem;font-weight:800;color:#fff;line-height:1}
+  .chip-label{font-size:.65rem;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;margin-top:.2rem}
+
+  /* Tabs */
+  .tabs{display:flex;gap:.25rem;background:var(--gray-100);border-radius:10px;padding:.25rem;width:fit-content;margin-bottom:1.25rem}
+  .tab-btn{padding:.45rem 1.1rem;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;font-weight:600;border:none;background:none;cursor:pointer;color:var(--gray-600);transition:background .2s,color .2s}
+  .tab-btn.active{background:var(--white);color:var(--navy);box-shadow:0 1px 4px rgba(13,31,60,.1)}
+
+  /* Progress bar */
+  .progress-wrap{margin-top:.5rem}
+  .progress-bar-bg{background:var(--gray-200);border-radius:999px;height:7px;overflow:hidden}
+  .progress-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#00b894,#00e5c9);transition:width .6s ease}
+  .progress-label{display:flex;justify-content:space-between;font-size:.7rem;color:var(--gray-400);margin-top:.3rem}
+
+  /* Sección título */
+  .section-title{font-size:1.2rem;font-weight:800;margin-bottom:.2rem}
+  .section-sub{font-size:.82rem;color:var(--gray-400);margin-bottom:1.5rem}
+
+  /* Nómina: tabla de proceso */
+  .nomina-status-wrap{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem}
+
+  /* Deducciones: tarjeta resumen */
+  .ded-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem}
+  .ded-card{background:var(--white);border:1px solid var(--gray-200);border-radius:14px;padding:1.1rem 1.25rem;position:relative;overflow:hidden;padding-top:1.5rem}
+
+  /* Historial: filtro búsqueda */
+  .search-bar{display:flex;align-items:center;gap:.5rem;background:var(--gray-100);border:1.5px solid var(--gray-200);border-radius:10px;padding:.5rem .9rem;transition:border-color .2s}
+  .search-bar:focus-within{border-color:var(--accent);background:var(--white)}
+  .search-bar input{border:none;background:none;outline:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:.875rem;color:var(--navy);width:200px}
+  .search-bar input::placeholder{color:var(--gray-400)}
+
+  /* Modal wide */
+  .modal-wide{max-width:600px}
+  .modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+
+  /* Reportes grid */
+  .report-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.25rem}
+  .report-card{background:var(--white);border:1px solid var(--gray-200);border-radius:14px;padding:1.5rem;display:flex;flex-direction:column;gap:.75rem;cursor:pointer;transition:box-shadow .2s,transform .15s;box-shadow:0 2px 8px rgba(13,31,60,.04)}
+  .report-card:hover{box-shadow:0 8px 24px rgba(0,184,148,.15);transform:translateY(-3px)}
+  .report-icon{font-size:1.6rem}
+  .report-title{font-weight:700;font-size:.9rem;color:var(--navy)}
+  .report-desc{font-size:.75rem;color:var(--gray-400);line-height:1.4}
+
+  /* Toast */
+  .toast{position:fixed;bottom:2rem;right:2rem;background:var(--navy);color:var(--white);padding:.85rem 1.5rem;border-radius:12px;font-size:.875rem;font-weight:600;box-shadow:0 8px 30px rgba(13,31,60,.25);z-index:600;transform:translateY(80px);opacity:0;transition:transform .3s ease,opacity .3s ease}
+  .toast.show{transform:translateY(0);opacity:1}
+
+  /* Notif topbar */
+  .topbar-notif{position:relative;width:36px;height:36px;border-radius:10px;background:var(--gray-100);border:1.5px solid var(--gray-200);display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;transition:background .2s}
+  .topbar-notif:hover{background:var(--gray-200)}
+  .notif-dot{position:absolute;top:-3px;right:-3px;width:14px;height:14px;background:#e74c3c;border-radius:50%;font-size:.6rem;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center}
+
+  /* Monto coloreado */
+  .amount-pos{color:#00916e;font-weight:700}
+  .amount-neg{color:#c0392b;font-weight:700}
+  .amount-neu{color:var(--accent);font-weight:700}
+
+  /* Timeline historial */
+  .timeline{display:flex;flex-direction:column;gap:.6rem}
+  .tl-item{display:flex;gap:1rem;align-items:flex-start;padding:.85rem 1.25rem;background:var(--white);border:1px solid var(--gray-200);border-radius:12px;transition:box-shadow .2s}
+  .tl-item:hover{box-shadow:0 4px 14px rgba(13,31,60,.08)}
+  .tl-dot{width:10px;height:10px;border-radius:50%;margin-top:.35rem;flex-shrink:0}
+  .tl-content{flex:1}
+  .tl-title{font-size:.875rem;font-weight:600;color:var(--navy);margin-bottom:.15rem}
+  .tl-meta{font-size:.75rem;color:var(--gray-400)}
+  .tl-amount{font-size:.95rem;font-weight:800;white-space:nowrap}
+
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%)}
+    .sidebar.open{transform:translateX(0)}
+    .main{margin-left:0}
+    .hamburger-btn{display:flex}
+    .content{padding:1.25rem}
+    .welcome-chips{display:none}
+    .modal-grid{grid-template-columns:1fr}
+    .nomina-status-wrap{grid-template-columns:1fr}
+  }

@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SALTIX – Contabilidad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/dashboard_profesor.css">
+<link rel="stylesheet" href="../css/dashboard_contabilidad.css">
+<style>
+/* ══ PLANTELES ══ */
+.plantel-block{
+  background:var(--white);
+  border:1px solid var(--gray-200);
+  border-radius:16px;
+  margin-bottom:1.25rem;
+  overflow:hidden;
+  box-shadow:0 2px 8px rgba(13,31,60,.04);
+}
+.plantel-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:1.1rem 1.5rem;
+  cursor:pointer;
+  user-select:none;
+  transition:background .2s;
+  flex-wrap:wrap;
+  gap:.75rem;
+}
+.plantel-header:hover{background:var(--gray-100)}
+.plantel-header-left{display:flex;align-items:center;gap:.9rem}
+.plantel-badge{
+  width:40px;height:40px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:1rem;color:#fff;flex-shrink:0;
+}
+.plantel-name{font-weight:700;font-size:.95rem;color:var(--navy)}
+.plantel-meta{font-size:.75rem;color:var(--gray-400);margin-top:.1rem}
+.plantel-header-right{display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap}
+.plantel-kpi{text-align:center}
+.plantel-kpi-val{display:block;font-weight:800;font-size:.9rem;color:var(--navy)}
+.plantel-kpi-lbl{font-size:.65rem;color:var(--gray-400);text-transform:uppercase;letter-spacing:.05em}
+.plantel-chevron{
+  font-size:1.1rem;color:var(--gray-400);
+  transition:transform .3s ease;
+  flex-shrink:0;
+}
+.plantel-body{
+  overflow:hidden;
+  transition:max-height .35s ease;
+  max-height:none;
+}
+.plantel-body:not(.open){
+  max-height:0 !important;
+}
+.dept-table-wrap{overflow-x:auto}
+.dept-table{width:100%;border-collapse:collapse}
+.dept-table thead tr{background:var(--gray-100)}
+.dept-table th{text-align:left;padding:.65rem 1.25rem;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)}
+.dept-table td{padding:.8rem 1.25rem;font-size:.84rem;color:var(--navy);border-bottom:1px solid var(--gray-100)}
+.dept-table tr:last-child td{border-bottom:none}
+.dept-table tr:hover td{background:#fafcff}
+.dept-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.5rem;vertical-align:middle}
+.plantel-footer-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.85rem 1.5rem;
+  border-top:1px solid var(--gray-100);
+  background:var(--gray-100);
+  flex-wrap:wrap;gap:.5rem;
+}
+
+/* ══ RESPONSIVE MEJORADO ══ */
+/* Topbar */
+@media(max-width:768px){
+  .topbar{padding:0 1rem}
+  .topbar-left{gap:.5rem}
+
+  /* Ocultar columnas menos críticas en tablas */
+  .dept-table th:nth-child(2),
+  .dept-table td:nth-child(2),
+  .dept-table th:nth-child(5),
+  .dept-table td:nth-child(5),
+  .dept-table th:nth-child(6),
+  .dept-table td:nth-child(6){display:none}
+
+  /* Plantel header apilado */
+  .plantel-header-right .plantel-kpi:nth-child(n+3){display:none}
+  .plantel-kpi-val{font-size:.82rem}
+
+  /* Tablas internas: scroll horizontal */
+  .dept-table-wrap{-webkit-overflow-scrolling:touch}
+
+  /* Cards grid: 1 columna */
+  .cards-grid{grid-template-columns:1fr 1fr}
+
+  /* Welcome chips: 2 columnas */
+  .welcome-chips{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+
+  /* Historial: ocultar columnas secundarias */
+  table th:nth-child(6),table td:nth-child(6),
+  table th:nth-child(8),table td:nth-child(8){display:none}
+
+  /* Nómina tabla: ocultar columnas IMSS/ISR/Bonos */
+  #page-nomina table th:nth-child(5),#page-nomina table td:nth-child(5),
+  #page-nomina table th:nth-child(6),#page-nomina table td:nth-child(6),
+  #page-nomina table th:nth-child(7),#page-nomina table td:nth-child(7){display:none}
+
+  /* Deducciones */
+  .ded-cards{grid-template-columns:1fr 1fr}
+
+  /* Modal */
+  .modal-wide{max-width:95vw;margin:1rem}
+  .modal-grid{grid-template-columns:1fr}
+  .modal-body{padding:1rem}
+
+  /* Report grid */
+  .report-grid{grid-template-columns:1fr 1fr}
+
+  /* Plantel footer apilado */
+  .plantel-footer-row{flex-direction:column;align-items:flex-start}
+
+  /* Tabla inicio: ocultar Avance */
+  #page-inicio table th:nth-child(6),#page-inicio table td:nth-child(6){display:none}
+
+  /* Tabs scroll horizontal */
+  .tabs{overflow-x:auto;width:100%}
+}
+
+@media(max-width:480px){
+  .cards-grid{grid-template-columns:1fr}
+  .report-grid{grid-template-columns:1fr}
+  .ded-cards{grid-template-columns:1fr}
+  .welcome-chips{grid-template-columns:1fr 1fr}
+  .content{padding:1rem}
+  .section-title{font-size:1rem}
+  .plantel-header{padding:.9rem 1rem}
+  .dept-table th,.dept-table td{padding:.65rem .9rem}
+}
+</style>
+
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark" style="background:linear-gradient(135deg,#00b894,#00e5c9);">SX</div>
+    <h1>SALTIX</h1>
+    <span class="role-tag role-tag-conta">Contabilidad</span>
+  </div>
+  <nav>
+    <div class="nav-label">Principal</div>
+    <button class="nav-item active" onclick="showPage('inicio',this)">
+      <span class="icon">🏠</span> Inicio
+    </button>
+
+    <div class="nav-label">Nómina</div>
+    <button class="nav-item" onclick="showPage('nomina',this)">
+      <span class="icon">💰</span> Procesar nómina
+    </button>
+    <button class="nav-item" onclick="showPage('historial',this)">
+      <span class="icon">🕐</span> Historial de pagos
+    </button>
+
+    <div class="nav-label">Finanzas</div>
+    <button class="nav-item" onclick="showPage('deducciones',this)">
+      <span class="icon">📉</span> Deducciones
+    </button>
+    <button class="nav-item" onclick="showPage('bonos',this)">
+      <span class="icon">🎁</span> Bonos
+    </button>
+
+    <div class="nav-label">Organización</div>
+    <button class="nav-item" onclick="showPage('planteles',this)">
+      <span class="icon">🏫</span> Planteles
+    </button>
+
+    <div class="nav-label">Reportes</div>
+    <button class="nav-item" onclick="showPage('reportes',this)">
+      <span class="icon">📊</span> Reportes financieros
+    </button>
+  </nav>
+  <div class="sidebar-profile">
+    <div class="avatar" style="background:linear-gradient(135deg,#00b894,#00e5c9);">RF</div>
+    <div class="profile-info">
+      <div class="profile-name">Rosa Fernández</div>
+      <div class="profile-role">Contadora</div>
+    </div>
+    <button class="logout-btn" title="Cerrar sesión">⎋</button>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">☰</button>
+      <div class="breadcrumb"><strong id="breadcrumb-text">Inicio</strong></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.75rem;">
+      <div class="topbar-notif">🔔<span class="notif-dot">2</span></div>
+      <div class="avatar" style="width:34px;height:34px;font-size:.8rem;background:linear-gradient(135deg,#00b894,#00e5c9);">RF</div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ══ INICIO ══ -->
+    <div class="page active" id="page-inicio">
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <h2>Panel de Contabilidad 💼</h2>
+          <p>Resumen financiero · Julio 2025</p>
+        </div>
+        <div class="welcome-chips">
+          <div class="welcome-chip"><div class="chip-val">$450k</div><div class="chip-label">Nómina bruta</div></div>
+          <div class="welcome-chip"><div class="chip-val">$61.2k</div><div class="chip-label">Deducciones</div></div>
+          <div class="welcome-chip"><div class="chip-val">$388k</div><div class="chip-label">Neto a pagar</div></div>
+        </div>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="cards-grid">
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-teal"></div>
+          <div class="card-top">
+            <div class="card-icon-wrap icon-green">💵</div>
+            <span class="card-trend trend-up">+3%</span>
+          </div>
+          <div class="card-label">Nómina del mes</div>
+          <div class="card-value" style="font-size:1.5rem">$450,000</div>
+          <div class="card-sub">Bruto · Julio 2025</div>
+        </div>
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-orange"></div>
+          <div class="card-top">
+            <div class="card-icon-wrap icon-yellow">⏳</div>
+            <span class="card-trend" style="background:#fff9e6;color:#b07d00">3 depts</span>
+          </div>
+          <div class="card-label">Pagos pendientes</div>
+          <div class="card-value" style="font-size:1.5rem">$117,400</div>
+          <div class="card-sub">Sistemas, Humanidades, Idiomas</div>
+        </div>
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-blue"></div>
+          <div class="card-top">
+            <div class="card-icon-wrap icon-blue">🎁</div>
+            <span class="card-trend trend-up">↑ 5%</span>
+          </div>
+          <div class="card-label">Bonos del mes</div>
+          <div class="card-value" style="font-size:1.5rem">$28,500</div>
+          <div class="card-sub">Puntualidad + desempeño</div>
+        </div>
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-red"></div>
+          <div class="card-top">
+            <div class="card-icon-wrap" style="background:#fdecea">📉</div>
+            <span class="card-trend trend-same">IMSS+ISR</span>
+          </div>
+          <div class="card-label">Deducciones totales</div>
+          <div class="card-value" style="font-size:1.5rem;color:var(--red)">$61,200</div>
+          <div class="card-sub">13.6% del bruto</div>
+        </div>
+      </div>
+
+      <!-- Estado de nómina por depto -->
+      <div class="table-wrap" style="margin-bottom:1.5rem">
+        <div class="table-header">
+          <h3>Estado de nómina — Julio 2025</h3>
+          <button class="btn-primary" onclick="showPage('nomina', document.querySelector('[onclick*=nomina]'))">Ver detalle</button>
+        </div>
+        <table>
+          <thead><tr><th>Departamento</th><th>Empleados</th><th>Bruto</th><th>Deducciones</th><th>Neto</th><th>Avance</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Matemáticas</td><td>18</td><td>$72,000</td><td class="amount-neg">-$9,800</td><td class="amount-neu">$62,200</td>
+              <td style="min-width:120px"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:100%"></div></div></td>
+              <td><span class="pill pill-green">Pagada</span></td>
+            </tr>
+            <tr>
+              <td>Ciencias</td><td>15</td><td>$60,500</td><td class="amount-neg">-$8,200</td><td class="amount-neu">$52,300</td>
+              <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:100%"></div></div></td>
+              <td><span class="pill pill-green">Pagada</span></td>
+            </tr>
+            <tr>
+              <td>Humanidades</td><td>22</td><td>$88,000</td><td class="amount-neg">-$11,900</td><td class="amount-neu">$76,100</td>
+              <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:55%"></div></div></td>
+              <td><span class="pill pill-yellow">En proceso</span></td>
+            </tr>
+            <tr>
+              <td>Administración</td><td>12</td><td>$58,000</td><td class="amount-neg">-$7,500</td><td class="amount-neu">$50,500</td>
+              <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:100%"></div></div></td>
+              <td><span class="pill pill-green">Pagada</span></td>
+            </tr>
+            <tr>
+              <td>Sistemas</td><td>10</td><td>$52,000</td><td class="amount-neg">-$7,100</td><td class="amount-neu">$44,900</td>
+              <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:0%"></div></div></td>
+              <td><span class="pill pill-gray">Pendiente</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Últimos movimientos -->
+      <div class="table-wrap">
+        <div class="table-header"><h3>Últimos movimientos</h3></div>
+        <div class="timeline" style="padding:1rem 1.25rem">
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#00b894"></div>
+            <div class="tl-content">
+              <div class="tl-title">Nómina Ciencias — dispersión completada</div>
+              <div class="tl-meta">Hoy · 11:42 AM · 15 empleados</div>
+            </div>
+            <div class="tl-amount amount-pos">+$52,300</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#00b894"></div>
+            <div class="tl-content">
+              <div class="tl-title">Nómina Matemáticas — dispersión completada</div>
+              <div class="tl-meta">Hoy · 09:15 AM · 18 empleados</div>
+            </div>
+            <div class="tl-amount amount-pos">+$62,200</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#fdcb6e"></div>
+            <div class="tl-content">
+              <div class="tl-title">Bonos puntualidad — Administración aplicados</div>
+              <div class="tl-meta">Ayer · 04:00 PM · 12 empleados</div>
+            </div>
+            <div class="tl-amount amount-pos">+$6,000</div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-dot" style="background:#e17055"></div>
+            <div class="tl-content">
+              <div class="tl-title">Retención ISR Julio — aplicada</div>
+              <div class="tl-meta">Ayer · 02:30 PM · Todos los departamentos</div>
+            </div>
+            <div class="tl-amount amount-neg">-$28,400</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PROCESAR NÓMINA ══ -->
+    <div class="page" id="page-nomina">
+      <div class="section-title">Procesar Nómina</div>
+      <div class="section-sub">Julio 2025 · Periodo quincenal</div>
+
+      <div class="tabs" id="nomina-tabs">
+        <button class="tab-btn active" onclick="filterNomina('todos',this)">Todos</button>
+        <button class="tab-btn" onclick="filterNomina('pendiente',this)">Pendientes</button>
+        <button class="tab-btn" onclick="filterNomina('proceso',this)">En proceso</button>
+        <button class="tab-btn" onclick="filterNomina('pagada',this)">Pagadas</button>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Nómina por departamento</h3>
+          <button class="btn-primary" onclick="showToast('⚙️ Procesando todas las nóminas pendientes...')">Procesar todas</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Departamento</th><th>Plantel</th><th>Empleados</th><th>Bruto</th><th>IMSS</th><th>ISR</th><th>Bonos</th><th>Neto</th><th>Estado</th><th>Acción</th></tr>
+          </thead>
+          <tbody id="nomina-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ HISTORIAL DE PAGOS ══ -->
+    <div class="page" id="page-historial">
+      <div class="section-title">Historial de Pagos</div>
+      <div class="section-sub">Registro completo de dispersiones realizadas</div>
+
+      <div class="cards-grid" style="margin-bottom:1.5rem">
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-teal"></div>
+          <div class="card-label">Total pagado 2025</div>
+          <div class="card-value" style="font-size:1.4rem">$2,765,000</div>
+          <div class="card-sub">Enero – Julio</div>
+        </div>
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-red"></div>
+          <div class="card-label">Deducciones 2025</div>
+          <div class="card-value" style="font-size:1.4rem;color:var(--red)">$376,400</div>
+          <div class="card-sub">IMSS + ISR acumulado</div>
+        </div>
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-blue"></div>
+          <div class="card-label">Bonos 2025</div>
+          <div class="card-value" style="font-size:1.4rem;color:var(--accent)">$158,500</div>
+          <div class="card-sub">Dispersados en el año</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Registro de dispersiones</h3>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+            <div class="search-bar">
+              <span style="color:var(--gray-400)">🔍</span>
+              <input type="text" placeholder="Buscar..." oninput="searchHistorial(this.value)">
+            </div>
+            <button class="btn-outline" onclick="showToast('📥 Exportando a Excel...')">Exportar Excel</button>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Folio</th><th>Fecha</th><th>Departamento</th><th>Empleados</th><th>Neto dispersado</th><th>Método</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="historial-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ DEDUCCIONES ══ -->
+    <div class="page" id="page-deducciones">
+      <div class="section-title">Deducciones</div>
+      <div class="section-sub">Gestión de descuentos obligatorios y voluntarios</div>
+
+      <div class="ded-cards">
+        <div class="ded-card">
+          <div class="card-bar bar-red"></div>
+          <div class="card-label">IMSS empleado (2.75%)</div>
+          <div class="card-value" style="font-size:1.4rem;color:var(--red)">$12,375</div>
+          <div class="card-sub">Este mes</div>
+        </div>
+        <div class="ded-card">
+          <div class="card-bar bar-orange"></div>
+          <div class="card-label">ISR retenido</div>
+          <div class="card-value" style="font-size:1.4rem;color:#b07d00">$28,400</div>
+          <div class="card-sub">Este mes</div>
+        </div>
+        <div class="ded-card">
+          <div class="card-bar bar-teal"></div>
+          <div class="card-label">IMSS patronal (15.94%)</div>
+          <div class="card-value" style="font-size:1.4rem;color:#00916e">$71,730</div>
+          <div class="card-sub">Aportación empresa</div>
+        </div>
+        <div class="ded-card">
+          <div class="card-bar bar-blue"></div>
+          <div class="card-label">Otras deducciones</div>
+          <div class="card-value" style="font-size:1.4rem;color:var(--accent)">$20,425</div>
+          <div class="card-sub">Préstamos, INFONAVIT</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:1.25rem">
+        <button class="btn-primary" onclick="openModalDeduccion()">+ Nueva deducción</button>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header"><h3>Deducciones aplicadas — Julio 2025</h3></div>
+        <table>
+          <thead><tr><th>Empleado</th><th>Departamento</th><th>Tipo</th><th>Concepto</th><th>Monto</th><th>Periodo</th><th>Estado</th><th>Acción</th></tr></thead>
+          <tbody>
+            <tr><td>Ana García</td><td>Matemáticas</td><td><span class="pill pill-yellow">Obligatoria</span></td><td>IMSS</td><td class="amount-neg">-$508</td><td>Mensual</td><td><span class="pill pill-green">Aplicada</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle de deducción')">Ver</button></td></tr>
+            <tr><td>Ana García</td><td>Matemáticas</td><td><span class="pill pill-yellow">Obligatoria</span></td><td>ISR</td><td class="amount-neg">-$1,220</td><td>Mensual</td><td><span class="pill pill-green">Aplicada</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle de deducción')">Ver</button></td></tr>
+            <tr><td>Luis Morales</td><td>Matemáticas</td><td><span class="pill pill-blue">Voluntaria</span></td><td>Préstamo INFONAVIT</td><td class="amount-neg">-$2,500</td><td>Mensual</td><td><span class="pill pill-green">Aplicada</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle de deducción')">Ver</button></td></tr>
+            <tr><td>Pedro Soto</td><td>Ciencias</td><td><span class="pill pill-yellow">Obligatoria</span></td><td>IMSS</td><td class="amount-neg">-$522</td><td>Mensual</td><td><span class="pill pill-green">Aplicada</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle de deducción')">Ver</button></td></tr>
+            <tr><td>Rosa Méndez</td><td>Humanidades</td><td><span class="pill pill-red">Descuento</span></td><td>Falta injustificada</td><td class="amount-neg">-$875</td><td>Julio</td><td><span class="pill pill-yellow">Pendiente</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle de deducción')">Ver</button></td></tr>
+            <tr><td>Roberto Vela</td><td>Sistemas</td><td><span class="pill pill-blue">Voluntaria</span></td><td>Caja de ahorro</td><td class="amount-neg">-$1,000</td><td>Mensual</td><td><span class="pill pill-green">Aplicada</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle de deducción')">Ver</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ BONOS ══ -->
+    <div class="page" id="page-bonos">
+      <div class="section-title">Gestión de Bonos</div>
+      <div class="section-sub">Bonos y percepciones adicionales · Julio 2025</div>
+
+      <div class="cards-grid" style="margin-bottom:1.5rem">
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-teal"></div>
+          <div class="card-top"><div class="card-icon-wrap icon-green">🏆</div><span class="card-trend trend-up">↑ 12%</span></div>
+          <div class="card-label">Bonos de puntualidad</div>
+          <div class="card-value" style="font-size:1.4rem">$14,500</div>
+          <div class="card-sub">29 empleados elegibles</div>
+        </div>
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-blue"></div>
+          <div class="card-top"><div class="card-icon-wrap icon-blue">⭐</div><span class="card-trend trend-up">↑ 5%</span></div>
+          <div class="card-label">Bonos de desempeño</div>
+          <div class="card-value" style="font-size:1.4rem">$10,000</div>
+          <div class="card-sub">8 empleados elegibles</div>
+        </div>
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-orange"></div>
+          <div class="card-top"><div class="card-icon-wrap icon-yellow">🎄</div><span class="card-trend trend-same">Anual</span></div>
+          <div class="card-label">Aguinaldo estimado</div>
+          <div class="card-value" style="font-size:1.4rem">$4,000</div>
+          <div class="card-sub">Provisión mensual</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-bottom:1.25rem">
+        <button class="btn-primary" onclick="openModalBono()">+ Asignar bono</button>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header"><h3>Bonos asignados — Julio 2025</h3></div>
+        <table>
+          <thead><tr><th>Empleado</th><th>Departamento</th><th>Tipo de bono</th><th>Monto</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr></thead>
+          <tbody>
+            <tr><td>Ana García</td><td>Matemáticas</td><td><span class="pill pill-green">Puntualidad</span></td><td class="amount-pos">+$1,500</td><td>Asistencia perfecta</td><td><span class="pill pill-green">Aplicado</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle del bono')">Ver</button></td></tr>
+            <tr><td>Pedro Soto</td><td>Ciencias</td><td><span class="pill pill-blue">Desempeño</span></td><td class="amount-pos">+$3,000</td><td>Evaluación Q2 sobresaliente</td><td><span class="pill pill-green">Aplicado</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle del bono')">Ver</button></td></tr>
+            <tr><td>María Alvarado</td><td>Administración</td><td><span class="pill pill-blue">Desempeño</span></td><td class="amount-pos">+$5,000</td><td>Cumplimiento metas institucionales</td><td><span class="pill pill-yellow">Pendiente</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle del bono')">Ver</button></td></tr>
+            <tr><td>Luis Morales</td><td>Matemáticas</td><td><span class="pill pill-green">Puntualidad</span></td><td class="amount-pos">+$1,000</td><td>Asistencia del mes</td><td><span class="pill pill-green">Aplicado</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle del bono')">Ver</button></td></tr>
+            <tr><td>Iván Gosseline</td><td>Matemáticas</td><td><span class="pill pill-green">Puntualidad</span></td><td class="amount-pos">+$1,500</td><td>Asistencia perfecta</td><td><span class="pill pill-green">Aplicado</span></td><td><button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Detalle del bono')">Ver</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ REPORTES ══ -->
+    <div class="page" id="page-reportes">
+      <div class="section-title">Reportes Financieros</div>
+      <div class="section-sub">Genera y exporta reportes contables en PDF o Excel</div>
+
+      <div class="report-grid">
+        <div class="report-card" onclick="showToast('📊 Generando reporte...')">
+          <div class="report-icon">📋</div>
+          <div class="report-title">Nómina mensual</div>
+          <div class="report-desc">Detalle completo de percepciones y deducciones del mes por empleado.</div>
+          <button class="btn-primary" style="padding:.45rem 1rem;font-size:.78rem">Generar PDF</button>
+        </div>
+        <div class="report-card" onclick="showToast('📊 Generando reporte...')">
+          <div class="report-icon">💸</div>
+          <div class="report-title">Deducciones e IMSS</div>
+          <div class="report-desc">Retenciones aplicadas: ISR, IMSS empleado y patronal del periodo.</div>
+          <button class="btn-primary" style="padding:.45rem 1rem;font-size:.78rem">Generar PDF</button>
+        </div>
+        <div class="report-card" onclick="showToast('📊 Generando reporte...')">
+          <div class="report-icon">🎁</div>
+          <div class="report-title">Bonos y percepciones</div>
+          <div class="report-desc">Resumen de bonos de puntualidad, desempeño y extraordinarios.</div>
+          <button class="btn-primary" style="padding:.45rem 1rem;font-size:.78rem">Generar Excel</button>
+        </div>
+        <div class="report-card" onclick="showToast('📊 Generando reporte...')">
+          <div class="report-icon">🏢</div>
+          <div class="report-title">Por departamento</div>
+          <div class="report-desc">Comparativo de gasto de nómina entre todos los departamentos.</div>
+          <button class="btn-primary" style="padding:.45rem 1rem;font-size:.78rem">Generar Excel</button>
+        </div>
+        <div class="report-card" onclick="showToast('📊 Generando reporte...')">
+          <div class="report-icon">📅</div>
+          <div class="report-title">Historial anual</div>
+          <div class="report-desc">Acumulado de pagos, deducciones y bonos durante el año fiscal.</div>
+          <button class="btn-primary" style="padding:.45rem 1rem;font-size:.78rem">Generar PDF</button>
+        </div>
+        <div class="report-card" onclick="showToast('📊 Generando reporte...')">
+          <div class="report-icon">🧾</div>
+          <div class="report-title">Recibos de nómina</div>
+          <div class="report-desc">Genera recibos individuales en PDF para todos los empleados.</div>
+          <button class="btn-primary" style="padding:.45rem 1rem;font-size:.78rem">Generar ZIP</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══ PLANTELES ══ -->
+    <div class="page" id="page-planteles">
+      <div class="section-title">Planteles y Departamentos</div>
+      <div class="section-sub">Desglose de nómina por plantel y departamento · Julio 2025</div>
+
+      <!-- KPIs resumen rápido -->
+      <div class="cards-grid" style="margin-bottom:1.75rem">
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-blue"></div>
+          <div class="card-top"><div class="card-icon-wrap icon-blue">🏫</div><span class="card-trend trend-same">3 planteles</span></div>
+          <div class="card-label">Nómina total</div>
+          <div class="card-value" style="font-size:1.4rem">$450,000</div>
+          <div class="card-sub">Bruto · Julio 2025</div>
+        </div>
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-teal"></div>
+          <div class="card-top"><div class="card-icon-wrap icon-green">👥</div><span class="card-trend trend-up">↑ 1</span></div>
+          <div class="card-label">Total empleados</div>
+          <div class="card-value" style="font-size:1.4rem">108</div>
+          <div class="card-sub">En 8 departamentos</div>
+        </div>
+        <div class="card" style="position:relative;overflow:hidden;padding-top:1.6rem">
+          <div class="card-bar bar-orange"></div>
+          <div class="card-top"><div class="card-icon-wrap icon-yellow">⏳</div><span class="card-trend" style="background:#fff9e6;color:#b07d00">2 deptos</span></div>
+          <div class="card-label">Pagos pendientes</div>
+          <div class="card-value" style="font-size:1.4rem">$96,600</div>
+          <div class="card-sub">Sistemas e Idiomas</div>
+        </div>
+      </div>
+
+      <!-- Bloque plantel Norte -->
+      <div class="plantel-block" id="plantel-norte">
+        <div class="plantel-header" onclick="togglePlantel('norte')">
+          <div class="plantel-header-left">
+            <div class="plantel-badge" style="background:linear-gradient(135deg,#007BFF,#00c6ff)">N</div>
+            <div>
+              <div class="plantel-name">Plantel Norte</div>
+              <div class="plantel-meta">3 departamentos · 55 empleados</div>
+            </div>
+          </div>
+          <div class="plantel-header-right">
+            <div class="plantel-kpi"><span class="plantel-kpi-val">$220,500</span><span class="plantel-kpi-lbl">Bruto</span></div>
+            <div class="plantel-kpi"><span class="plantel-kpi-val amount-neg">-$29,900</span><span class="plantel-kpi-lbl">Deducciones</span></div>
+            <div class="plantel-kpi"><span class="plantel-kpi-val amount-pos">$190,600</span><span class="plantel-kpi-lbl">Neto</span></div>
+            <div class="plantel-kpi">
+              <span class="pill pill-yellow">En proceso</span>
+            </div>
+            <div class="plantel-chevron" id="chevron-norte">▾</div>
+          </div>
+        </div>
+        <div class="plantel-body open" id="body-norte">
+          <div class="dept-table-wrap">
+            <table class="dept-table">
+              <thead><tr><th>Departamento</th><th>Responsable</th><th>Empleados</th><th>Bruto</th><th>IMSS</th><th>ISR</th><th>Bonos</th><th>Neto</th><th>Avance</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="dept-dot" style="background:#00b894"></span>Matemáticas</td>
+                  <td style="font-size:.8rem;color:var(--gray-400)">Juan Ramos</td>
+                  <td>18</td><td>$72,000</td>
+                  <td class="amount-neg">-$5,200</td><td class="amount-neg">-$4,600</td>
+                  <td class="amount-pos">+$8,500</td><td class="amount-neu">$70,700</td>
+                  <td style="min-width:110px"><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:100%"></div></div><div class="progress-label"><span>100%</span></div></td>
+                  <td><span class="pill pill-green">Pagada</span></td>
+                </tr>
+                <tr>
+                  <td><span class="dept-dot" style="background:#007BFF"></span>Ciencias</td>
+                  <td style="font-size:.8rem;color:var(--gray-400)">Marta Olvera</td>
+                  <td>15</td><td>$60,500</td>
+                  <td class="amount-neg">-$4,400</td><td class="amount-neg">-$3,800</td>
+                  <td class="amount-pos">+$5,000</td><td class="amount-neu">$57,300</td>
+                  <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:100%"></div></div><div class="progress-label"><span>100%</span></div></td>
+                  <td><span class="pill pill-green">Pagada</span></td>
+                </tr>
+                <tr>
+                  <td><span class="dept-dot" style="background:#fdcb6e"></span>Humanidades</td>
+                  <td style="font-size:.8rem;color:var(--gray-400)">Carlos Vega</td>
+                  <td>22</td><td>$88,000</td>
+                  <td class="amount-neg">-$6,400</td><td class="amount-neg">-$5,500</td>
+                  <td class="amount-pos">+$6,000</td><td class="amount-neu">$82,100</td>
+                  <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:55%;background:linear-gradient(90deg,#fdcb6e,#f7971e)"></div></div><div class="progress-label"><span>55%</span></div></td>
+                  <td><span class="pill pill-yellow">En proceso</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="plantel-footer-row">
+            <span style="font-size:.8rem;color:var(--gray-400)">Total Norte: <strong style="color:var(--navy)">$190,600 neto</strong></span>
+            <button class="btn-outline" style="padding:.35rem .85rem;font-size:.75rem" onclick="showToast('📊 Generando reporte Plantel Norte...')">Reporte plantel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloque plantel Centro -->
+      <div class="plantel-block" id="plantel-centro">
+        <div class="plantel-header" onclick="togglePlantel('centro')">
+          <div class="plantel-header-left">
+            <div class="plantel-badge" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">C</div>
+            <div>
+              <div class="plantel-name">Plantel Centro</div>
+              <div class="plantel-meta">3 departamentos · 31 empleados</div>
+            </div>
+          </div>
+          <div class="plantel-header-right">
+            <div class="plantel-kpi"><span class="plantel-kpi-val">$146,000</span><span class="plantel-kpi-lbl">Bruto</span></div>
+            <div class="plantel-kpi"><span class="plantel-kpi-val amount-neg">-$19,900</span><span class="plantel-kpi-lbl">Deducciones</span></div>
+            <div class="plantel-kpi"><span class="plantel-kpi-val amount-pos">$135,600</span><span class="plantel-kpi-lbl">Neto</span></div>
+            <div class="plantel-kpi">
+              <span class="pill pill-yellow">En proceso</span>
+            </div>
+            <div class="plantel-chevron" id="chevron-centro">▾</div>
+          </div>
+        </div>
+        <div class="plantel-body open" id="body-centro">
+          <div class="dept-table-wrap">
+            <table class="dept-table">
+              <thead><tr><th>Departamento</th><th>Responsable</th><th>Empleados</th><th>Bruto</th><th>IMSS</th><th>ISR</th><th>Bonos</th><th>Neto</th><th>Avance</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="dept-dot" style="background:#7c3aed"></span>Administración</td>
+                  <td style="font-size:.8rem;color:var(--gray-400)">Sofía Reyes</td>
+                  <td>12</td><td>$58,000</td>
+                  <td class="amount-neg">-$4,200</td><td class="amount-neg">-$3,300</td>
+                  <td class="amount-pos">+$6,000</td><td class="amount-neu">$56,500</td>
+                  <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:100%"></div></div><div class="progress-label"><span>100%</span></div></td>
+                  <td><span class="pill pill-green">Pagada</span></td>
+                </tr>
+                <tr>
+                  <td><span class="dept-dot" style="background:#e17055"></span>Sistemas</td>
+                  <td style="font-size:.8rem;color:var(--gray-400)">Héctor Núñez</td>
+                  <td>10</td><td>$52,000</td>
+                  <td class="amount-neg">-$3,800</td><td class="amount-neg">-$3,300</td>
+                  <td class="amount-pos">+$2,000</td><td class="amount-neu">$46,900</td>
+                  <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:0%;background:linear-gradient(90deg,#e17055,#fd79a8)"></div></div><div class="progress-label"><span>0%</span></div></td>
+                  <td><span class="pill pill-gray">Pendiente</span></td>
+                </tr>
+                <tr>
+                  <td><span class="dept-dot" style="background:#00b894"></span>Arte y Diseño</td>
+                  <td style="font-size:.8rem;color:var(--gray-400)">Lucía Paredes</td>
+                  <td>9</td><td>$36,000</td>
+                  <td class="amount-neg">-$2,600</td><td class="amount-neg">-$2,200</td>
+                  <td class="amount-pos">+$1,000</td><td class="amount-neu">$32,200</td>
+                  <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:100%"></div></div><div class="progress-label"><span>100%</span></div></td>
+                  <td><span class="pill pill-green">Pagada</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="plantel-footer-row">
+            <span style="font-size:.8rem;color:var(--gray-400)">Total Centro: <strong style="color:var(--navy)">$135,600 neto</strong></span>
+            <button class="btn-outline" style="padding:.35rem .85rem;font-size:.75rem" onclick="showToast('📊 Generando reporte Plantel Centro...')">Reporte plantel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bloque plantel Sur -->
+      <div class="plantel-block" id="plantel-sur">
+        <div class="plantel-header" onclick="togglePlantel('sur')">
+          <div class="plantel-header-left">
+            <div class="plantel-badge" style="background:linear-gradient(135deg,#f7971e,#ffd200)">S</div>
+            <div>
+              <div class="plantel-name">Plantel Sur</div>
+              <div class="plantel-meta">2 departamentos · 22 empleados</div>
+            </div>
+          </div>
+          <div class="plantel-header-right">
+            <div class="plantel-kpi"><span class="plantel-kpi-val">$83,500</span><span class="plantel-kpi-lbl">Bruto</span></div>
+            <div class="plantel-kpi"><span class="plantel-kpi-val amount-neg">-$11,200</span><span class="plantel-kpi-lbl">Deducciones</span></div>
+            <div class="plantel-kpi"><span class="plantel-kpi-val amount-pos">$72,300</span><span class="plantel-kpi-lbl">Neto</span></div>
+            <div class="plantel-kpi">
+              <span class="pill pill-yellow">En proceso</span>
+            </div>
+            <div class="plantel-chevron" id="chevron-sur">▾</div>
+          </div>
+        </div>
+        <div class="plantel-body open" id="body-sur">
+          <div class="dept-table-wrap">
+            <table class="dept-table">
+              <thead><tr><th>Departamento</th><th>Responsable</th><th>Empleados</th><th>Bruto</th><th>IMSS</th><th>ISR</th><th>Bonos</th><th>Neto</th><th>Avance</th><th>Estado</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="dept-dot" style="background:#00b894"></span>Ed. Física</td>
+                  <td style="font-size:.8rem;color:var(--gray-400)">Roberto Leal</td>
+                  <td>8</td><td>$32,000</td>
+                  <td class="amount-neg">-$2,300</td><td class="amount-neg">-$2,000</td>
+                  <td class="amount-pos">+$0</td><td class="amount-neu">$27,700</td>
+                  <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:100%"></div></div><div class="progress-label"><span>100%</span></div></td>
+                  <td><span class="pill pill-green">Pagada</span></td>
+                </tr>
+                <tr>
+                  <td><span class="dept-dot" style="background:#e17055"></span>Idiomas</td>
+                  <td style="font-size:.8rem;color:var(--gray-400)">Gabriela Torres</td>
+                  <td>14</td><td>$51,500</td>
+                  <td class="amount-neg">-$3,700</td><td class="amount-neg">-$3,200</td>
+                  <td class="amount-pos">+$0</td><td class="amount-neu">$44,600</td>
+                  <td><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:0%;background:linear-gradient(90deg,#e17055,#fd79a8)"></div></div><div class="progress-label"><span>0%</span></div></td>
+                  <td><span class="pill pill-gray">Pendiente</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="plantel-footer-row">
+            <span style="font-size:.8rem;color:var(--gray-400)">Total Sur: <strong style="color:var(--navy)">$72,300 neto</strong></span>
+            <button class="btn-outline" style="padding:.35rem .85rem;font-size:.75rem" onclick="showToast('📊 Generando reporte Plantel Sur...')">Reporte plantel</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-planteles -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ══ MODAL: NUEVA DEDUCCIÓN ══ -->
+<div class="modal-overlay" id="modal-ded" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div><div class="modal-title">Nueva deducción</div><div class="modal-sub">Aplica un descuento a un empleado</div></div>
+      <button class="modal-close" onclick="document.getElementById('modal-ded').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="form-group"><label class="form-label">Empleado</label>
+          <select class="form-select">
+            <option>— Seleccionar —</option>
+            <option>Ana García</option><option>Luis Morales</option><option>Carmen Ruiz</option>
+            <option>Pedro Soto</option><option>Rosa Méndez</option><option>Iván Gosseline</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Tipo de deducción</label>
+          <select class="form-select">
+            <option>— Seleccionar —</option>
+            <option>Obligatoria (IMSS/ISR)</option>
+            <option>Voluntaria (préstamo)</option>
+            <option>Descuento por falta</option>
+            <option>INFONAVIT</option>
+            <option>Caja de ahorro</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Concepto</label><input class="form-input" type="text" placeholder="Descripción del descuento"></div>
+        <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" type="number" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Periodo de aplicación</label>
+          <select class="form-select"><option>Este mes (Julio 2025)</option><option>Quincenal</option><option>Mensual recurrente</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" type="date"></div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Observaciones</label><textarea class="form-textarea" placeholder="Notas adicionales sobre esta deducción..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="document.getElementById('modal-ded').classList.remove('open')">Cancelar</button>
+      <button class="btn-submit" onclick="document.getElementById('modal-ded').classList.remove('open');showToast('✅ Deducción aplicada correctamente')">Aplicar deducción</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ASIGNAR BONO ══ -->
+<div class="modal-overlay" id="modal-bono" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div><div class="modal-title">Asignar bono</div><div class="modal-sub">Agrega una percepción adicional al empleado</div></div>
+      <button class="modal-close" onclick="document.getElementById('modal-bono').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="form-group"><label class="form-label">Empleado</label>
+          <select class="form-select">
+            <option>— Seleccionar —</option>
+            <option>Ana García</option><option>Luis Morales</option><option>Pedro Soto</option>
+            <option>María Alvarado</option><option>Iván Gosseline</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Tipo de bono</label>
+          <select class="form-select">
+            <option>— Seleccionar —</option>
+            <option>Puntualidad</option><option>Desempeño</option>
+            <option>Productividad</option><option>Extraordinario</option><option>Aguinaldo</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" type="number" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label class="form-label">Periodo</label>
+          <select class="form-select"><option>Julio 2025</option><option>1ª quincena Julio</option><option>2ª quincena Julio</option></select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1"><label class="form-label">Motivo / Descripción</label><textarea class="form-textarea" placeholder="Describe el motivo del bono..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="document.getElementById('modal-bono').classList.remove('open')">Cancelar</button>
+      <button class="btn-submit" onclick="document.getElementById('modal-bono').classList.remove('open');showToast('✅ Bono asignado correctamente')">Asignar bono</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══ NAVEGACIÓN ══ */
+const breadcrumbs={inicio:'Inicio',nomina:'Procesar Nómina',historial:'Historial de Pagos',deducciones:'Deducciones',bonos:'Bonos',planteles:'Planteles',reportes:'Reportes Financieros'};
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  document.getElementById('breadcrumb-text').textContent=breadcrumbs[id]||id;
+  closeSidebar();
+}
+
+/* ══ SIDEBAR ══ */
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.contains('open')?closeSidebar():openSidebar();
+}
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('visible');
+  document.getElementById('hamburger-btn').textContent='✕';
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('visible');
+  document.getElementById('hamburger-btn').textContent='☰';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSidebar();});
+
+/* ══ DATOS NÓMINA ══ */
+const nominaData=[
+  {dept:'Matemáticas', plantel:'Norte', emp:18, bruto:72000, imss:5200, isr:4600, bonos:8500, neto:70700, estado:'pagada'},
+  {dept:'Ciencias',    plantel:'Norte', emp:15, bruto:60500, imss:4400, isr:3800, bonos:5000, neto:57300, estado:'pagada'},
+  {dept:'Humanidades', plantel:'Norte', emp:22, bruto:88000, imss:6400, isr:5500, bonos:6000, neto:82100, estado:'proceso'},
+  {dept:'Administración',plantel:'Centro',emp:12,bruto:58000,imss:4200,isr:3300,bonos:6000,neto:56500,estado:'pagada'},
+  {dept:'Sistemas',    plantel:'Centro',emp:10, bruto:52000, imss:3800, isr:3300, bonos:2000, neto:46900, estado:'pendiente'},
+  {dept:'Arte y Diseño',plantel:'Centro',emp:9, bruto:36000, imss:2600, isr:2200, bonos:1000, neto:32200, estado:'pagada'},
+  {dept:'Ed. Física',  plantel:'Sur',   emp:8,  bruto:32000, imss:2300, isr:2000, bonos:0,    neto:27700, estado:'pagada'},
+  {dept:'Idiomas',     plantel:'Sur',   emp:14, bruto:51500, imss:3700, isr:3200, bonos:0,    neto:44600, estado:'pendiente'},
+];
+
+let nominaFilter='todos';
+
+function renderNomina(){
+  const tbody=document.getElementById('nomina-tbody');
+  tbody.innerHTML='';
+  const filtered=nominaData.filter(r=>nominaFilter==='todos'||r.estado===nominaFilter);
+  filtered.forEach(r=>{
+    const estadoPill={pagada:'pill-green',proceso:'pill-yellow',pendiente:'pill-gray'}[r.estado]||'pill-gray';
+    const estadoLabel={pagada:'Pagada',proceso:'En proceso',pendiente:'Pendiente'}[r.estado]||r.estado;
+    const accion=r.estado==='pagada'
+      ?`<button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Generando recibos...')">Recibos</button>`
+      :`<button class="btn-primary" style="padding:.3rem .7rem;font-size:.75rem;border-radius:7px" onclick="procesarNomina(this,'${r.dept}')">Procesar</button>`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${r.dept}</td>
+      <td><span class="pill pill-blue" style="font-size:.7rem">${r.plantel}</span></td>
+      <td>${r.emp}</td>
+      <td>$${r.bruto.toLocaleString()}</td>
+      <td class="amount-neg">-$${r.imss.toLocaleString()}</td>
+      <td class="amount-neg">-$${r.isr.toLocaleString()}</td>
+      <td class="amount-pos">+$${r.bonos.toLocaleString()}</td>
+      <td class="amount-neu">$${r.neto.toLocaleString()}</td>
+      <td><span class="pill ${estadoPill}">${estadoLabel}</span></td>
+      <td>${accion}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function filterNomina(f,btn){
+  nominaFilter=f;
+  document.querySelectorAll('#nomina-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderNomina();
+}
+
+function procesarNomina(btn,dept){
+  const row=btn.closest('tr');
+  btn.textContent='⏳ Procesando...';
+  btn.disabled=true;
+  setTimeout(()=>{
+    const pill=row.querySelector('.pill');
+    pill.className='pill pill-green';
+    pill.textContent='Pagada';
+    btn.outerHTML=`<button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Generando recibos...')">Recibos</button>`;
+    showToast('✅ Nómina de '+dept+' procesada');
+  },1400);
+}
+
+/* ══ DATOS HISTORIAL ══ */
+const historialData=[
+  {folio:'NOM-2025-014',fecha:'30 jun 2025',dept:'Ciencias',emp:15,neto:52300,metodo:'Transferencia',estado:'completado'},
+  {folio:'NOM-2025-013',fecha:'30 jun 2025',dept:'Matemáticas',emp:18,neto:62200,metodo:'Transferencia',estado:'completado'},
+  {folio:'NOM-2025-012',fecha:'15 jun 2025',dept:'Administración',emp:12,neto:50500,metodo:'Transferencia',estado:'completado'},
+  {folio:'NOM-2025-011',fecha:'15 jun 2025',dept:'Arte y Diseño',emp:9,neto:32200,metodo:'Cheque',estado:'completado'},
+  {folio:'NOM-2025-010',fecha:'31 may 2025',dept:'Humanidades',emp:22,neto:76100,metodo:'Transferencia',estado:'completado'},
+  {folio:'NOM-2025-009',fecha:'31 may 2025',dept:'Idiomas',emp:14,neto:44600,metodo:'Transferencia',estado:'completado'},
+  {folio:'NOM-2025-008',fecha:'15 may 2025',dept:'Sistemas',emp:10,neto:46900,metodo:'Transferencia',estado:'completado'},
+  {folio:'NOM-2025-007',fecha:'15 may 2025',dept:'Ed. Física',emp:8,neto:27700,metodo:'Cheque',estado:'completado'},
+];
+let histSearch='';
+
+function renderHistorial(){
+  const tbody=document.getElementById('historial-tbody');
+  tbody.innerHTML='';
+  const filtered=historialData.filter(r=>
+    histSearch===''||
+    r.folio.toLowerCase().includes(histSearch.toLowerCase())||
+    r.dept.toLowerCase().includes(histSearch.toLowerCase())
+  );
+  filtered.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><code style="font-size:.78rem;background:var(--gray-100);padding:.1rem .45rem;border-radius:5px">${r.folio}</code></td>
+      <td style="font-size:.82rem;color:var(--gray-400)">${r.fecha}</td>
+      <td>${r.dept}</td>
+      <td>${r.emp}</td>
+      <td class="amount-pos">$${r.neto.toLocaleString()}</td>
+      <td>${r.metodo}</td>
+      <td><span class="pill pill-green">Completado</span></td>
+      <td style="display:flex;gap:.4rem;padding:.85rem 1.5rem">
+        <button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📄 Abriendo comprobante...')">Ver</button>
+        <button class="btn-outline" style="padding:.3rem .7rem;font-size:.75rem" onclick="showToast('📥 Descargando PDF...')">PDF</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function searchHistorial(val){histSearch=val;renderHistorial();}
+
+/* ══ MODALES ══ */
+function openModalDeduccion(){document.getElementById('modal-ded').classList.add('open');}
+function openModalBono(){document.getElementById('modal-bono').classList.add('open');}
+
+/* ══ TOAST ══ */
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+
+/* ══ PLANTELES ══ */
+function togglePlantel(id){
+  const body    = document.getElementById('body-'    + id);
+  const chevron = document.getElementById('chevron-' + id);
+  const isOpen  = body.classList.contains('open');
+  if(isOpen){
+    body.style.maxHeight = body.scrollHeight + 'px';
+    requestAnimationFrame(()=>{ body.style.maxHeight = '0'; });
+    body.classList.remove('open');
+    chevron.style.transform = 'rotate(-90deg)';
+  } else {
+    body.classList.add('open');
+    body.style.maxHeight = body.scrollHeight + 'px';
+    setTimeout(()=>{ body.style.maxHeight = 'none'; }, 380);
+    chevron.style.transform = 'rotate(0deg)';
+  }
+}
+
+/* ══ INIT ══ */
+renderNomina();
+renderHistorial();
+</script>
+</body>
+</html>
