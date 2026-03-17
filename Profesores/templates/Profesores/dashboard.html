@@ -29,11 +29,11 @@
             <div class="page active" id="page-inicio">
                 <div class="welcome-banner">
                     <div class="welcome-text">
-                        <h2>{{ saludo }}</h2>
+                        <h2>Bienvenido, {{nombrep}}</h2>
                         <p>{{ resumen_mes_label }}</p>
                     </div>
                     <div class="welcome-badge">
-                        <div class="amount">{{ salario_mensual }}</div>
+                        <div class="amount">{{ salariomensualp }}</div>
                         <div class="amount-label">Salario mensual</div>
                     </div>
                 </div>
@@ -44,8 +44,8 @@
                             <span class="card-trend trend-up">{{ salario_trend_label }}</span>
                         </div>
                         <div class="card-label">Mi salario</div>
-                        <div class="card-value">{{ salario_bruto }}</div>
-                        <div class="card-sub">{{ salario_bruto_label }}</div>
+                        <div class="card-value">${{ salariop }}</div>
+                        <div class="card-sub">Bruto mensual</div>
                     </div>
                     <div class="card">
                         <div class="card-top">
@@ -53,8 +53,8 @@
                             <span class="card-trend trend-same">{{ horas_trend_label }}</span>
                         </div>
                         <div class="card-label">Horas trabajadas</div>
-                        <div class="card-value">{{ horas_trabajadas }}</div>
-                        <div class="card-sub">{{ horas_trabajadas_label }}</div>
+                        <div class="card-value">{{ horasp }}</div>
+                        <div class="card-sub">de {{ horasesperadasp }} h esperadas</div>
                     </div>
                     <div class="card">
                         <div class="card-top">
@@ -62,8 +62,8 @@
                             <span class="card-trend trend-up">{{ proximo_pago_fecha }}</span>
                         </div>
                         <div class="card-label">Próximo pago</div>
-                        <div class="card-value">{{ proximo_pago }}</div>
-                        <div class="card-sub">{{ proximo_pago_label }}</div>
+                        <div class="card-value">{{ salarionetop }}</div>
+                        <div class="card-sub">Neto estimado</div>
                     </div>
                 </div>
                 <div class="table-wrap">
