@@ -1,0 +1,221 @@
+/* ── VARIABLES ── */
+:root {
+    --bg: #f5f7fa;
+    --white: #ffffff;
+    --navy: #0d1f3c;
+    --accent: #007BFF;
+    --accent2: #00c6ff;
+    --green: #00b894;
+    --yellow: #fdcb6e;
+    --red: #e17055;
+    --gray-100: #eef1f6;
+    --gray-200: #dde3ed;
+    --gray-400: #8fa5be;
+    --gray-600: #4a6080;
+}
+
+/* ── GLOBAL ── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--bg);
+    color: var(--navy);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    width: 100%;
+    max-width: 960px;
+    padding: 2rem;
+}
+
+/* ── HEADER ── */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--gray-600);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.back-btn:hover {
+    color: var(--accent);
+}
+
+.icon-arrow-left {
+    font-size: 1.1rem;
+}
+
+.page-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--white);
+}
+
+.profile-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--navy);
+}
+
+.profile-role {
+    font-size: 0.75rem;
+    color: var(--gray-400);
+}
+
+/* ── SCHEDULE ── */
+.schedule-container {
+    background-color: var(--white);
+    border-radius: 16px;
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.schedule-header {
+    background-color: var(--gray-100);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.date {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.time {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+}
+
+.schedule-body {
+    padding: 1.5rem;
+}
+
+.schedule-item {
+    background-color: var(--gray-100);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.schedule-time {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-600);
+}
+
+.schedule-class {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.schedule-room {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+}
+
+.btn-register {
+    background-color: var(--accent);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s, transform 0.15s;
+}
+
+.btn-register:hover {
+    background-color: var(--accent2);
+    transform: translateY(-2px);
+}
+
+.icon-check {
+    font-size: 1rem;
+}
+
+/* ── TOAST ── */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background-color: var(--navy);
+    color: var(--white);
+    padding: 0.85rem 1.5rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: 0 8px 30px rgba(13, 31, 60, 0.25);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
