@@ -39,7 +39,10 @@
               <div class="profile-name">{{ user.nombre }} {{ user.apellido }}</div>
               <div class="profile-role">{{ user.rol_id.nombre|default:"" }}</div>
             </div>
-            <button class="logout-btn" title="Cerrar sesion">&#x23FB;</button>
+            <form action="{% url 'logout' %}" method="post" class="logout-form">
+              {% csrf_token %}
+              <button class="logout-btn" type="submit" title="Cerrar sesion">&#x23FB;</button>
+            </form>
           </div>
         </aside>
       {% elif role == "profesor"%}
@@ -80,7 +83,57 @@
               <div class="profile-name">{{ user.nombre }} {{ user.apellido }}</div>
               <div class="profile-role">{{ user.rol_id.nombre|default:"" }}</div>
             </div>
-            <button class="logout-btn" title="Cerrar sesion">&#x23FB;</button>
+            <form action="{% url 'logout' %}" method="post" class="logout-form">
+              {% csrf_token %}
+              <button class="logout-btn" type="submit" title="Cerrar sesion">&#x23FB;</button>
+            </form>
+          </div>
+        </aside>
+      {% elif role == "contabilidad" %}
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-logo">
+            <div class="logo-mark" style="background:linear-gradient(135deg,#00b894,#00e5c9);">SX</div>
+            <h1>SALTIX</h1>
+            <span class="role-tag role-tag-conta">Contabilidad</span>
+          </div>
+          <nav>
+            <div class="nav-label">Principal</div>
+            <button class="nav-item active" onclick="showPage('inicio',this)">
+              <span class="icon">&#x1F3E0;</span> Inicio
+            </button>
+            <div class="nav-label">Nomina</div>
+            <button class="nav-item" onclick="showPage('nomina',this)">
+              <span class="icon">&#x1F4B0;</span> Procesar nomina
+            </button>
+            <button class="nav-item" onclick="showPage('historial',this)">
+              <span class="icon">&#x1F550;</span> Historial de pagos
+            </button>
+            <div class="nav-label">Finanzas</div>
+            <button class="nav-item" onclick="showPage('deducciones',this)">
+              <span class="icon">&#x1F4C9;</span> Deducciones
+            </button>
+            <button class="nav-item" onclick="showPage('bonos',this)">
+              <span class="icon">&#x1F381;</span> Bonos
+            </button>
+            <div class="nav-label">Organizacion</div>
+            <button class="nav-item" onclick="showPage('planteles',this)">
+              <span class="icon">&#x1F3EB;</span> Planteles
+            </button>
+            <div class="nav-label">Reportes</div>
+            <button class="nav-item" onclick="showPage('reportes',this)">
+              <span class="icon">&#x1F4CA;</span> Reportes financieros
+            </button>
+          </nav>
+          <div class="sidebar-profile">
+            <div class="avatar" style="background:linear-gradient(135deg,#00b894,#00e5c9);">{{ user.nombre|default:"U"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}</div>
+            <div class="profile-info">
+              <div class="profile-name">{{ user.nombre }} {{ user.apellido }}</div>
+              <div class="profile-role">{{ user.rol_id.nombre|default:"" }}</div>
+            </div>
+            <form action="{% url 'logout' %}" method="post" class="logout-form">
+              {% csrf_token %}
+              <button class="logout-btn" type="submit" title="Cerrar sesion">&#x23FB;</button>
+            </form>
           </div>
         </aside>
       {% elif role == "administrador" or role == "admin" %}
@@ -116,11 +169,9 @@
               <div class="profile-name">{{ user.nombre }} {{ user.apellido }}</div>
               <div class="profile-role">{{ user.rol_id.nombre|default:"" }}</div>
             </div>
-            <form action="{% url 'logout' %}" method="post">
+            <form action="{% url 'logout' %}" method="post" class="logout-form">
                 {% csrf_token %}
-                <button class="logout-btn" title="Cerrar sesión">
-                    &#x23FB;
-                </button>
+                <button class="logout-btn" type="submit" title="Cerrar sesion">&#x23FB;</button>
             </form>
           </div>
         </aside>

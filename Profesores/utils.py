@@ -1,6 +1,7 @@
 from .models import Profesor, Horario
 from datetime import datetime, timedelta
 from Asistencias.models import Asistencia
+from django.utils import timezone
 
 """
 Obtener el Horario del profesor
@@ -20,10 +21,11 @@ def obtener_horario_hoy(profesor):
         5 : "SAB"
     }
 
-    hoy = datetime.now()
-    dia = dias[hoy.weekday()]
-    horario = Horario.objects.filter(profesor=profesor, dia_semana=dia)
-    return horario  
+    hoy = timezone.localdate()
+    dia = dias.get(hoy.weekday())
+    if not dia:
+        return Horario.objects.none()
+    return Horario.objects.filter(profesor=profesor, dia_semana=dia)
 
 
 def obtener_horario(profesor): 

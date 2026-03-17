@@ -6,8 +6,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 {% endblock %}
 {% block page_css %}
-<link rel="stylesheet" href="{% static 'core/css/dashboard_base.css' %}">
-<link rel="stylesheet" href="{% static 'core/css/dashboard_profesor.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard_base.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard_profesor.css' %}">
 {% endblock %}
 
 {% block topbar %}
@@ -54,7 +54,7 @@
                         </div>
                         <div class="card-label">Horas trabajadas</div>
                         <div class="card-value">{{ horasp }}</div>
-                        <div class="card-sub">de {{ horasesperadasp }} h esperadas</div>
+                        <div class="card-sub">de {{ horasesperadasp }}h esperadas</div>
                     </div>
                     <div class="card">
                         <div class="card-top">
@@ -189,9 +189,12 @@
 
             <!-- ══ ASISTENCIAS (NUEVA) ══ -->
             <div class="page" id="page-asistencias">
-                <div style="margin-bottom:1.25rem">
-                    <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mis Asistencias</div>
-                    <div style="font-size:.82rem;color:var(--gray-400)">Consulta tu registro mensual y justifica faltas pendientes</div>
+                <div style="margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
+                    <div>
+                        <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mis Asistencias</div>
+                        <div style="font-size:.82rem;color:var(--gray-400)">Consulta tu registro mensual y justifica faltas pendientes</div>
+                    </div>
+                    <a class="btn-primary" href="{% url 'profesores_registro_asistencia' %}">Registrar asistencia</a>
                 </div>
 
                 <div class="month-selector">

@@ -5,8 +5,21 @@ const breadcrumbs = {
     reportes: 'Reportes'
   };
 
-  let pendientes = parseInt('{{ solicitudes_pendientes_total|default:"0" }}', 10);
-  if (isNaN(pendientes)) pendientes = 0;
+  function getInitialPendientes() {
+    const sources = [
+      document.getElementById('badge-sol'),
+      document.getElementById('card-sol-badge'),
+      document.getElementById('card-sol-val')
+    ];
+    for (const node of sources) {
+      if (!node) continue;
+      const value = parseInt((node.textContent || '').trim(), 10);
+      if (!isNaN(value)) return value;
+    }
+    return 0;
+  }
+
+  let pendientes = getInitialPendientes();
 
   function showPage(id, btn) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
