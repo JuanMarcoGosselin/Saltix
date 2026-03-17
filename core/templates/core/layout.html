@@ -116,7 +116,12 @@
               <div class="profile-name">{{ user.nombre }} {{ user.apellido }}</div>
               <div class="profile-role">{{ user.rol_id.nombre|default:"" }}</div>
             </div>
-            <button class="logout-btn" title="Cerrar sesion">&#x23FB;</button>
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button class="logout-btn" title="Cerrar sesión">
+                    &#x23FB;
+                </button>
+            </form>
           </div>
         </aside>
       {% endif %}

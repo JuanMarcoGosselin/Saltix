@@ -10,9 +10,13 @@ from django.urls import reverse
 
 from core.models import BitacoraAuditoria, Notificacion, Plantel
 from Profesores.models import Profesor, Horario, TransferenciaDepartamento
-from users.models import Departamento, Rol, RolPermiso, Usuario
+from users.models import Departamento, Permiso, Rol, RolPermiso, Usuario
+
+from core.decorators import requiere_rol, requiere_permiso
 
 
+@requiere_rol("administrador")
+@requiere_permiso("auditoria.ver_bitacora")
 def dashboard(request):
     now = timezone.localtime()
     profesores_qs = Profesor.objects.select_related(
@@ -84,6 +88,20 @@ def dashboard(request):
     usuarios_por_rol = {
         role.id: Usuario.objects.filter(rol_id=role).count() for role in roles
     }
+    permisos_catalogo = list(Permiso.objects.all().order_by("codigo"))
+    rol_perm_map = {role.id: set() for role in roles}
+    for rp in RolPermiso.objects.filter(rol__in=roles, permiso__in=permisos_catalogo):
+        rol_perm_map.setdefault(rp.rol_id, set()).add(rp.permiso_id)
+    roles_detalle = [
+        {
+            "id": role.id,
+            "nombre": role.nombre,
+            "perm_ids": sorted(list(rol_perm_map.get(role.id, set()))),
+            "usuarios": usuarios_por_rol.get(role.id, 0),
+            "permisos": permisos_por_rol.get(role.id, 0),
+        }
+        for role in roles
+    ]
 
     permisos_resumen = [
         {
@@ -363,6 +381,8 @@ def dashboard(request):
         "usuarios": usuarios,
         "horarios_by_user": horarios_by_user,
         "roles_permisos": roles,
+        "roles_detalle": roles_detalle,
+        "permisos_catalogo": permisos_catalogo,
         "permisos_resumen": permisos_resumen,
         "empleados_data": empleados_data,
         "depts_by_plantel": depts_by_plantel,
@@ -383,6 +403,8 @@ def _redirect_with_message(request, ok=None, error=None):
     return base
 
 
+@requiere_rol("administrador")
+@requiere_permiso("users.manage_users")
 def create_user(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -433,6 +455,8 @@ def create_user(request):
     return redirect(_redirect_with_message(request, ok="Usuario creado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("users.manage_users")
 def update_user(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -489,6 +513,46 @@ def update_user(request):
     return redirect(_redirect_with_message(request, ok="Usuario actualizado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("users.manage_roles")
+def update_role_permissions(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    roles = list(Rol.objects.all())
+    permisos = list(Permiso.objects.all())
+    permisos_ids = {p.id for p in permisos}
+
+    for role in roles:
+        selected_ids = set()
+        for val in request.POST.getlist(f"perms_{role.id}"):
+            try:
+                selected_ids.add(int(val))
+            except (TypeError, ValueError):
+                continue
+        selected_ids &= permisos_ids
+
+        existing_ids = set(
+            RolPermiso.objects.filter(rol=role, permiso_id__in=permisos_ids)
+            .values_list("permiso_id", flat=True)
+        )
+
+        to_add = selected_ids - existing_ids
+        if to_add:
+            RolPermiso.objects.bulk_create(
+                [RolPermiso(rol=role, permiso_id=pid) for pid in to_add],
+                ignore_conflicts=True,
+            )
+
+        to_remove = existing_ids - selected_ids
+        if to_remove:
+            RolPermiso.objects.filter(rol=role, permiso_id__in=to_remove).delete()
+
+    return redirect(_redirect_with_message(request, ok="Permisos por rol actualizados."))
+
+
+@requiere_rol("administrador")
+@requiere_permiso("admin.manage_plantel")
 def create_plantel(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -523,6 +587,8 @@ def create_plantel(request):
     return redirect(_redirect_with_message(request, ok="Plantel creado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("admin.manage_plantel")
 def update_plantel(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -553,6 +619,41 @@ def update_plantel(request):
     return redirect(_redirect_with_message(request, ok="Plantel actualizado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("admin.manage_plantel")
+def delete_plantel(request):
+    if request.method != "POST":
+        return redirect("admin_dashboard")
+
+    plantel_id = request.POST.get("plantel_id")
+    if not plantel_id:
+        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
+
+    plantel = Plantel.objects.filter(id=plantel_id).first()
+    if not plantel:
+        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
+
+    if plantel.profesores.exists():
+        return redirect(_redirect_with_message(request, error="No puedes eliminar el plantel porque tiene profesores asignados."))
+
+    departamentos = list(Departamento.objects.filter(plantel=plantel))
+    for depto in departamentos:
+        if depto.profesores.exists():
+            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene profesores asignados."))
+        if TransferenciaDepartamento.objects.filter(
+            Q(departamento_origen=depto) | Q(departamento_destino=depto)
+        ).exists():
+            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene historial de transferencias."))
+
+    for depto in departamentos:
+        depto.delete()
+
+    plantel.delete()
+    return redirect(_redirect_with_message(request, ok="Plantel eliminado."))
+
+
+@requiere_rol("administrador")
+@requiere_permiso("admin.manage_departamento")
 def create_departamento(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -592,6 +693,8 @@ def create_departamento(request):
     return redirect(_redirect_with_message(request, ok="Departamento creado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("admin.manage_departamento")
 def update_departamento(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -623,7 +726,6 @@ def update_departamento(request):
         if Departamento.objects.filter(jefe=jefe).exclude(id=depto.id).exists():
             return redirect(_redirect_with_message(request, error="Ese jefe ya esta asignado a un plantel."))
     else:
-        # Sin asignar: reasigna al administrador actual
         jefe = request.user
 
     depto.nombre = nombre
@@ -636,37 +738,8 @@ def update_departamento(request):
     return redirect(_redirect_with_message(request, ok="Departamento actualizado."))
 
 
-def delete_plantel(request):
-    if request.method != "POST":
-        return redirect("admin_dashboard")
-
-    plantel_id = request.POST.get("plantel_id")
-    if not plantel_id:
-        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
-
-    plantel = Plantel.objects.filter(id=plantel_id).first()
-    if not plantel:
-        return redirect(_redirect_with_message(request, error="Plantel no encontrado."))
-
-    if plantel.profesores.exists():
-        return redirect(_redirect_with_message(request, error="No puedes eliminar el plantel porque tiene profesores asignados."))
-
-    departamentos = list(Departamento.objects.filter(plantel=plantel))
-    for depto in departamentos:
-        if depto.profesores.exists():
-            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene profesores asignados."))
-        if TransferenciaDepartamento.objects.filter(
-            Q(departamento_origen=depto) | Q(departamento_destino=depto)
-        ).exists():
-            return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene historial de transferencias."))
-
-    for depto in departamentos:
-        depto.delete()
-
-    plantel.delete()
-    return redirect(_redirect_with_message(request, ok="Plantel eliminado."))
-
-
+@requiere_rol("administrador")
+@requiere_permiso("admin.manage_departamento")
 def delete_departamento(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -691,6 +764,8 @@ def delete_departamento(request):
     return redirect(_redirect_with_message(request, ok="Departamento eliminado."))
 
 
+@requiere_rol("administrador")
+@requiere_permiso("notificaciones.manage_notificacion")
 def marcar_notificacion_leida(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -703,6 +778,8 @@ def marcar_notificacion_leida(request):
     return redirect("admin_dashboard")
 
 
+@requiere_rol("administrador")
+@requiere_permiso("notificaciones.manage_notificacion")
 def marcar_notificaciones_leidas(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
