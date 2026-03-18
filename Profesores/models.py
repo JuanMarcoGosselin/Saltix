@@ -39,7 +39,7 @@ class Horario(models.Model):
     hora_inicio = models.TimeField()
     hora_fin = models.TimeField()
     aula = models.CharField(max_length=10)
-    es_hora_clase = models.BooleanField(default=True)
+    es_hora_clase = models.BooleanField(default=True) # Indica si esta hora es una clase programada o una hora de disponibilidad general. Se paga o no
 
     def __str__(self):
         return f"{self.profesor} | {self.dia_semana} {self.hora_inicio}-{self.hora_fin}"

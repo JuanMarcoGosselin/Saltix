@@ -11,4 +11,12 @@ function markAttendance(button) {
   button.classList.add('is-done');
   button.textContent = 'Asistencia registrada';
   showAttendanceToast('Asistencia registrada correctamente');
+
+}
+function markExit(button) {
+  if (!button || button.classList.contains('is-done')) return;
+  button.classList.add('is-done');
+  button.textContent = 'Salida registrada';
+  showAttendanceToast('Salida registrada correctamente');
+  
 }

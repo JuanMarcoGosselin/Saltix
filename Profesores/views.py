@@ -7,6 +7,15 @@ from Asistencias.models import Asistencia
 from .models import Horario, Profesor 
 from .utils import obtener_horario_hoy
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+import json
+from core.decorators import requiere_rol, requiere_permiso
+from django.http import JsonResponse
+
+
+
+
 def dashboard(request):
     usuario = request.user
     profesor = Profesor.objects.get(usuario=usuario.id)
@@ -39,10 +48,20 @@ def registro_asistencia(request):
             "horario_id", flat=True
         )
     )
+
+    asistencias_hoy = {
+        a.horario_id: a
+        for a in Asistencia.objects.filter(profesor=profesor, fecha=hoy, horario__in=horarios_hoy)
+    }
+
     for horario in horarios_hoy:
-        horario.ya_registrada = horario.id in asistencias_hoy_ids
+        asistencia = asistencias_hoy.get(horario.id)
+        horario.ya_registrada = asistencia is not None
+        horario.salida = asistencia.hora_salida if asistencia else None
+        horario.asistencia_id = asistencia.id if asistencia else None
 
     context = {
+        "profesor_id": profesor.id,
         "profesor_nombre": f"{profesor.usuario.nombre} {profesor.usuario.apellido}".strip(),
         "profesor_iniciales": f"{(profesor.usuario.nombre or 'U')[:1]}{(profesor.usuario.apellido or '')[:1]}".upper(),
         "profesor_rol": "Profesor",
@@ -51,3 +70,39 @@ def registro_asistencia(request):
     }
     return render(request, "Profesores/registro_asistencia.html", context)
 
+
+@requiere_rol("Profesor")
+def registrar_asistencia(request):
+    try:
+        profesor_id = request.POST.get("profesor_id")
+        horario_id = request.POST.get("horario_id")
+        if not horario_id:
+            return JsonResponse({'error': 'ID de horario no proporcionado'}, status=400)
+        
+        asistencia = Asistencia.objects.create(
+            profesor_id=profesor_id,
+            horario_id=horario_id,
+            fecha=timezone.localdate(),
+            hora_entrada=timezone.now().time(),
+            estado="ASISTENCIA",
+            creado_por=request.user
+        )
+
+        return JsonResponse({
+            'success': f'Asistencia registrada para horario {horario_id}',
+            'asistencia_id': asistencia.id
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+@requiere_rol("Profesor") 
+def registrar_salida(request):
+    try:
+        asistencia_id = request.POST.get("asistencia_id")
+        asistencia = Asistencia.objects.get(id=asistencia_id, profesor__usuario=request.user)
+        asistencia.hora_salida = timezone.now().time()
+        asistencia.save()
+        
+        return JsonResponse({'success': f'Salida registrada para horario {asistencia_id}'})
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)

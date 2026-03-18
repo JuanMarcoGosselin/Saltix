@@ -43,16 +43,40 @@
 								<div class="schedule-meta">
 									<div class="schedule-time">{{ horario.hora_inicio|time:"g:i A" }} - {{ horario.hora_fin|time:"g:i A" }}</div>
 									<div class="schedule-class">{% if horario.es_hora_clase %}Clase{% else %}Actividad{% endif %}</div>
-									<div class="schedule-room">Aula {{ horario.aula }}</div>
+									<div class="schedule-room">Aula</div>
 								</div>
-								<button
-									class="btn-register{% if horario.ya_registrada %} is-done{% endif %}"
-									type="button"
-									data-horario-id="{{ horario.id }}"
-									onclick="markAttendance(this)"
-								>
-									{% if horario.ya_registrada %}Asistencia registrada{% else %}Registrar asistencia{% endif %}
-								</button>
+
+								{% if not horario.ya_registrada %}
+								<form action="{% url 'profesores_registrar_asistencia' %}" method="POST" name="form_registrarAsistencia">
+									{% csrf_token %}
+									<input type="hidden" value="{{ horario.id }}" name="horario_id">
+									<input type="hidden"  value="{{ profesor_id }}" name="profesor_id">
+									<button
+										class="btn-register{% if horario.ya_registrada %} is-done{% endif %}"
+										type="submit"
+										onclick="markAttendance(this)"
+									>
+										{% if horario.ya_registrada %}Asistencia registrada{% else %}Registrar asistencia{% endif %}
+									</button>
+								</form>
+								{% endif %}
+									
+								{% if horario.ya_registrada and not horario.salida %}
+								<form action="{% url 'profesores_registrar_salida' %}" method="POST" name="form_registrarSalida">
+									{% csrf_token %}
+									<input type="hidden" value="{{ horario.id }}" name="horario_id">
+									<input type="hidden"  value="{{ profesor_id }}" name="profesor_id">
+									<input type="hidden" value="{{ horario.asistencia_id }}" name="asistencia_id">
+
+									<button
+										class="btn-register{% if horario.salida %} is-done{% endif %}"
+										type="submit"
+										onclick="markExit(this)"
+									>
+										{% if horario.salida %}Salida registrada{% else %}Registrar salida{% endif %}
+									</button>
+								</form>
+								{% endif %}
 							</div>
 						{% endfor %}
 					{% else %}

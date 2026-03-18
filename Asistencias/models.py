@@ -15,7 +15,7 @@ class Asistencia(models.Model):
     profesor = models.ForeignKey("Profesores.Profesor", on_delete=models.PROTECT)
     fecha = models.DateField()
     hora_entrada = models.TimeField()
-    hora_salida = models.TimeField()
+    hora_salida = models.TimeField(null=True, blank=True)
     estado = models.CharField(max_length=25, choices=ESTADOS)
     justificada = models.BooleanField(default=False)
     observaciones = models.TextField(max_length=1000, blank=True, null=True)

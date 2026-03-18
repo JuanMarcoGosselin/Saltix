@@ -51,7 +51,7 @@ def verificar_asistencia(profesor):
     ahora = datetime.now().time()
 
     for clase in horario_hoy: 
-        if clase.hora_inicio - timedelta(minutes=15) <= ahora <= clase.hora_fin + timedelta(minutes=15): 
+        if clase.hora_inicio - timedelta(minutes=15) <= ahora <= clase.hora_fin + timedelta(minutes=30): 
             asistencia = Asistencia.objects.filter(profesor=profesor, fecha=datetime.now().date(), horario=clase)
             if asistencia.exists(): 
                 return "Ya has registrado tu asistencia para esta clase."
