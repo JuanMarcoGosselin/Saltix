@@ -241,7 +241,7 @@
                     </div>
                     <div class="legend-item">
                         <div class="legend-dot dot-blue"></div>
-                         Vacaciones
+                         Clase calendarizada
                     </div>
                     <div class="legend-item">
                         <div class="legend-dot dot-gray"></div>
@@ -278,9 +278,9 @@
                                 {% endfor %}
 
                                 {% for registro in asistenciap %}
-                                    {% if registro.dia_semana == dia and registro.hora_inicio == hora %}
-                                    <div class="cal-event asistencia {{ registro.asistencia }}">
-                                        {{ registro.aula }}
+                                    {% if registro.dia_semana == dia and registro.hora_inicio.hour == hora %}
+                                    <div class="cal-event asistencia asistencia-{{ registro.estado }}">
+                                        {{ registro.profesor.usuario.nombre }}
                                     </div>
                                     {% endif %}
                                 {% endfor %}

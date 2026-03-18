@@ -200,16 +200,55 @@
   display: block;
 }
 
+/* Clase de salón — azul (sin asistencia aún) */
 .cal-event.clase-salon {
   background-color: #d0e8ff;
   border-left: 3px solid #3a8fd6;
   color: #1a4a7a;
 }
 
+/* Asistencia base (fallback) */
 .cal-event.asistencia {
   background-color: #d4edda;
   border-left: 3px solid #28a745;
   color: #155724;
+}
+
+/* ── Colores por tipo de asistencia ── */
+.cal-event.asistencia-presente {
+  background-color: #d4edda;
+  border-left: 3px solid #28a745;
+  color: #155724;
+}
+
+.cal-event.asistencia-falta {
+  background-color: #fdecea;
+  border-left: 3px solid #c0392b;
+  color: #c0392b;
+}
+
+.cal-event.asistencia-justificada {
+  background-color: #fff9e6;
+  border-left: 3px solid #fdcb6e;
+  color: #b07d00;
+}
+
+.cal-event.asistencia-inhabil {
+  background-color: #f0f0f0;
+  border-left: 3px solid #b2c0d0;
+  color: #888;
+}
+
+.cal-event.asistencia-pendiente {
+  background-color: #d0e8ff;
+  border-left: 3px solid #3a8fd6;
+  color: #1a4a7a;
+}
+
+.cal-event.asistencia-retardo {
+  background-color: #fff0e6;
+  border-left: 3px solid #e07000;
+  color: #a04800;
 }
 
 /* ── Status badges (se mantienen del diseño anterior) ── */
