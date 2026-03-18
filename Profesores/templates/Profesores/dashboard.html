@@ -250,17 +250,48 @@
                 </div>
 
                 <div class="calendar-grid">
-                    <div class="cal-header">
-                        <div class="cal-day-name">Lun</div>
-                        <div class="cal-day-name">Mar</div>
-                        <div class="cal-day-name">Mié</div>
-                        <div class="cal-day-name">Jue</div>
-                        <div class="cal-day-name">Vie</div>
-                        <div class="cal-day-name weekend">Sáb</div>
-                        <div class="cal-day-name weekend">Dom</div>
-                    </div>
-                    <div class="cal-body" id="cal-body"></div>
-                </div>
+                <table class="cal-table">
+                    <thead>
+                        <tr>
+                            <th class="cal-hour-col">Hora</th>
+                            <th class="cal-day-name">Lun</th>
+                            <th class="cal-day-name">Mar</th>
+                            <th class="cal-day-name">Mié</th>
+                            <th class="cal-day-name">Jue</th>
+                            <th class="cal-day-name">Vie</th>
+                            <th class="cal-day-name weekend">Sáb</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hora in horaclasep %}
+                        <tr class="cal-row">
+                            <td class="cal-hour">{{ hora }}:00</td>
+
+                            {% for dia in diasp %}
+                            <td class="cal-cell">
+                                {% for clase in clasep %}
+                                    {% if clase.dia_semana == dia and clase.hora_inicio.hour == hora %}
+                                    <div class="cal-event clase-salon {{ clase.clase_salon }}">
+                                        <p>Clase {{nombrep}} {{apellidop}}</p> 
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% for registro in asistenciap %}
+                                    {% if registro.dia_semana == dia and registro.hora_inicio == hora %}
+                                    <div class="cal-event asistencia {{ registro.asistencia }}">
+                                        {{ registro.aula }}
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            {% endfor %}
+
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
                 <div class="faltas-pendientes">
                     <div class="faltas-header">

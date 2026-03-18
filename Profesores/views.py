@@ -9,18 +9,23 @@ from .utils import obtener_horario_hoy
 def dashboard(request):
     usuario = request.user
     profesor = Profesor.objects.get(usuario=usuario.id)
-    
+    clasep = Horario.objects.filter(profesor=profesor.id)
     context = {
         "nombrep": profesor.usuario.nombre,
+        "apellidop": profesor.usuario.apellido,
         "salariop": profesor.costo_por_hora,
         "salariomensualp": profesor.costo_por_hora,
         "salarionetop": profesor.costo_por_hora,
         "horasesperadasp": 1,
-        "horasp": 2
+        "horasp": 2,
+        "horaclasep": range(5, 24),  # 5:00 a 23:00
+        "diasp": ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'],
+        "clasep": clasep,       
+        "asistenciap": Asistencia.objects.filter(profesor=profesor.id)
+    , 
     }
 
     return render(request, "Profesores/dashboard.html", context)
-
 
 @login_required
 def registro_asistencia(request):
