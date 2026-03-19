@@ -29,6 +29,18 @@ class Asistencia(models.Model):
 
     def __str__(self):
         return f"{self.profesor} | {self.fecha} | {self.estado}"
+    
+    @property
+    def color_clase(self):
+        if self.cancelada_institucional:
+            return "inhabil"
+        if self.estado == "ASISTENCIA":
+            return "presente"
+        if self.estado == "FALTA":
+            return "justificada" if self.justificada or self.tipo_registro == "MANUAL" else "falta"
+        if self.estado == "RETARDO":
+            return "retardo"
+        return "pendiente"
 
 class Incidencia(models.Model): 
     # Justificacion de faltas/retardos con su flujo de aprobacion.

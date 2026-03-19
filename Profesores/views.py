@@ -12,14 +12,13 @@ from django.views.decorators.http import require_POST
 import json
 from core.decorators import requiere_rol, requiere_permiso
 from django.http import JsonResponse
-
-
-
+from datetime import datetime
 
 def dashboard(request):
     usuario = request.user
     profesor = Profesor.objects.get(usuario=usuario.id)
     clasep = Horario.objects.filter(profesor=profesor.id)
+    diasp = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB']
     context = {
         "nombrep": profesor.usuario.nombre,
         "apellidop": profesor.usuario.apellido,
@@ -29,10 +28,11 @@ def dashboard(request):
         "horasesperadasp": 1,
         "horasp": 2,
         "horaclasep": range(5, 24),  # 5:00 a 23:00
-        "diasp": ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB'],
+        "horaactualp": datetime.now(timezone.UTC),
+        "diasp": diasp,
+        "diaactualp": diasp[datetime.today().weekday()],
         "clasep": clasep,       
-        "asistenciap": Asistencia.objects.filter(profesor=profesor.id)
-    , 
+        "asistenciap": Asistencia.objects.filter(profesor=profesor.id), 
     }
 
     return render(request, "Profesores/dashboard.html", context)

@@ -278,8 +278,9 @@
                                 {% endfor %}
 
                                 {% for registro in asistenciap %}
-                                    {% if registro.dia_semana == dia and registro.hora_inicio.hour == hora %}
-                                    <div class="cal-event asistencia asistencia-{{ registro.estado }}">
+                                {{horaactualp.hour}}
+                                    {% if registro.horario.dia_semana == diaactualp and registro.hora_entrada.hour == horaactualp.hour %}
+                                    <div class="cal-event asistencia asistencia-{{ registro.color_clase }}">
                                         {{ registro.profesor.usuario.nombre }}
                                     </div>
                                     {% endif %}
