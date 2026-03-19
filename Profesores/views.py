@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from Asistencias.models import Asistencia
 from .models import Horario, Profesor 
-from .utils import obtener_horario_hoy
+from .utils import obtener_horario_hoy, verificar_entrada
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -79,6 +79,11 @@ def asistencia_accion(request):
             horario_id=horario_id,
             fecha=hoy
         ).first()
+        
+        if not verificar_entrada(horario_id): 
+             return JsonResponse({
+            'error': 'Hora de entrada/salida invalido'
+        }, status=400)
 
         if not asistencia:
             asistencia = Asistencia.objects.create(

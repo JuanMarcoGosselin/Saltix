@@ -46,14 +46,31 @@ def obtener_horario(profesor):
     return (horario, horas_totales)
 
 
-def verificar_asistencia(profesor):
-    horario_hoy = obtener_horario_hoy(profesor)
-    ahora = datetime.now().time()
+def verificar_entrada(horario_id):
+    ahora = timezone.now()
+    hoy = ahora.date()
 
-    for clase in horario_hoy: 
-        if clase.hora_inicio - timedelta(minutes=15) <= ahora <= clase.hora_fin + timedelta(minutes=30): 
-            asistencia = Asistencia.objects.filter(profesor=profesor, fecha=datetime.now().date(), horario=clase)
-            if asistencia.exists(): 
-                return "Ya has registrado tu asistencia para esta clase."
-            else: 
-                return "Puedes registrar tu asistencia para esta clase."
+    horario = Horario.objects.get(id=horario_id)
+
+    tz = timezone.get_current_timezone()
+    print(tz)
+    inicio = datetime.combine(hoy, horario.hora_inicio, tzinfo=tz)
+
+    if inicio - timedelta(minutes=15) <= ahora <= inicio + timedelta(minutes=30): 
+        return True
+    return False
+
+def verficar_salida(horario_id): 
+    ahora = timezone.now()
+    hoy = ahora.date()
+
+    horario = Horario.objects.get(id=horario_id)
+
+    tz = timezone.get_current_timezone()
+    print(tz)
+
+    fin = datetime.combine(hoy, horario.hora_fin, tzinfo=tz)
+
+    if fin - timedelta(minutes=10) <= ahora <= fin + timedelta(minutes=30): 
+        return True
+    return False
