@@ -14,11 +14,62 @@ from core.decorators import requiere_rol, requiere_permiso
 from django.http import JsonResponse
 from datetime import datetime
 
+from django.utils import timezone
+from datetime import datetime, timedelta
+
 def dashboard(request):
     usuario = request.user
     profesor = Profesor.objects.get(usuario=usuario.id)
     clasep = Horario.objects.filter(profesor=profesor.id)
     diasp = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB']
+
+    # Calcular inicio y fin de la semana actual (Lun - Sab)
+    hoy = timezone.localtime(timezone.now()).date()
+    inicio_semana = hoy - timedelta(days=hoy.weekday())      # Lunes
+    fin_semana = inicio_semana + timedelta(days=5)            # Sábado
+
+    asistenciap = Asistencia.objects.filter(
+        profesor=profesor.id,
+        fecha__gte=inicio_semana,
+        fecha__lte=fin_semana,
+    )
+
+    horario_color = {}
+
+    # Default pendiente para todas las clases
+    for clase in clasep:
+        horario_color[clase.id] = "pendiente"
+
+    hoy = timezone.localtime(timezone.now())
+
+    for clase in clasep:
+        # Calcular la fecha real de esa clase en la semana actual
+        dias_map = {'LUN': 0, 'MAR': 1, 'MIE': 2, 'JUE': 3, 'VIE': 4, 'SAB': 5}
+        dia_clase = dias_map.get(clase.dia_semana, -1)
+        if dia_clase == -1:
+            continue
+
+        fecha_clase = inicio_semana + timedelta(days=dia_clase)
+
+        # Si la clase aún no ha sucedido, se queda pendiente
+        if fecha_clase > hoy.date():
+            horario_color[clase.id] = "pendiente"
+            continue
+
+        # Si ya pasó pero no tiene registro, es falta
+        if fecha_clase < hoy.date():
+            registro = asistenciap.filter(horario=clase, fecha=fecha_clase).first()
+            horario_color[clase.id] = registro.color_clase if registro else "falta"
+            continue
+
+        # Si es hoy, verificar si ya pasó la hora
+        if fecha_clase == hoy.date():
+            if clase.hora_inicio <= hoy.time():
+                registro = asistenciap.filter(horario=clase, fecha=fecha_clase).first()
+                horario_color[clase.id] = registro.color_clase if registro else "falta"
+            else:
+                horario_color[clase.id] = "pendiente"
+
     context = {
         "nombrep": profesor.usuario.nombre,
         "apellidop": profesor.usuario.apellido,
@@ -27,12 +78,13 @@ def dashboard(request):
         "salarionetop": profesor.costo_por_hora,
         "horasesperadasp": 1,
         "horasp": 2,
-        "horaclasep": range(5, 24),  # 5:00 a 23:00
-        "horaactualp": datetime.now(timezone.UTC),
+        "horaclasep": range(5, 24),
+        "horaactualp": timezone.localtime(timezone.now()),
         "diasp": diasp,
         "diaactualp": diasp[datetime.today().weekday()],
-        "clasep": clasep,       
-        "asistenciap": Asistencia.objects.filter(profesor=profesor.id), 
+        "clasep": clasep,
+        "asistenciap": asistenciap,
+        "horario_color": horario_color,
     }
 
     return render(request, "Profesores/dashboard.html", context)

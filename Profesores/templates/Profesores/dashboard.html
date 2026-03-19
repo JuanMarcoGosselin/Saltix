@@ -1,4 +1,5 @@
 {% extends "core/layout.html" %}
+{% load my_filters %}
 {% load static %}
 {% block title %}SALTIX - Profesor{% endblock %}
 {% block fonts %}
@@ -271,18 +272,9 @@
                             <td class="cal-cell">
                                 {% for clase in clasep %}
                                     {% if clase.dia_semana == dia and clase.hora_inicio.hour == hora %}
-                                    <div class="cal-event clase-salon {{ clase.clase_salon }}">
-                                        <p>Clase {{nombrep}} {{apellidop}}</p> 
-                                    </div>
-                                    {% endif %}
-                                {% endfor %}
-
-                                {% for registro in asistenciap %}
-                                {{horaactualp.hour}}
-                                    {% if registro.horario.dia_semana == diaactualp and registro.hora_entrada.hour == horaactualp.hour %}
-                                    <div class="cal-event asistencia asistencia-{{ registro.color_clase }}">
-                                        {{ registro.profesor.usuario.nombre }}
-                                    </div>
+                                        <div class="cal-event clase-salon asistencia-{{ horario_color|get_item:clase.id }}">
+                                            <p>Clase {{nombrep}} {{apellidop}}</p>
+                                        </div>
                                     {% endif %}
                                 {% endfor %}
                             </td>
