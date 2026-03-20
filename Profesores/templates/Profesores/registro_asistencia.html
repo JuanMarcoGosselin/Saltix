@@ -46,37 +46,21 @@
 									<div class="schedule-room">Aula</div>
 								</div>
 
+							<button
+								class="btn-register{% if horario.salida %} is-done{% endif %}"
+								data-url="{% url 'asistencia_accion' %}"
+								data-horario="{{ horario.id }}"
+								onclick="handleAsistencia(this)"
+								>
 								{% if not horario.ya_registrada %}
-								<form action="{% url 'profesores_registrar_asistencia' %}" method="POST" name="form_registrarAsistencia">
-									{% csrf_token %}
-									<input type="hidden" value="{{ horario.id }}" name="horario_id">
-									<input type="hidden"  value="{{ profesor_id }}" name="profesor_id">
-									<button
-										class="btn-register{% if horario.ya_registrada %} is-done{% endif %}"
-										type="submit"
-										onclick="markAttendance(this)"
-									>
-										{% if horario.ya_registrada %}Asistencia registrada{% else %}Registrar asistencia{% endif %}
-									</button>
-								</form>
+									Registrar asistencia
+								{% elif not horario.salida %}
+									Registrar salida
+								{% else %}
+									Asistencia registrada
 								{% endif %}
+							</button>
 									
-								{% if horario.ya_registrada and not horario.salida %}
-								<form action="{% url 'profesores_registrar_salida' %}" method="POST" name="form_registrarSalida">
-									{% csrf_token %}
-									<input type="hidden" value="{{ horario.id }}" name="horario_id">
-									<input type="hidden"  value="{{ profesor_id }}" name="profesor_id">
-									<input type="hidden" value="{{ horario.asistencia_id }}" name="asistencia_id">
-
-									<button
-										class="btn-register{% if horario.salida %} is-done{% endif %}"
-										type="submit"
-										onclick="markExit(this)"
-									>
-										{% if horario.salida %}Salida registrada{% else %}Registrar salida{% endif %}
-									</button>
-								</form>
-								{% endif %}
 							</div>
 						{% endfor %}
 					{% else %}

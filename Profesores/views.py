@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from Asistencias.models import Asistencia
 from .models import Horario, Profesor 
-from .utils import obtener_horario_hoy
+from .utils import obtener_horario_hoy, verificar_entrada
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -95,11 +95,6 @@ def registro_asistencia(request):
     hoy = timezone.localdate()
 
     horarios_hoy = obtener_horario_hoy(profesor).order_by("hora_inicio")
-    asistencias_hoy_ids = set(
-        Asistencia.objects.filter(profesor=profesor, fecha=hoy, horario__in=horarios_hoy).values_list(
-            "horario_id", flat=True
-        )
-    )
 
     asistencias_hoy = {
         a.horario_id: a
@@ -113,7 +108,6 @@ def registro_asistencia(request):
         horario.asistencia_id = asistencia.id if asistencia else None
 
     context = {
-        "profesor_id": profesor.id,
         "profesor_nombre": f"{profesor.usuario.nombre} {profesor.usuario.apellido}".strip(),
         "profesor_iniciales": f"{(profesor.usuario.nombre or 'U')[:1]}{(profesor.usuario.apellido or '')[:1]}".upper(),
         "profesor_rol": "Profesor",
@@ -123,38 +117,60 @@ def registro_asistencia(request):
     return render(request, "Profesores/registro_asistencia.html", context)
 
 
+@require_POST
 @requiere_rol("Profesor")
-def registrar_asistencia(request):
+def asistencia_accion(request):
     try:
-        profesor_id = request.POST.get("profesor_id")
-        horario_id = request.POST.get("horario_id")
+        body = json.loads(request.body)
+        horario_id = body.get("horario_id")
+
         if not horario_id:
-            return JsonResponse({'error': 'ID de horario no proporcionado'}, status=400)
-        
-        asistencia = Asistencia.objects.create(
-            profesor_id=profesor_id,
+            return JsonResponse({'error': 'Horario no proporcionado'}, status=400)
+
+        profesor = Profesor.objects.get(usuario=request.user.id)
+        hoy = timezone.localdate()
+
+        asistencia = Asistencia.objects.filter(
+            profesor=profesor,
             horario_id=horario_id,
-            fecha=timezone.localdate(),
-            hora_entrada=timezone.now().time(),
-            estado="ASISTENCIA",
-            creado_por=request.user
-        )
+            fecha=hoy
+        ).first()
+        
+        if not verificar_entrada(horario_id): 
+             return JsonResponse({
+            'error': 'Hora de entrada/salida invalido'
+        }, status=400)
+
+        if not asistencia:
+            asistencia = Asistencia.objects.create(
+                profesor=profesor,
+                horario_id=horario_id,
+                fecha=hoy,
+                hora_entrada=timezone.now().time(),
+                estado="ASISTENCIA",
+                creado_por=request.user
+            )
+
+            return JsonResponse({
+                'tipo': 'entrada',
+                'message': 'Asistencia registrada correctamente',
+                'asistencia_id': asistencia.id
+            })
+
+        if asistencia and not asistencia.hora_salida:
+            asistencia.hora_salida = timezone.now().time()
+            asistencia.save()
+
+            return JsonResponse({
+                'tipo': 'salida',
+                'message': 'Salida registrada correctamente'
+            })
 
         return JsonResponse({
-            'success': f'Asistencia registrada para horario {horario_id}',
-            'asistencia_id': asistencia.id
-        })
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'JSON inválido'}, status=400)
+            'error': 'Ya registraste entrada y salida para este horario'
+        }, status=400)
 
-@requiere_rol("Profesor") 
-def registrar_salida(request):
-    try:
-        asistencia_id = request.POST.get("asistencia_id")
-        asistencia = Asistencia.objects.get(id=asistencia_id, profesor__usuario=request.user)
-        asistencia.hora_salida = timezone.now().time()
-        asistencia.save()
-        
-        return JsonResponse({'success': f'Salida registrada para horario {asistencia_id}'})
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)
+        }, status=500)
