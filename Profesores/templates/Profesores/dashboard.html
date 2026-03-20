@@ -274,6 +274,9 @@
                                     {% if clase.dia_semana == dia and clase.hora_inicio.hour == hora %}
                                         <div class="cal-event clase-salon asistencia-{{ horario_color|get_item:clase.id }}">
                                             <p>Clase {{nombrep}} {{apellidop}}</p>
+                                            <small style="display:block;opacity:.9">
+                                                {{ horario_estado|get_item:clase.id|title }}
+                                            </small>
                                         </div>
                                     {% endif %}
                                 {% endfor %}

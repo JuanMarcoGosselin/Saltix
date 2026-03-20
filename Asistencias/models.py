@@ -10,6 +10,7 @@ class Asistencia(models.Model):
         ("ASISTENCIA", "Asistencia"),
         ("RETARDO", "Retardo"),
         ("FALTA", "Falta"),
+        ("JUSTIFICADA", "Justificada"),
     ]
 
     profesor = models.ForeignKey("Profesores.Profesor", on_delete=models.PROTECT)
@@ -34,10 +35,12 @@ class Asistencia(models.Model):
     def color_clase(self):
         if self.cancelada_institucional:
             return "inhabil"
+        if self.justificada or self.estado == "JUSTIFICADA":
+            return "justificada"
         if self.estado == "ASISTENCIA":
             return "presente"
         if self.estado == "FALTA":
-            return "justificada" if self.justificada or self.tipo_registro == "MANUAL" else "falta"
+            return "falta"
         if self.estado == "RETARDO":
             return "retardo"
         return "pendiente"
