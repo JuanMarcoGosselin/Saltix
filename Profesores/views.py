@@ -1,29 +1,44 @@
 import json
+from datetime import datetime as dt
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Prefetch
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from Asistencias.models import Asistencia
-from Asistencias.services import obtener_color_estado, obtener_estado_clase
+from Asistencias.services import (
+    MAX_WEEK_OFFSET,
+    obtener_color_estado,
+    obtener_estado_clase,
+    unjustified_absences_queryset,
+)
 from core.decorators import requiere_rol
 
 from .models import Horario, Profesor
-from .utils import obtener_horario_hoy, verificar_entrada
+from .utils import obtener_horario_hoy, verificar_entrada, verificar_salida
 
+
+@login_required
 def dashboard(request):
     usuario = request.user
     profesor = Profesor.objects.select_related("usuario").get(usuario=usuario.id)
     diasp = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB']
 
-    # Calcular inicio y fin de la semana actual (Lun - Sab)
     hoy = timezone.localdate()
-    inicio_semana = hoy - timedelta(days=hoy.weekday())      # Lunes
-    fin_semana = inicio_semana + timedelta(days=5)            # Sábado
+
+    try:
+        week_offset = int(request.GET.get("week_offset", 0) or 0)
+    except (TypeError, ValueError):
+        week_offset = 0
+    week_offset = max(0, min(week_offset, MAX_WEEK_OFFSET))
+    inicio_semana = hoy - timedelta(days=hoy.weekday()) - timedelta(weeks=week_offset)
+    fin_semana = inicio_semana + timedelta(days=5)
 
     asistenciap = Asistencia.objects.filter(profesor=profesor, fecha__range=(inicio_semana, fin_semana))
 
@@ -47,6 +62,39 @@ def dashboard(request):
         horario_color[clase.id] = obtener_color_estado(estado)
         horario_estado[clase.id] = estado
 
+    faltas_qs, faltas_rango_semana, faltas_rango_periodo, faltas_rango_efectivo = unjustified_absences_queryset(
+        profesor=profesor,
+        hoy=hoy,
+        week_offset=week_offset,
+    )
+    faltas_paginator = Paginator(faltas_qs, 12)
+    faltas_page = faltas_paginator.get_page(request.GET.get("page"))
+
+    if request.GET.get("partial") == "faltas":
+        rows_html = render_to_string(
+            "Profesores/partials/faltas_rows.html",
+            {"faltas_page": faltas_page},
+            request=request,
+        )
+        return JsonResponse(
+            {
+                "rows_html": rows_html,
+                "count_total": faltas_page.paginator.count,
+                "page_number": faltas_page.number,
+                "num_pages": faltas_page.paginator.num_pages,
+                "has_previous": faltas_page.has_previous(),
+                "has_next": faltas_page.has_next(),
+                "week_offset": week_offset,
+                "week_offset_prev": min(MAX_WEEK_OFFSET, week_offset + 1),
+                "week_offset_next": max(0, week_offset - 1),
+                "max_week_offset": MAX_WEEK_OFFSET,
+                "semana_inicio": faltas_rango_semana.inicio.strftime("%d/%m/%Y"),
+                "semana_fin": faltas_rango_semana.fin.strftime("%d/%m/%Y"),
+                "periodo_inicio": faltas_rango_periodo.inicio.strftime("%d/%m/%Y"),
+                "periodo_fin": faltas_rango_periodo.fin.strftime("%d/%m/%Y"),
+            }
+        )
+
     context = {
         "nombrep": profesor.usuario.nombre,
         "apellidop": profesor.usuario.apellido,
@@ -63,9 +111,20 @@ def dashboard(request):
         "asistenciap": asistenciap,
         "horario_color": horario_color,
         "horario_estado": horario_estado,
+        "week_offset": week_offset,
+        "max_week_offset": MAX_WEEK_OFFSET,
+        "week_offset_prev": min(MAX_WEEK_OFFSET, week_offset + 1),
+        "week_offset_next": max(0, week_offset - 1),
+        "faltas_page": faltas_page,
+        "faltas_semana_inicio": faltas_rango_semana.inicio,
+        "faltas_semana_fin": faltas_rango_semana.fin,
+        "faltas_periodo_inicio": faltas_rango_periodo.inicio,
+        "faltas_periodo_fin": faltas_rango_periodo.fin,
+        "faltas_rango_efectivo": faltas_rango_efectivo,
     }
 
     return render(request, "Profesores/dashboard.html", context)
+
 
 @login_required
 def registro_asistencia(request):
@@ -113,31 +172,50 @@ def asistencia_accion(request):
             horario_id=horario_id,
             fecha=hoy
         ).first()
-        
-        if not verificar_entrada(horario_id): 
-             return JsonResponse({
-            'error': 'Hora de entrada/salida invalido'
-        }, status=400)
 
         if not asistencia:
+            if not verificar_entrada(horario_id):
+                return JsonResponse({
+                    'error': 'Fuera del horario permitido para registrar entrada'
+                }, status=400)
+
+            ahora = timezone.now()
+            horario = Horario.objects.get(id=horario_id)
+            tz = timezone.get_current_timezone()
+
+            inicio = timezone.make_aware(dt.combine(hoy, horario.hora_inicio), tz)
+            if ahora > inicio:
+                estado = "RETARDO"
+                tolerancia_minutos = int((ahora - inicio).total_seconds() // 60)
+            else:
+                estado = "ASISTENCIA"
+                tolerancia_minutos = 0
+
             asistencia = Asistencia.objects.create(
                 profesor=profesor,
                 horario_id=horario_id,
                 fecha=hoy,
-                hora_entrada=timezone.now().time(),
-                estado="ASISTENCIA",
-                creado_por=request.user
+                hora_entrada=ahora.time(),
+                estado=estado,
+                tolerancia_minutos=tolerancia_minutos,
+                creado_por=request.user,
             )
 
             return JsonResponse({
                 'tipo': 'entrada',
+                'estado': estado,
                 'message': 'Asistencia registrada correctamente',
-                'asistencia_id': asistencia.id
+                'asistencia_id': asistencia.id,
             })
 
-        if asistencia and not asistencia.hora_salida:
+        if not asistencia.hora_salida:
+            if not verificar_salida(horario_id):
+                return JsonResponse({
+                    'error': 'Fuera del horario permitido para registrar salida'
+                }, status=400)
+
             asistencia.hora_salida = timezone.now().time()
-            asistencia.save()
+            asistencia.save(update_fields=["hora_salida"])
 
             return JsonResponse({
                 'tipo': 'salida',

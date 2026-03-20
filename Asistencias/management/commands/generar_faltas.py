@@ -10,21 +10,37 @@ from Profesores.models import Horario
 
 
 class Command(BaseCommand):
-    help = "Genera registros de 'FALTA' para clases del día ya finalizadas sin registro de asistencia."
+    help = (
+        "Genera registros de 'FALTA' para clases del día ya finalizadas sin registro de asistencia.\n"
+        "\n"
+        "Uso en producción (cron job diario, ej. a las 23:30):\n"
+        "  python manage.py generar_faltas\n"
+        "\n"
+        "Uso en desarrollo (simular cualquier fecha pasada):\n"
+        "  python manage.py generar_faltas --fecha 2026-03-18\n"
+        "  python manage.py generar_faltas --fecha 2026-03-18 --dry-run\n"
+        "\n"
+        "Configuración de cron recomendada (crontab -e):\n"
+        "  30 23 * * 1-6 /ruta/venv/bin/python /ruta/manage.py generar_faltas >> /var/log/saltix_faltas.log 2>&1\n"
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--fecha",
             type=str,
             default=None,
-            help="Fecha a procesar en formato YYYY-MM-DD (por defecto: hoy en zona local).",
+            help="Fecha a procesar en formato YYYY-MM-DD (por defecto: hoy en zona local). "
+                "Útil en desarrollo para simular días pasados.",
         )
-        parser.add_argument("--dry-run", action="store_true", help="No crea registros, solo muestra el conteo.")
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="No crea registros, solo muestra el conteo.",
+        )
 
     def handle(self, *args, **options):
         fecha = self._parse_fecha(options.get("fecha"))
 
-        # Horario.DIAS no incluye DOM; si hoy es domingo, no hay clases programadas.
         dias_codigos = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]
         dia_codigo = dias_codigos[fecha.weekday()]
         if dia_codigo == "DOM":
@@ -60,7 +76,10 @@ class Command(BaseCommand):
                     horario_id=horario.id,
                     fecha=fecha,
                     hora_entrada=horario.hora_inicio,
+                    hora_salida=horario.hora_fin,
                     estado="FALTA",
+                    tipo_registro="MANUAL",
+                    justificada=False,
                 )
             )
 
@@ -70,10 +89,9 @@ class Command(BaseCommand):
 
         if por_crear:
             Asistencia.objects.bulk_create(por_crear)
-        self.stdout.write(f"{len(por_crear)} faltas generadas.")
+        self.stdout.write(f"{len(por_crear)} faltas generadas para {fecha}.")
 
     def _parse_fecha(self, fecha_str: str | None) -> date:
         if not fecha_str:
             return timezone.localdate()
         return date.fromisoformat(fecha_str)
-

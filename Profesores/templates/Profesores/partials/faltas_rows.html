@@ -1,0 +1,43 @@
+{% for falta in faltas_page.object_list %}
+<tr
+    data-asistencia-id="{{ falta.id }}"
+    data-modal-label="{{ falta.fecha|date:'d/m/Y' }} | {{ falta.horario.hora_inicio|time:'H:i' }}-{{ falta.horario.hora_fin|time:'H:i' }}"
+    data-estado="{{ falta.estado }}"
+    style="cursor:pointer;background:{% if falta.estado == 'RETARDO' %}#fffbf0{% else %}#fff7f7{% endif %}"
+>
+    <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
+        {{ falta.profesor.usuario.nombre }} {{ falta.profesor.usuario.apellido }}
+    </td>
+    <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
+        {{ falta.fecha|date:"d/m/Y" }}
+    </td>
+    <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
+        {{ falta.horario.dia_semana }} {{ falta.horario.hora_inicio|time:"H:i" }}–{{ falta.horario.hora_fin|time:"H:i" }}
+        {% if falta.horario.aula %}(Aula {{ falta.horario.aula }}){% endif %}
+    </td>
+    <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
+        {% if falta.estado == "RETARDO" %}
+            <span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#fff3cd;color:#856404">
+                Retardo sin justificar{% if falta.tolerancia_minutos %} ({{ falta.tolerancia_minutos }} min){% endif %}
+            </span>
+        {% else %}
+            <span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#fdecea;color:#c0392b">
+                Falta sin justificar
+            </span>
+        {% endif %}
+    </td>
+    <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
+        <button
+            type="button"
+            data-justificar-btn="1"
+            style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:8px;padding:.4rem 1rem;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer"
+        >Justificar</button>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="5" style="padding:1.5rem;text-align:center;font-size:.85rem;color:var(--gray-400)">
+        ✅ Sin faltas ni retardos pendientes de justificación en esta semana
+    </td>
+</tr>
+{% endfor %}

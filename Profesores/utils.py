@@ -3,22 +3,14 @@ from datetime import datetime, timedelta
 from Asistencias.models import Asistencia
 from django.utils import timezone
 
-"""
-Obtener el Horario del profesor
-el horario de el día de hoy
-Verificar que la asistencia corresponde al dia y hora actual
-Logica de Tolerancia (30min antes de inicio, 10min despues de incio, 10min antes de acabar, 30min despues de acabar)
-Verificar que no exista una asistencia ya registrada para esa clase
-Calcular 
-"""
 def obtener_horario_hoy(profesor):
     dias = {
-        0 : "LUN",
-        1 : "MAR", 
-        2 : "MIE",
-        3 : "JUE", 
-        4 : "VIE", 
-        5 : "SAB"
+        0: "LUN",
+        1: "MAR",
+        2: "MIE",
+        3: "JUE",
+        4: "VIE",
+        5: "SAB",
     }
 
     hoy = timezone.localdate()
@@ -28,21 +20,21 @@ def obtener_horario_hoy(profesor):
     return Horario.objects.filter(profesor=profesor, dia_semana=dia)
 
 
-def obtener_horario(profesor): 
+def obtener_horario(profesor):
     dias = {
-        0 : "LUN",
-        1 : "MAR", 
-        2 : "MIE",
-        3 : "JUE", 
-        4 : "VIE", 
-        5 : "SAB"
+        0: "LUN",
+        1: "MAR",
+        2: "MIE",
+        3: "JUE",
+        4: "VIE",
+        5: "SAB",
     }
     horario = {}
     horas_totales = 0
     for dia in dias:
         horario[dia] = Horario.objects.filter(profesor=profesor, dia_semana=dias[dia])
-        for clase in horario[dia]: 
-           horas_totales += (clase.hora_fin.hour - clase.hora_inicio.hour)
+        for clase in horario[dia]:
+            horas_totales += clase.hora_fin.hour - clase.hora_inicio.hour
     return (horario, horas_totales)
 
 
@@ -51,26 +43,18 @@ def verificar_entrada(horario_id):
     hoy = ahora.date()
 
     horario = Horario.objects.get(id=horario_id)
-
     tz = timezone.get_current_timezone()
-    print(tz)
-    inicio = datetime.combine(hoy, horario.hora_inicio, tzinfo=tz)
+    inicio = timezone.make_aware(datetime.combine(hoy, horario.hora_inicio), tz)
 
-    if inicio - timedelta(minutes=15) <= ahora <= inicio + timedelta(minutes=30): 
-        return True
-    return False
+    return inicio - timedelta(minutes=15) <= ahora <= inicio + timedelta(minutes=30)
 
-def verficar_salida(horario_id): 
+
+def verificar_salida(horario_id):
     ahora = timezone.now()
     hoy = ahora.date()
 
     horario = Horario.objects.get(id=horario_id)
-
     tz = timezone.get_current_timezone()
-    print(tz)
+    fin = timezone.make_aware(datetime.combine(hoy, horario.hora_fin), tz)
 
-    fin = datetime.combine(hoy, horario.hora_fin, tzinfo=tz)
-
-    if fin - timedelta(minutes=10) <= ahora <= fin + timedelta(minutes=30): 
-        return True
-    return False
+    return fin - timedelta(minutes=10) <= ahora <= fin + timedelta(minutes=30)
