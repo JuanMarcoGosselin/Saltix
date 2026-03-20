@@ -266,7 +266,9 @@
                     <tbody>
                         {% for hora in horaclasep %}
                         <tr class="cal-row">
-                            <td class="cal-hour">{{ hora }}:00</td>
+                            <td class="cal-hour {% if hora == horaactualp.hour %}cal-hour-active{% endif %}">
+                                {{ hora }}:00
+                            </td>
 
                             {% for dia in diasp %}
                             <td class="cal-cell">
@@ -284,6 +286,25 @@
                         {% endfor %}
                     </tbody>
                 </table>
+
+                <script>
+                    function marcarHoraActual() {
+                        document.querySelectorAll('.cal-hour-active')
+                            .forEach(el => el.classList.remove('cal-hour-active'));
+
+                        const horaActual = new Date().getHours();
+
+                        document.querySelectorAll('.cal-hour').forEach(el => {
+                            const horaCell = parseInt(el.textContent);
+                            if (horaCell === horaActual) {
+                                el.classList.add('cal-hour-active');
+                            }
+                        });
+                    }
+
+                    marcarHoraActual();
+                    setInterval(marcarHoraActual, 60000);
+                </script>
             </div>
 
                 <div class="faltas-pendientes">

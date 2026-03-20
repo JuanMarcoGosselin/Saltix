@@ -251,6 +251,14 @@
   color: #a04800;
 }
 
+/* ── Marcador de hora actual en el horario de clase semanal ── */
+.cal-hour-active {
+    background: #007BFF !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    border-right: 2px solid #007BFF;
+}
+
 /* ── Status badges (se mantienen del diseño anterior) ── */
 .day-status {
   width: 28px;
