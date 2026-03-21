@@ -3,6 +3,7 @@
     data-asistencia-id="{{ falta.id }}"
     data-modal-label="{{ falta.fecha|date:'d/m/Y' }} | {{ falta.horario.hora_inicio|time:'H:i' }}-{{ falta.horario.hora_fin|time:'H:i' }}"
     data-estado="{{ falta.estado }}"
+    data-incidencia-pendiente="{% if falta.tiene_incidencia_pendiente %}1{% else %}0{% endif %}"
     style="cursor:pointer;background:{% if falta.estado == 'RETARDO' %}#fffbf0{% else %}#fff7f7{% endif %}"
 >
     <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
@@ -16,7 +17,11 @@
         {% if falta.horario.aula %}(Aula {{ falta.horario.aula }}){% endif %}
     </td>
     <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
-        {% if falta.estado == "RETARDO" %}
+        {% if falta.tiene_incidencia_pendiente %}
+            <span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#e7f1ff;color:#004085">
+                Justificación pendiente
+            </span>
+        {% elif falta.estado == "RETARDO" %}
             <span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#fff3cd;color:#856404">
                 Retardo sin justificar{% if falta.tolerancia_minutos %} ({{ falta.tolerancia_minutos }} min){% endif %}
             </span>
@@ -30,8 +35,9 @@
         <button
             type="button"
             data-justificar-btn="1"
-            style="background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:8px;padding:.4rem 1rem;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer"
-        >Justificar</button>
+            {% if falta.tiene_incidencia_pendiente %}disabled{% endif %}
+            style="{% if falta.tiene_incidencia_pendiente %}background:var(--gray-200);color:var(--gray-600);cursor:not-allowed;opacity:.8{% else %}background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer{% endif %};border:none;border-radius:8px;padding:.4rem 1rem;font-family:'Plus Jakarta Sans',sans-serif;font-size:.78rem;font-weight:600"
+        >{% if falta.tiene_incidencia_pendiente %}En revisión{% else %}Justificar{% endif %}</button>
     </td>
 </tr>
 {% empty %}

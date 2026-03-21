@@ -16,13 +16,13 @@ from Asistencias.services import (
     MAX_WEEK_OFFSET,
     obtener_color_estado,
     obtener_estado_clase,
+    period_stats,
     unjustified_absences_queryset,
 )
 from core.decorators import requiere_rol
 
 from .models import Horario, Profesor
 from .utils import obtener_horario_hoy, verificar_entrada, verificar_salida
-
 
 @login_required
 def dashboard(request):
@@ -67,18 +67,26 @@ def dashboard(request):
         hoy=hoy,
         week_offset=week_offset,
     )
+    stats = period_stats(profesor=profesor, hoy=hoy)
     faltas_paginator = Paginator(faltas_qs, 12)
     faltas_page = faltas_paginator.get_page(request.GET.get("page"))
 
     if request.GET.get("partial") == "faltas":
-        rows_html = render_to_string(
-            "Profesores/partials/faltas_rows.html",
-            {"faltas_page": faltas_page},
-            request=request,
-        )
+        partial_ctx = {
+            "faltas_page": faltas_page,
+            "horaclasep": range(5, 24),
+            "diasp": diasp,
+            "clasep": clasep,
+            "horario_color": horario_color,
+            "horario_estado": horario_estado,
+        }
+        rows_html   = render_to_string("Profesores/partials/faltas_rows.html",   partial_ctx, request=request)
+        horario_html = render_to_string("Profesores/partials/horario_semana.html", partial_ctx, request=request)
         return JsonResponse(
             {
                 "rows_html": rows_html,
+                "horario_html": horario_html,
+                "stats": stats,
                 "count_total": faltas_page.paginator.count,
                 "page_number": faltas_page.number,
                 "num_pages": faltas_page.paginator.num_pages,
@@ -121,12 +129,17 @@ def dashboard(request):
         "faltas_periodo_inicio": faltas_rango_periodo.inicio,
         "faltas_periodo_fin": faltas_rango_periodo.fin,
         "faltas_rango_efectivo": faltas_rango_efectivo,
+        "stat_asistencias": stats.get("asistencias", 0),
+        "stat_retardos": stats.get("retardos", 0),
+        "stat_faltas": stats.get("faltas", 0),
+        "stat_justificadas": stats.get("justificadas", 0),
     }
 
     return render(request, "Profesores/dashboard.html", context)
 
 
 @login_required
+@requiere_rol("Profesor")
 def registro_asistencia(request):
     profesor = Profesor.objects.select_related("usuario").get(usuario=request.user.id)
     hoy = timezone.localdate()

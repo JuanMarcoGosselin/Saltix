@@ -5,7 +5,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
-from Asistencias.models import Asistencia
+from Asistencias.models import Asistencia, Incidencia
 from core.decorators import requiere_rol
 from Profesores.models import Profesor
 
@@ -21,7 +21,6 @@ def _get_json_body(request):
 @login_required
 @requiere_rol("Profesor", "jefatura", "administrador")
 def justificar_asistencia(request):
-
     payload = _get_json_body(request) if request.content_type.startswith("application/json") else request.POST
     if payload is None:
         return JsonResponse({"error": "JSON inválido."}, status=400)
@@ -40,7 +39,9 @@ def justificar_asistencia(request):
     qs = Asistencia.objects.select_related("profesor", "profesor__usuario", "horario")
 
     rol_nombre = getattr(getattr(request.user, "rol_id", None), "nombre", "") or ""
-    if rol_nombre.lower() == "profesor":
+    es_profesor = rol_nombre.lower() == "profesor"
+
+    if es_profesor:
         try:
             profesor = Profesor.objects.get(usuario=request.user.id)
         except Profesor.DoesNotExist:
@@ -55,6 +56,25 @@ def justificar_asistencia(request):
         if asistencia.cancelada_institucional:
             return JsonResponse({"error": "La asistencia está cancelada institucionalmente."}, status=400)
 
+        if es_profesor:
+            # El profesor solo solicita una incidencia; la asistencia NO se marca como justificada
+            # hasta que la incidencia sea aprobada.
+            if asistencia.estado not in ("FALTA", "RETARDO"):
+                return JsonResponse({"error": "Solo se pueden justificar faltas o retardos."}, status=400)
+
+            if Incidencia.objects.filter(asistencia=asistencia, estado="PENDIENTE").exists():
+                return JsonResponse({"ok": True, "already": True, "pending": True})
+
+            Incidencia.objects.create(
+                asistencia=asistencia,
+                motivo=motivo,
+                tipo=asistencia.estado,  # "FALTA" o "RETARDO"
+                estado="PENDIENTE",
+                solicitante=request.user,
+            )
+            return JsonResponse({"ok": True, "pending": True})
+
+        # jefatura/administrador: comportamiento legado (justifica directamente)
         if asistencia.estado not in ("FALTA", "RETARDO", "JUSTIFICADA"):
             return JsonResponse({"error": "Solo se pueden justificar faltas o retardos."}, status=400)
 
@@ -67,3 +87,4 @@ def justificar_asistencia(request):
         asistencia.save(update_fields=["justificada", "estado", "observaciones"])
 
     return JsonResponse({"ok": True})
+

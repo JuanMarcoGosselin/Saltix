@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-from django.db.models import QuerySet
+from django.db.models import Exists, OuterRef, QuerySet
 from django.utils import timezone
 
-from Asistencias.models import Asistencia
+from Asistencias.models import Asistencia, Incidencia
 
 
 MAX_WEEK_OFFSET = 8  # ~2 meses
@@ -46,7 +46,6 @@ def unjustified_absences_queryset(
     hoy: date | None = None,
     week_offset: int = 0,
 ) -> tuple[QuerySet[Asistencia], DateRange, DateRange, DateRange | None]:
-
     hoy = hoy or timezone.localdate()
     week_offset = max(0, min(int(week_offset), MAX_WEEK_OFFSET))
 
@@ -67,8 +66,29 @@ def unjustified_absences_queryset(
     else:
         qs = qs.filter(fecha__range=(rango_efectivo.inicio, rango_efectivo.fin))
 
+    pendiente_qs = Incidencia.objects.filter(asistencia_id=OuterRef("pk"), estado="PENDIENTE")
+    qs = qs.annotate(tiene_incidencia_pendiente=Exists(pendiente_qs))
+
     qs = qs.select_related("profesor", "horario", "profesor__usuario").order_by("-fecha", "-id")
     return qs, rango_semana, rango_periodo, rango_efectivo
+
+
+def period_stats(*, profesor, hoy: date | None = None) -> dict:
+    hoy = hoy or timezone.localdate()
+    periodo = simulated_payroll_period(hoy=hoy)
+
+    qs = Asistencia.objects.filter(
+        profesor=profesor,
+        fecha__range=(periodo.inicio, periodo.fin),
+        cancelada_institucional=False,
+    )
+
+    return {
+        "asistencias": qs.filter(estado="ASISTENCIA").count(),
+        "retardos": qs.filter(estado="RETARDO", justificada=False).count(),
+        "faltas": qs.filter(estado="FALTA", justificada=False).count(),
+        "justificadas": qs.filter(justificada=True).count(),
+    }
 
 
 def all_absences_queryset(
@@ -77,7 +97,6 @@ def all_absences_queryset(
     fecha_inicio: date | None = None,
     fecha_fin: date | None = None,
 ) -> QuerySet[Asistencia]:
-
     qs = Asistencia.objects.filter(
         estado__in=("FALTA", "JUSTIFICADA"),
         cancelada_institucional=False,
@@ -90,3 +109,4 @@ def all_absences_queryset(
         qs = qs.filter(fecha__lte=fecha_fin)
 
     return qs.select_related("profesor", "horario", "profesor__usuario").order_by("-fecha", "-id")
+

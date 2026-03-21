@@ -197,6 +197,7 @@
             <a class="btn-primary" href="{% url 'profesores_registro_asistencia' %}">Registrar asistencia</a>
         </div>
 
+        <!-- Navegación de semana (calendario semanal) -->
         <div class="month-selector">
             <a
                 href="?week_offset={{ week_offset_prev }}"
@@ -217,27 +218,31 @@
             >›</a>
         </div>
 
+        <!-- Resumen rápido (contadores del periodo completo) -->
         <div class="asist-summary">
             <div class="asist-stat">
                 <div class="asist-stat-icon">✅</div>
-                <div class="asist-stat-val" id="stat-asist">—</div>
+                <div class="asist-stat-val" id="stat-asist">{{ stat_asistencias }}</div>
                 <div class="asist-stat-lbl">Asistencias</div>
             </div>
             <div class="asist-stat">
                 <div class="asist-stat-icon">⏰</div>
-                <div class="asist-stat-val" id="stat-retardo" style="color:#856404">—</div>
+                <div class="asist-stat-val" id="stat-retardo" style="color:#856404">{{ stat_retardos }}</div>
                 <div class="asist-stat-lbl">Retardos</div>
             </div>
             <div class="asist-stat">
                 <div class="asist-stat-icon">❌</div>
-                <div class="asist-stat-val" id="stat-faltas" style="color:var(--red)">—</div>
+                <div class="asist-stat-val" id="stat-faltas" style="color:var(--red)">{{ stat_faltas }}</div>
                 <div class="asist-stat-lbl">Faltas</div>
             </div>
             <div class="asist-stat">
                 <div class="asist-stat-icon">📄</div>
-                <div class="asist-stat-val" id="stat-justif" style="color:#0062cc">—</div>
+                <div class="asist-stat-val" id="stat-justif" style="color:#0062cc">{{ stat_justificadas }}</div>
                 <div class="asist-stat-lbl">Justificadas</div>
             </div>
+        </div>
+        <div style="font-size:.75rem;color:var(--gray-400);margin-bottom:.75rem">
+            Periodo: {{ faltas_periodo_inicio|date:"d/m/Y" }} – {{ faltas_periodo_fin|date:"d/m/Y" }}
         </div>
 
         <!-- Leyenda -->
@@ -263,26 +268,8 @@
                         <th class="cal-day-name weekend">Sáb</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for hora in horaclasep %}
-                    <tr class="cal-row">
-                        <td class="cal-hour">{{ hora }}:00</td>
-                        {% for dia in diasp %}
-                        <td class="cal-cell">
-                            {% for clase in clasep %}
-                                {% if clase.dia_semana == dia and clase.hora_inicio.hour == hora %}
-                                    <div class="cal-event clase-salon asistencia-{{ horario_color|get_item:clase.id }}">
-                                        <p>Clase</p>
-                                        <small style="display:block;opacity:.9">
-                                            {{ horario_estado|get_item:clase.id|title }}
-                                        </small>
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                        </td>
-                        {% endfor %}
-                    </tr>
-                    {% endfor %}
+                <tbody id="horario-tbody">
+                    {% include "Profesores/partials/horario_semana.html" %}
                 </tbody>
             </table>
         </div>
@@ -426,13 +413,6 @@
             <div class="form-group">
                 <label class="form-label">Descripción <span style="font-weight:400;color:var(--gray-400)">(opcional)</span></label>
                 <textarea class="form-textarea" id="motivo-desc" placeholder="Describe brevemente el motivo de tu ausencia..."></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Documento de respaldo <span style="font-weight:400;color:var(--gray-400)">(opcional)</span></label>
-                <label class="file-upload" id="file-label">
-                    <input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">
-                    📎 Adjunta un comprobante (PDF, JPG, PNG)
-                </label>
             </div>
         </div>
         <div class="modal-footer">

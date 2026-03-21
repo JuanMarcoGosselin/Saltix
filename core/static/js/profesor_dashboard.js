@@ -1,3 +1,7 @@
+// ─────────────────────────────────────────────
+//  Saltix · Dashboard Profesor
+// ─────────────────────────────────────────────
+
 const breadcrumbs = {
     inicio:      'Inicio',
     recibos:     'Mis Recibos',
@@ -52,22 +56,20 @@ function showPage(id, btn) {
     saveActivePage(id);
 }
 
-function actualizarContadores() {
-    const tbody = document.getElementById('faltas-tbody');
-    if (!tbody) return;
+// ── Contadores del periodo completo ───────────
+// Los valores vienen del servidor en la respuesta JSON del partial.
+// Esta función los aplica al DOM cuando se navega por semanas con AJAX.
 
-    let faltas = 0, retardos = 0;
-    tbody.querySelectorAll('tr[data-estado]').forEach(row => {
-        const estado = row.dataset.estado;
-        if (estado === 'FALTA')   faltas++;
-        if (estado === 'RETARDO') retardos++;
-    });
-
-    const el = (id) => document.getElementById(id);
-    if (el('stat-faltas'))  el('stat-faltas').textContent  = faltas;
-    if (el('stat-retardo')) el('stat-retardo').textContent = retardos;
+function aplicarStats(stats) {
+    if (!stats) return;
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.textContent = val; };
+    set('stat-asist',   stats.asistencias);
+    set('stat-retardo', stats.retardos);
+    set('stat-faltas',  stats.faltas);
+    set('stat-justif',  stats.justificadas);
 }
 
+// ── Modal de justificación ────────────────────
 
 let activeAsistenciaId = null;
 
@@ -76,18 +78,18 @@ function openJustifyModal(asistenciaId, label, estado) {
     const hidden = document.getElementById('asistencia-id-input');
     if (hidden) hidden.value = String(activeAsistenciaId);
 
+    // Título del modal según el tipo
     const title = document.getElementById('modal-title');
     if (title) title.textContent = estado === 'RETARDO' ? 'Justificar retardo' : 'Justificar falta';
 
     const fechaLabel = document.getElementById('modal-fecha-label');
     if (fechaLabel) fechaLabel.textContent = label || '';
 
+    // Limpiar campos
     const motivoSel  = document.getElementById('motivo-select');
     const motivoDesc = document.getElementById('motivo-desc');
-    const fileLabel  = document.getElementById('file-label');
     if (motivoSel)  motivoSel.value  = '';
     if (motivoDesc) motivoDesc.value = '';
-    if (fileLabel) fileLabel.innerHTML = '<input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">📎 Adjunta un comprobante (PDF, JPG, PNG)';
 
     const overlay = document.getElementById('modal-overlay');
     if (overlay) overlay.classList.add('open');
@@ -103,14 +105,6 @@ function closeModalDirect() {
     activeAsistenciaId = null;
     const hidden = document.getElementById('asistencia-id-input');
     if (hidden) hidden.value = '';
-}
-
-function handleFile(input) {
-    const label = document.getElementById('file-label');
-    if (!label) return;
-    if (input.files && input.files.length > 0) {
-        label.innerHTML = `<input type="file" id="file-input" accept=".pdf,.jpg,.png" onchange="handleFile(this)">✅ <strong>${input.files[0].name}</strong> adjunto`;
-    }
 }
 
 function getCookie(name) {
@@ -140,6 +134,7 @@ function submitJustificacion() {
         return;
     }
 
+    // FIX: leer la URL del DOM en lugar de hardcodearla
     const url = document.getElementById('justificar-url')?.value || '/profesores/justificar-asistencia/';
 
     const btn = document.getElementById('btn-submit-justif');
@@ -172,6 +167,7 @@ function submitJustificacion() {
     });
 }
 
+// ── Toast ─────────────────────────────────────
 
 function showToast(msg) {
     const t = document.getElementById('toast');
@@ -181,6 +177,7 @@ function showToast(msg) {
     setTimeout(() => t.classList.remove('show'), 3500);
 }
 
+// ── Tabla de faltas: carga AJAX + paginación ──
 
 function getFaltasStateFromLocation() {
     const params  = new URLSearchParams(window.location.search || '');
@@ -205,10 +202,43 @@ function buildUrlWithState(state) {
 function applyFaltasResponse(data) {
     if (!data) return;
 
+    // Tabla de faltas
     const tbody = document.getElementById('faltas-tbody');
     if (tbody && typeof data.rows_html === 'string') {
         tbody.innerHTML = data.rows_html;
-        actualizarContadores(); // recalcular contadores tras actualizar tbody
+    }
+
+    // Stats del periodo completo (vienen del servidor)
+    aplicarStats(data.stats);
+
+    // Calendario semanal
+    const horarioTbody = document.getElementById('horario-tbody');
+    if (horarioTbody && typeof data.horario_html === 'string') {
+        horarioTbody.innerHTML = data.horario_html;
+    }
+
+    // Label de semana en el selector de arriba (month-selector)
+    const calLabel = document.querySelector('.month-selector .month-label');
+    if (calLabel && data.semana_inicio && data.semana_fin) {
+        calLabel.textContent = `Semana del ${data.semana_inicio} al ${data.semana_fin}`;
+    }
+
+    // Botones de navegación del calendario (arriba)
+    const calPrev = document.getElementById('cal-week-prev');
+    const calNext = document.getElementById('cal-week-next');
+    if (calPrev && typeof data.week_offset_prev === 'number') {
+        calPrev.dataset.weekOffset = String(data.week_offset_prev);
+        calPrev.href = `?week_offset=${data.week_offset_prev}`;
+        const disable = typeof data.max_week_offset === 'number' && data.week_offset >= data.max_week_offset;
+        calPrev.style.pointerEvents = disable ? 'none' : '';
+        calPrev.style.opacity       = disable ? '0.4'  : '';
+    }
+    if (calNext && typeof data.week_offset_next === 'number') {
+        calNext.dataset.weekOffset = String(data.week_offset_next);
+        calNext.href = `?week_offset=${data.week_offset_next}`;
+        const disable = data.week_offset === 0;
+        calNext.style.pointerEvents = disable ? 'none' : '';
+        calNext.style.opacity       = disable ? '0.4'  : '';
     }
 
     const countEl = document.getElementById('faltas-count-total');
@@ -295,25 +325,31 @@ function changeFaltasPage(dir) {
     loadFaltas({ ...currentFaltasState, page: currentFaltasState.page + delta }, { push: true });
 }
 
-window.changeFaltasPage = changeFaltasPage;
-window.showPage         = showPage;
-window.closeModal       = closeModal;
-window.closeModalDirect = closeModalDirect;
-window.handleFile       = handleFile;
+// exponer para onclick inline del template
+window.changeFaltasPage    = changeFaltasPage;
+window.showPage            = showPage;
+window.closeModal          = closeModal;
+window.closeModalDirect    = closeModalDirect;
 window.submitJustificacion = submitJustificacion;
 
+// ── Init ──────────────────────────────────────
 
 restoreActivePage();
-actualizarContadores();
 
+// Click en fila de la tabla → abrir modal con los datos del data-attribute
 document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-justificar-btn]');
     const row = btn ? btn.closest('tr[data-asistencia-id]') : e.target.closest('#faltas-table tbody tr[data-asistencia-id]');
     if (!row) return;
     e.preventDefault();
+    if (row.dataset.incidenciaPendiente === '1') {
+        showToast('Ya existe una justificación en revisión para este registro.');
+        return;
+    }
     openJustifyModal(row.dataset.asistenciaId, row.dataset.modalLabel, row.dataset.estado);
 });
 
+// Navegación de semana con AJAX (no full-reload)
 document.addEventListener('click', (e) => {
     const link = e.target.closest('#faltas-week-prev, #faltas-week-next');
     if (!link) return;
@@ -322,6 +358,7 @@ document.addEventListener('click', (e) => {
     loadFaltas({ weekOffset: offset, page: 1 }, { push: true });
 });
 
+// Navegación de semana del calendario (los enlaces de arriba)
 document.addEventListener('click', (e) => {
     const link = e.target.closest('#cal-week-prev, #cal-week-next');
     if (!link) return;
