@@ -205,6 +205,26 @@
   display: block;
 }
 
+.cal-event.cal-span {
+  height: 100%;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.cal-event.cal-span.span-mid,
+.cal-event.cal-span.span-end {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.cal-event.cal-span.span-mid,
+.cal-event.cal-span.span-start {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 /* Clase de salón — azul (sin asistencia aún) */
 .cal-event.clase-salon {
   background-color: #d0e8ff;

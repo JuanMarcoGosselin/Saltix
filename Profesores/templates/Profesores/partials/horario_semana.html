@@ -4,17 +4,24 @@
     <td class="cal-hour">{{ hora }}:00</td>
     {% for dia in diasp %}
 	    <td class="cal-cell{% if is_current_week and dia == diaactualp and horaactualp and hora == horaactualp.hour %} cal-now{% endif %}">
-        {% for clase in clasep %}
-            {% if clase.dia_semana == dia and clase.hora_inicio.hour == hora %}
-                <div class="cal-event clase-salon asistencia-{{ horario_color|get_item:clase.id }}">
-	                    <p>{% if clase.aula %}{{ clase.aula }}{% else %}Clase{% endif %}</p>
-                    <small style="display:block;opacity:.9">
-                        {{ horario_estado|get_item:clase.id|title }}
-                    </small>
-                </div>
-            {% endif %}
-        {% endfor %}
-    </td>
+	        {% for clase in clasep %}
+                {% if clase.dia_semana == dia and hora >= clase.hora_inicio.hour and hora < clase.hora_fin.hour %}
+                    <div class="cal-event cal-span{% if hora == clase.hora_inicio.hour %} span-start{% else %} span-mid{% endif %}{% if hora == clase.hora_fin.hour|add:'-1' %} span-end{% endif %} clase-salon asistencia-{{ horario_color|get_item:clase.id }}">
+                        {% if hora == clase.hora_inicio.hour %}
+                            <p>
+                                Clase
+                                <small style="font-weight:700;opacity:.85">
+                                    {{ clase.hora_inicio|time:"H:i" }}–{{ clase.hora_fin|time:"H:i" }}
+                                </small>
+                            </p>
+                            <small style="display:block;opacity:.9">
+                                {{ horario_estado|get_item:clase.id|title }}
+                            </small>
+                        {% endif %}
+                    </div>
+                {% endif %}
+	        {% endfor %}
+	    </td>
     {% endfor %}
 </tr>
 {% endfor %}

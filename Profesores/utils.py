@@ -130,18 +130,23 @@ def dashboard_kpis(*, profesor: Profesor, hoy, rango_periodo):
         horarios_clase, rango_periodo.inicio, rango_periodo.fin
     )
 
-    mes_inicio, mes_fin = month_bounds(hoy)
-    minutos_esperados_mes = expected_minutes_for_range(horarios_clase, mes_inicio, mes_fin)
-    horas_esperadas_mes = (Decimal(minutos_esperados_mes) / Decimal(60))
-    salario_bruto_estimado_mes = horas_esperadas_mes * (profesor.costo_por_hora or Decimal(0))
+    costo_por_hora = profesor.costo_por_hora or Decimal(0)
+
+    horas_trabajadas_periodo = Decimal(minutos_trabajados_periodo) / Decimal(60)
+    horas_esperadas_periodo = Decimal(minutos_esperados_periodo) / Decimal(60)
+
+    salario_bruto_real_periodo = horas_trabajadas_periodo * costo_por_hora
+    salario_bruto_estimado_periodo = horas_esperadas_periodo * costo_por_hora
 
     return {
         "horarios_clase": horarios_clase,
         "minutos_trabajados_periodo": minutos_trabajados_periodo,
         "minutos_esperados_periodo": minutos_esperados_periodo,
-        "mes_inicio": mes_inicio,
-        "mes_fin": mes_fin,
-        "salario_bruto_estimado_mes": salario_bruto_estimado_mes,
+        # Para el dashboard del profesor, usamos el periodo vigente (inicio/fin) como rango principal.
+        "mes_inicio": rango_periodo.inicio,
+        "mes_fin": rango_periodo.fin,
+        "salario_bruto_estimado_mes": salario_bruto_estimado_periodo,
+        "salario_bruto_real_periodo": salario_bruto_real_periodo,
     }
 
 
