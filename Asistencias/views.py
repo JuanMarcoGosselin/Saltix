@@ -59,8 +59,8 @@ def justificar_asistencia(request):
         if es_profesor:
             # El profesor solo solicita una incidencia; la asistencia NO se marca como justificada
             # hasta que la incidencia sea aprobada.
-            if asistencia.estado not in ("FALTA", "RETARDO"):
-                return JsonResponse({"error": "Solo se pueden justificar faltas o retardos."}, status=400)
+            if asistencia.estado != "FALTA":
+                return JsonResponse({"error": "Solo se pueden justificar faltas."}, status=400)
 
             if Incidencia.objects.filter(asistencia=asistencia, estado="PENDIENTE").exists():
                 return JsonResponse({"ok": True, "already": True, "pending": True})
@@ -68,15 +68,15 @@ def justificar_asistencia(request):
             Incidencia.objects.create(
                 asistencia=asistencia,
                 motivo=motivo,
-                tipo=asistencia.estado,  # "FALTA" o "RETARDO"
+                tipo="FALTA",
                 estado="PENDIENTE",
                 solicitante=request.user,
             )
             return JsonResponse({"ok": True, "pending": True})
 
         # jefatura/administrador: comportamiento legado (justifica directamente)
-        if asistencia.estado not in ("FALTA", "RETARDO", "JUSTIFICADA"):
-            return JsonResponse({"error": "Solo se pueden justificar faltas o retardos."}, status=400)
+        if asistencia.estado not in ("FALTA", "JUSTIFICADA"):
+            return JsonResponse({"error": "Solo se pueden justificar faltas."}, status=400)
 
         if asistencia.justificada or asistencia.estado == "JUSTIFICADA":
             return JsonResponse({"ok": True, "already": True})
@@ -87,4 +87,3 @@ def justificar_asistencia(request):
         asistencia.save(update_fields=["justificada", "estado", "observaciones"])
 
     return JsonResponse({"ok": True})
-

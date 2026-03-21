@@ -123,7 +123,7 @@ def unjustified_absences_queryset(
     rango_efectivo = intersect_ranges(rango_semana, rango_periodo)
 
     qs = Asistencia.objects.filter(
-        estado__in=("FALTA", "RETARDO"),
+        estado="FALTA",
         justificada=False,
         cancelada_institucional=False,
     )
@@ -202,7 +202,7 @@ def period_stats(*, profesor, hoy: date | None = None) -> dict:
 
     return {
         "asistencias": qs.filter(estado="ASISTENCIA").count(),
-        "retardos": qs.filter(estado="RETARDO", justificada=False).count(),
+        "retardos": qs.filter(estado="RETARDO").count(),
         "faltas": qs.filter(estado="FALTA", justificada=False).count(),
         "justificadas": qs.filter(justificada=True).count(),
     }

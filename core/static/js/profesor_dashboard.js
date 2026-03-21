@@ -73,14 +73,14 @@ function aplicarStats(stats) {
 
 let activeAsistenciaId = null;
 
-function openJustifyModal(asistenciaId, label, estado) {
+function openJustifyModal(asistenciaId, label) {
     activeAsistenciaId = Number(asistenciaId);
     const hidden = document.getElementById('asistencia-id-input');
     if (hidden) hidden.value = String(activeAsistenciaId);
 
     // Título del modal según el tipo
     const title = document.getElementById('modal-title');
-    if (title) title.textContent = estado === 'RETARDO' ? 'Justificar retardo' : 'Justificar falta';
+    if (title) title.textContent = 'Justificar falta';
 
     const fechaLabel = document.getElementById('modal-fecha-label');
     if (fechaLabel) fechaLabel.textContent = label || '';
@@ -346,7 +346,7 @@ document.addEventListener('click', (e) => {
         showToast('Ya existe una justificación en revisión para este registro.');
         return;
     }
-    openJustifyModal(row.dataset.asistenciaId, row.dataset.modalLabel, row.dataset.estado);
+    openJustifyModal(row.dataset.asistenciaId, row.dataset.modalLabel);
 });
 
 // Navegación de semana con AJAX (no full-reload)

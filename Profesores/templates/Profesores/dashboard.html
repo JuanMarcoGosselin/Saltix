@@ -192,7 +192,7 @@
         <div style="margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
             <div>
                 <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Mis Asistencias</div>
-                <div style="font-size:.82rem;color:var(--gray-400)">Consulta tu registro semanal y justifica faltas o retardos pendientes</div>
+                        <div style="font-size:.82rem;color:var(--gray-400)">Consulta tu registro semanal y justifica faltas pendientes</div>
             </div>
             <a class="btn-primary" href="{% url 'profesores_registro_asistencia' %}">Registrar asistencia</a>
         </div>
@@ -274,11 +274,11 @@
             </table>
         </div>
 
-        <!-- Tabla de faltas / retardos pendientes de justificar -->
+        <!-- Tabla de faltas pendientes de justificar -->
         <div class="faltas-pendientes">
             <div class="faltas-header">
                 <div>
-                    <h3>⚠️ Faltas y retardos sin justificar</h3>
+                    <h3>⚠️ Faltas sin justificar</h3>
                     <div style="margin-top:.15rem;font-size:.78rem;color:var(--gray-400)">
                         <span id="faltas-semana-label">Semana: {{ faltas_semana_inicio|date:"d/m/Y" }} – {{ faltas_semana_fin|date:"d/m/Y" }}</span>
                         <span style="margin:0 .35rem;color:var(--gray-200)">|</span>
@@ -384,7 +384,7 @@
 {% endblock %}
 
 {% block extra %}
-<!-- MODAL JUSTIFICAR FALTA / RETARDO -->
+<!-- MODAL JUSTIFICAR FALTA -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
     <div class="modal">
         <div class="modal-header">

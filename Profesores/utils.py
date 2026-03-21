@@ -2,6 +2,7 @@ import calendar
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
+from django.db.models import Q
 from django.utils import timezone
 
 from Asistencias.models import Asistencia
@@ -117,8 +118,9 @@ def dashboard_kpis(*, profesor: Profesor, hoy, rango_periodo):
             profesor=profesor,
             fecha__range=(rango_periodo.inicio, rango_periodo.fin),
             cancelada_institucional=False,
-            estado__in=("ASISTENCIA", "RETARDO"),
         )
+        .filter(Q(estado__in=("ASISTENCIA", "RETARDO", "JUSTIFICADA")) | Q(justificada=True))
+        .exclude(estado="FALTA", justificada=False)
         .select_related("horario")
     )
     minutos_trabajados_periodo = sum(
