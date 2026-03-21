@@ -51,7 +51,7 @@ class Command(BaseCommand):
         tz = timezone.get_current_timezone()
 
         horarios = (
-            Horario.objects.filter(dia_semana=dia_codigo, es_hora_clase=True)
+            Horario.objects.filter(dia_semana=dia_codigo, es_hora_clase=True, activo=True)
             .select_related("profesor")
             .only("id", "profesor_id", "hora_inicio", "hora_fin")
         )

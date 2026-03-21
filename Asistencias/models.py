@@ -20,7 +20,7 @@ class Asistencia(models.Model):
     estado = models.CharField(max_length=25, choices=ESTADOS)
     justificada = models.BooleanField(default=False)
     observaciones = models.TextField(max_length=1000, blank=True, null=True)
-    horario = models.ForeignKey("Profesores.Horario", on_delete=models.CASCADE)
+    horario = models.ForeignKey("Profesores.Horario", on_delete=models.PROTECT)
     tolerancia_minutos = models.PositiveSmallIntegerField(default=0)
     tipo_registro = models.CharField(max_length=10, choices=TIPO_REGISTRO, default="RELOJ")
     creado_por = models.ForeignKey("users.Usuario", on_delete=models.PROTECT, null=True, blank=True)

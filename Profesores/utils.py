@@ -22,7 +22,7 @@ def obtener_horario_hoy(profesor):
     dia = dias.get(hoy.weekday())
     if not dia:
         return Horario.objects.none()
-    return Horario.objects.filter(profesor=profesor, dia_semana=dia)
+    return Horario.objects.filter(profesor=profesor, dia_semana=dia, activo=True)
 
 
 def obtener_horario(profesor):
@@ -37,7 +37,7 @@ def obtener_horario(profesor):
     horario = {}
     horas_totales = 0
     for dia in dias:
-        horario[dia] = Horario.objects.filter(profesor=profesor, dia_semana=dias[dia])
+        horario[dia] = Horario.objects.filter(profesor=profesor, dia_semana=dias[dia], activo=True)
         for clase in horario[dia]:
             horas_totales += clase.hora_fin.hour - clase.hora_inicio.hour
     return (horario, horas_totales)
@@ -125,7 +125,7 @@ def dashboard_kpis(*, profesor: Profesor, hoy, rango_periodo):
         minutes_between_times(a.horario.hora_inicio, a.horario.hora_fin) for a in asistencias_periodo if a.horario_id
     )
 
-    horarios_clase = list(Horario.objects.filter(profesor=profesor, es_hora_clase=True))
+    horarios_clase = list(Horario.objects.filter(profesor=profesor, es_hora_clase=True, activo=True))
     minutos_esperados_periodo = expected_minutes_for_range(
         horarios_clase, rango_periodo.inicio, rango_periodo.fin
     )

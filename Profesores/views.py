@@ -51,7 +51,7 @@ def dashboard(request):
     asistenciap = Asistencia.objects.filter(profesor=profesor, fecha__range=(inicio_semana, fin_semana))
 
     clasep = (
-        Horario.objects.filter(profesor=profesor)
+        Horario.objects.filter(profesor=profesor, activo=True)
         .prefetch_related(Prefetch("asistencia_set", queryset=asistenciap, to_attr="_asistencias_semana"))
     )
 
