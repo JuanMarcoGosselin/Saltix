@@ -22,7 +22,15 @@ from Asistencias.services import (
 from core.decorators import requiere_rol
 
 from .models import Horario, Profesor
-from .utils import obtener_horario_hoy, verificar_entrada, verificar_salida
+from .utils import (
+    dashboard_kpis,
+    format_hours,
+    format_money,
+    obtener_horario_hoy,
+    profesor_profile_context,
+    verificar_entrada,
+    verificar_salida,
+)
 
 @login_required
 def dashboard(request):
@@ -62,20 +70,30 @@ def dashboard(request):
         horario_color[clase.id] = obtener_color_estado(estado)
         horario_estado[clase.id] = estado
 
-    faltas_qs, faltas_rango_semana, faltas_rango_periodo, faltas_rango_efectivo = unjustified_absences_queryset(
-        profesor=profesor,
-        hoy=hoy,
-        week_offset=week_offset,
-    )
-    stats = period_stats(profesor=profesor, hoy=hoy)
-    faltas_paginator = Paginator(faltas_qs, 12)
-    faltas_page = faltas_paginator.get_page(request.GET.get("page"))
+        faltas_qs, faltas_rango_semana, faltas_rango_periodo, faltas_rango_efectivo = unjustified_absences_queryset(
+            profesor=profesor,
+            hoy=hoy,
+            week_offset=week_offset,
+        )
+        stats = period_stats(profesor=profesor, hoy=hoy)
+        kpis = dashboard_kpis(profesor=profesor, hoy=hoy, rango_periodo=faltas_rango_periodo)
+        horarios_clase = kpis["horarios_clase"]
+        minutos_trabajados_periodo = kpis["minutos_trabajados_periodo"]
+        minutos_esperados_periodo = kpis["minutos_esperados_periodo"]
+        mes_inicio = kpis["mes_inicio"]
+        mes_fin = kpis["mes_fin"]
+        salario_bruto_estimado_mes = kpis["salario_bruto_estimado_mes"]
+        faltas_paginator = Paginator(faltas_qs, 12)
+        faltas_page = faltas_paginator.get_page(request.GET.get("page"))
 
     if request.GET.get("partial") == "faltas":
         partial_ctx = {
             "faltas_page": faltas_page,
             "horaclasep": range(5, 24),
             "diasp": diasp,
+            "diaactualp": diasp[hoy.weekday()],
+            "horaactualp": timezone.localtime(timezone.now()),
+            "is_current_week": week_offset == 0,
             "clasep": clasep,
             "horario_color": horario_color,
             "horario_estado": horario_estado,
@@ -104,17 +122,26 @@ def dashboard(request):
         )
 
     context = {
+        "fecha_actual": hoy.strftime("%d/%m/%Y"),
         "nombrep": profesor.usuario.nombre,
         "apellidop": profesor.usuario.apellido,
-        "salariop": profesor.costo_por_hora,
-        "salariomensualp": profesor.costo_por_hora,
-        "salarionetop": profesor.costo_por_hora,
-        "horasesperadasp": 1,
-        "horasp": 2,
+        "salariop": format_money(salario_bruto_estimado_mes),
+        "salariomensualp": format_money(salario_bruto_estimado_mes),
+        "salarionetop": f"${format_money(salario_bruto_estimado_mes)}",
+        "salario_trend_label": f"${format_money(profesor.costo_por_hora)}/h",
+        "horasesperadasp": format_hours(minutos_esperados_periodo),
+        "horasp": format_hours(minutos_trabajados_periodo),
+        "horas_trend_label": f"Periodo {faltas_rango_periodo.inicio.strftime('%d/%m')}–{faltas_rango_periodo.fin.strftime('%d/%m')}",
+        "proximo_pago_fecha": mes_fin.strftime("%d/%m/%Y"),
+        "resumen_mes_label": f"Periodo: {faltas_rango_periodo.inicio.strftime('%d/%m/%Y')} – {faltas_rango_periodo.fin.strftime('%d/%m/%Y')}",
+        "recibo_periodo_label": f"{mes_inicio.strftime('%d/%m/%Y')} – {mes_fin.strftime('%d/%m/%Y')}",
+        "recibo_detalle": [],
+        "recibos": [],
         "horaclasep": range(5, 24),
         "horaactualp": timezone.localtime(timezone.now()),
         "diasp": diasp,
         "diaactualp": diasp[hoy.weekday()],
+        "is_current_week": week_offset == 0,
         "clasep": clasep,
         "asistenciap": asistenciap,
         "horario_color": horario_color,
@@ -133,6 +160,7 @@ def dashboard(request):
         "stat_retardos": stats.get("retardos", 0),
         "stat_faltas": stats.get("faltas", 0),
         "stat_justificadas": stats.get("justificadas", 0),
+        **profesor_profile_context(profesor=profesor, hoy=hoy, horarios_clase=horarios_clase),
     }
 
     return render(request, "Profesores/dashboard.html", context)

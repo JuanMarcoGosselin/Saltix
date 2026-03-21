@@ -3,11 +3,11 @@
 <tr class="cal-row">
     <td class="cal-hour">{{ hora }}:00</td>
     {% for dia in diasp %}
-    <td class="cal-cell">
+	    <td class="cal-cell{% if is_current_week and dia == diaactualp and horaactualp and hora == horaactualp.hour %} cal-now{% endif %}">
         {% for clase in clasep %}
             {% if clase.dia_semana == dia and clase.hora_inicio.hour == hora %}
                 <div class="cal-event clase-salon asistencia-{{ horario_color|get_item:clase.id }}">
-                    <p>Clase</p>
+	                    <p>{% if clase.aula %}{{ clase.aula }}{% else %}Clase{% endif %}</p>
                     <small style="display:block;opacity:.9">
                         {{ horario_estado|get_item:clase.id|title }}
                     </small>
