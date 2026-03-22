@@ -10,9 +10,9 @@ class Profesor(models.Model):
     ]
 
     usuario = models.ForeignKey("users.Usuario", on_delete=models.CASCADE)
-    rfc = models.CharField(max_length=13)
-    curp = models.CharField(max_length=18)
-    telefono = models.CharField(max_length=10)
+    rfc = models.CharField(max_length=13, unique=True)
+    curp = models.CharField(max_length=18, unique=True)
+    telefono = models.CharField(max_length=10, unique=True, blank=True, null=True)
     direccion = models.TextField(max_length=100)
     fecha_ingreso = models.DateField()
     estado_laboral = models.CharField(max_length=20, choices=ESTADOS, default="ACTIVO")
@@ -55,3 +55,18 @@ class TransferenciaDepartamento(models.Model):
     def __str__(self):
         return f"{self.profesor} | {self.departamento_origen} -> {self.departamento_destino}"
     
+#Contraints para asegurar que el rfc y curp sean unicos por usuario, pueden repetirse entre diferentes planteles o deartamentos
+class Meta:
+    constraints = [
+        models.UniqueConstraint(
+            fields=["rfc", "usuario"],
+            name="unique_rfc_por_usuario"
+        ),
+        models.UniqueConstraint(
+            fields=["curp", "usuario"],
+            name="unique_curp_por_usuario"
+        ),
+    ]
+
+    def __str__(self):
+        return f"{self.usuario} | {self.rfc}"
