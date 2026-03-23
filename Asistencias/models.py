@@ -10,6 +10,7 @@ class Asistencia(models.Model):
         ("ASISTENCIA", "Asistencia"),
         ("RETARDO", "Retardo"),
         ("FALTA", "Falta"),
+        ("JUSTIFICADA", "Justificada"),
     ]
 
     profesor = models.ForeignKey("Profesores.Profesor", on_delete=models.PROTECT)
@@ -19,7 +20,7 @@ class Asistencia(models.Model):
     estado = models.CharField(max_length=25, choices=ESTADOS)
     justificada = models.BooleanField(default=False)
     observaciones = models.TextField(max_length=1000, blank=True, null=True)
-    horario = models.ForeignKey("Profesores.Horario", on_delete=models.CASCADE)
+    horario = models.ForeignKey("Profesores.Horario", on_delete=models.PROTECT)
     tolerancia_minutos = models.PositiveSmallIntegerField(default=0)
     tipo_registro = models.CharField(max_length=10, choices=TIPO_REGISTRO, default="RELOJ")
     creado_por = models.ForeignKey("users.Usuario", on_delete=models.PROTECT, null=True, blank=True)
@@ -29,6 +30,20 @@ class Asistencia(models.Model):
 
     def __str__(self):
         return f"{self.profesor} | {self.fecha} | {self.estado}"
+    
+    @property
+    def color_clase(self):
+        if self.cancelada_institucional:
+            return "inhabil"
+        if self.justificada or self.estado == "JUSTIFICADA":
+            return "justificada"
+        if self.estado == "ASISTENCIA":
+            return "presente"
+        if self.estado == "FALTA":
+            return "falta"
+        if self.estado == "RETARDO":
+            return "retardo"
+        return "pendiente"
 
 class Incidencia(models.Model): 
     # Justificacion de faltas/retardos con su flujo de aprobacion.

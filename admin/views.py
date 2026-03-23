@@ -124,7 +124,8 @@ def dashboard(request):
         .prefetch_related("planteles", "departamentos")
     }
     horarios_by_user = {}
-    for h in Horario.objects.filter(profesor__usuario_id__in=usuarios_ids).select_related("profesor"):
+    profesor_ids = [p.id for p in profes_by_user.values()]
+    for h in Horario.objects.filter(profesor_id__in=profesor_ids, activo=True).select_related("profesor"):
         horarios_by_user.setdefault(h.profesor.usuario_id, []).append(
             {
                 "dia": h.dia_semana,
@@ -908,9 +909,29 @@ def _update_horarios(request, profesor):
     if any_data and not entries:
         return "Selecciona al menos un bloque con horario de clase."
 
-    profesor.horario_set.all().delete()
+    profesor.horario_set.update(activo=False)
+
     for item in entries:
-        profesor.horario_set.create(**item)
+        defaults = {
+            "aula": item.get("aula", ""),
+            "es_hora_clase": bool(item.get("es_hora_clase", True)),
+            "activo": True,
+        }
+        horario, created = Horario.objects.get_or_create(
+            profesor=profesor,
+            dia_semana=item["dia_semana"],
+            hora_inicio=item["hora_inicio"],
+            hora_fin=item["hora_fin"],
+            defaults=defaults,
+        )
+        if not created:
+            changed = False
+            for field, value in defaults.items():
+                if getattr(horario, field) != value:
+                    setattr(horario, field, value)
+                    changed = True
+            if changed:
+                horario.save(update_fields=list(defaults.keys()))
     return None
 
 

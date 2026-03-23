@@ -25,7 +25,7 @@ class ProfesorAdmin(admin.ModelAdmin):
 @admin.register(Horario)
 class HorarioAdmin(admin.ModelAdmin):
     list_display = ("profesor", "dia_semana", "hora_inicio", "hora_fin", "aula", "es_hora_clase")
-    list_filter = ("dia_semana", "es_hora_clase")
+    list_filter = ("dia_semana", "es_hora_clase", "activo")
     search_fields = ("profesor__usuario__nombre", "aula")
     list_select_related = ("profesor",)
 

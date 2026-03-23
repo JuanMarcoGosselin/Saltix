@@ -30,68 +30,73 @@
             </div>
         </header>
 
-		<main class="main">
-			<div class="schedule-container">
-				<div class="schedule-header">
-					<div class="date">Hoy</div>
-					<div class="time">Jornada activa</div>
-				</div>
-				<div class="schedule-body">
-					{% if horarios_hoy %}
-						{% for horario in horarios_hoy %}
-							<div class="schedule-item">
-								<div class="schedule-meta">
-									<div class="schedule-time">{{ horario.hora_inicio|time:"g:i A" }} - {{ horario.hora_fin|time:"g:i A" }}</div>
-									<div class="schedule-class">{% if horario.es_hora_clase %}Clase{% else %}Actividad{% endif %}</div>
-									<div class="schedule-room">Aula</div>
-								</div>
+        <main class="main">
+            <div class="schedule-container">
+                <div class="schedule-header">
+                    <div class="date">
+                        {# FIX: mostrar la fecha real del servidor #}
+                        {% if fecha_hoy %}{{ fecha_hoy|date:"l, d \d\e F \d\e Y" }}{% else %}Hoy{% endif %}
+                    </div>
+                    <div class="time">Jornada activa</div>
+                </div>
+                <div class="schedule-body">
+                    {% if horarios_hoy %}
+                        {% for horario in horarios_hoy %}
+                            <div class="schedule-item">
+                                <div class="schedule-meta">
+                                    <div class="schedule-time">{{ horario.hora_inicio|time:"g:i A" }} - {{ horario.hora_fin|time:"g:i A" }}</div>
+                                    <div class="schedule-class">
+                                        {% if horario.es_hora_clase %}Clase{% else %}Actividad{% endif %}
+                                    </div>
+                                    {# FIX: mostrar el aula real, no el texto estático "Aula" #}
+                                    {% if horario.aula %}
+                                    <div class="schedule-room">Aula {{ horario.aula }}</div>
+                                    {% endif %}
+                                </div>
 
-								{% if not horario.ya_registrada %}
-								<form action="{% url 'profesores_registrar_asistencia' %}" method="POST" name="form_registrarAsistencia">
-									{% csrf_token %}
-									<input type="hidden" value="{{ horario.id }}" name="horario_id">
-									<input type="hidden"  value="{{ profesor_id }}" name="profesor_id">
-									<button
-										class="btn-register{% if horario.ya_registrada %} is-done{% endif %}"
-										type="submit"
-										onclick="markAttendance(this)"
-									>
-										{% if horario.ya_registrada %}Asistencia registrada{% else %}Registrar asistencia{% endif %}
-									</button>
-								</form>
-								{% endif %}
-									
-								{% if horario.ya_registrada and not horario.salida %}
-								<form action="{% url 'profesores_registrar_salida' %}" method="POST" name="form_registrarSalida">
-									{% csrf_token %}
-									<input type="hidden" value="{{ horario.id }}" name="horario_id">
-									<input type="hidden"  value="{{ profesor_id }}" name="profesor_id">
-									<input type="hidden" value="{{ horario.asistencia_id }}" name="asistencia_id">
+                                {% if horario.salida %}
+                                    {# Entrada y salida ya registradas: botón deshabilitado #}
+                                    <button class="btn-register is-done" disabled>
+                                        ✓ Asistencia registrada
+                                    </button>
+                                {% elif horario.ya_registrada %}
+                                    {# Entrada registrada, falta salida #}
+                                    <button
+                                        class="btn-register"
+                                        data-url="{% url 'asistencia_accion' %}"
+                                        data-horario="{{ horario.id }}"
+                                        data-accion="salida"
+                                        onclick="handleAsistencia(this)"
+                                    >
+                                        Registrar salida
+                                    </button>
+                                {% else %}
+                                    {# Sin registro: botón de entrada #}
+                                    <button
+                                        class="btn-register"
+                                        data-url="{% url 'asistencia_accion' %}"
+                                        data-horario="{{ horario.id }}"
+                                        data-accion="entrada"
+                                        onclick="handleAsistencia(this)"
+                                    >
+                                        Registrar asistencia
+                                    </button>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="schedule-item">
+                            <div class="schedule-meta">
+                                <div class="schedule-class">No tienes clases programadas para hoy.</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
 
-									<button
-										class="btn-register{% if horario.salida %} is-done{% endif %}"
-										type="submit"
-										onclick="markExit(this)"
-									>
-										{% if horario.salida %}Salida registrada{% else %}Registrar salida{% endif %}
-									</button>
-								</form>
-								{% endif %}
-							</div>
-						{% endfor %}
-					{% else %}
-						<div class="schedule-item">
-							<div class="schedule-meta">
-								<div class="schedule-class">No tienes clases programadas para hoy.</div>
-							</div>
-						</div>
-					{% endif %}
-				</div>
-			</div>
-		</main>
-	</div>
-
-	<div class="toast" id="toast"></div>
-	<script src="{% static 'js/asistencia_profesor.js' %}"></script>
-	</body>
-	</html>
+    <div class="toast" id="toast"></div>
+    <script src="{% static 'js/asistencia_profesor.js' %}"></script>
+</body>
+</html>
