@@ -36,7 +36,7 @@ from .utils import (
 @login_required
 def dashboard(request):
     usuario = request.user
-    profesor = Profesor.objects.select_related("usuario").get(usuario=usuario.id)
+    profesor = Profesor.objects.select_related("usuario").get(usuario_id=usuario.id)
     diasp = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB"]
 
     hoy = timezone.localdate()
@@ -83,7 +83,7 @@ def dashboard(request):
     asistenciap = Asistencia.objects.filter(profesor=profesor, fecha__range=(inicio_semana, fin_semana))
 
     clasep = (
-        Horario.objects.filter(profesor=profesor, activo=True)
+        Horario.objects.filter(profesor_id=profesor.id, activo=True).order_by("dia_semana", "hora_inicio")
         .prefetch_related(Prefetch("asistencia_set", queryset=asistenciap, to_attr="_asistencias_semana"))
     )
 
@@ -195,7 +195,7 @@ def dashboard(request):
 @login_required
 @requiere_rol("Profesor")
 def registro_asistencia(request):
-    profesor = Profesor.objects.select_related("usuario").get(usuario=request.user.id)
+    profesor = Profesor.objects.select_related("usuario").get(usuario_id=request.user.id)
     hoy = timezone.localdate()
 
     horarios_hoy = obtener_horario_hoy(profesor).order_by("hora_inicio")
@@ -231,7 +231,7 @@ def asistencia_accion(request):
         if not horario_id:
             return JsonResponse({'error': 'Horario no proporcionado'}, status=400)
 
-        profesor = Profesor.objects.get(usuario=request.user.id)
+        profesor = Profesor.objects.get(usuario_id=request.user.id)
         hoy = timezone.localdate()
 
         asistencia = Asistencia.objects.filter(

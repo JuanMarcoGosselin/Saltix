@@ -9,9 +9,9 @@ class Profesor(models.Model):
         ("BAJA_DEFINITIVA", "Baja definitiva"),
     ]
 
-    usuario = models.ForeignKey("users.Usuario", on_delete=models.CASCADE)
-    rfc = models.CharField(max_length=13)
-    curp = models.CharField(max_length=18)
+    usuario = models.OneToOneField("users.Usuario", on_delete=models.CASCADE)
+    rfc = models.CharField(max_length=13, unique=True)
+    curp = models.CharField(max_length=18, unique=True)
     telefono = models.CharField(max_length=10)
     direccion = models.TextField(max_length=100)
     fecha_ingreso = models.DateField()
@@ -21,6 +21,12 @@ class Profesor(models.Model):
     departamentos = models.ManyToManyField("users.Departamento", related_name="profesores")
     planteles = models.ManyToManyField("core.Plantel", related_name="profesores")
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["estado_laboral"]),
+            models.Index(fields=["fecha_ingreso"]),
+        ]
+        
     def __str__(self):
         return f"{self.usuario} | {self.rfc}"
 
@@ -42,6 +48,19 @@ class Horario(models.Model):
     es_hora_clase = models.BooleanField(default=True) # Indica si esta hora es una clase programada o una hora de disponibilidad general. Se paga o no
     activo = models.BooleanField(default=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["profesor", "dia_semana", "hora_inicio", "hora_fin"],
+                name="unique_horario_profesor_bloque",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["profesor", "dia_semana", "activo"]),
+            models.Index(fields=["profesor", "es_hora_clase", "activo"]),
+            models.Index(fields=["dia_semana", "es_hora_clase", "activo"]),
+        ]
+
     def __str__(self):
         return f"{self.profesor} | {self.dia_semana} {self.hora_inicio}-{self.hora_fin}"
 
@@ -53,6 +72,10 @@ class TransferenciaDepartamento(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     aprobado_por = models.ForeignKey("users.Usuario", on_delete=models.PROTECT, null=True, blank=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["profesor", "fecha"]),
+        ]
+
     def __str__(self):
         return f"{self.profesor} | {self.departamento_origen} -> {self.departamento_destino}"
-    

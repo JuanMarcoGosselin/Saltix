@@ -37,10 +37,16 @@ def obtener_horario(profesor):
     }
     horario = {}
     horas_totales = 0
+    horarios = list(
+        Horario.objects.filter(profesor=profesor, activo=True).order_by("dia_semana", "hora_inicio")
+    )
+    horarios_por_dia = {codigo: [] for codigo in dias.values()}
+    for clase in horarios:
+        horarios_por_dia.setdefault(clase.dia_semana, []).append(clase)
+        horas_totales += clase.hora_fin.hour - clase.hora_inicio.hour
+
     for dia in dias:
-        horario[dia] = Horario.objects.filter(profesor=profesor, dia_semana=dias[dia], activo=True)
-        for clase in horario[dia]:
-            horas_totales += clase.hora_fin.hour - clase.hora_inicio.hour
+        horario[dia] = horarios_por_dia.get(dias[dia], [])
     return (horario, horas_totales)
 
 

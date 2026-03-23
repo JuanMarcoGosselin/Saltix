@@ -124,7 +124,8 @@ def dashboard(request):
         .prefetch_related("planteles", "departamentos")
     }
     horarios_by_user = {}
-    for h in Horario.objects.filter(profesor__usuario_id__in=usuarios_ids, activo=True).select_related("profesor"):
+    profesor_ids = [p.id for p in profes_by_user.values()]
+    for h in Horario.objects.filter(profesor_id__in=profesor_ids, activo=True).select_related("profesor"):
         horarios_by_user.setdefault(h.profesor.usuario_id, []).append(
             {
                 "dia": h.dia_semana,
