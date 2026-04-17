@@ -22,6 +22,12 @@
 {% endblock %}
 
 {% block content %}
+<input type="hidden" id="url-listar-asistencias" value="{% url 'asistencias:listar_asistencias_jefatura' %}">
+<input type="hidden" id="url-listar-incidencias" value="{% url 'asistencias:listar_incidencias_jefatura' %}">
+<input type="hidden" id="url-aprobar-incidencia" value="{% url 'asistencias:aprobar_incidencia' %}">
+<input type="hidden" id="url-rechazar-incidencia" value="{% url 'asistencias:rechazar_incidencia' %}">
+<input type="hidden" id="url-cancelar-asistencia" value="{% url 'asistencias:cancelar_asistencia_institucional' %}">
+<input type="hidden" id="url-corregir-asistencia" value="{% url 'asistencias:corregir_asistencia_jefatura' %}">
 
   <div class="page active" id="page-equipo">
     <div style="margin-bottom:1.5rem">
@@ -33,7 +39,7 @@
         <div class="card-top">
           <div class="card-icon-wrap icon-blue">&#x1F465;</div>
         </div>
-        <div class="card-label">Empleados a cargo</div>
+        <div class="card-label">Profesores a cargo</div>
         <div class="card-value">{{ equipo_total }}</div>
         <div class="card-sub">{{ equipo_variacion }}</div>
       </div>
@@ -41,7 +47,7 @@
         <div class="card-top">
           <div class="card-icon-wrap icon-green">&#x1F550;</div>
         </div>
-        <div class="card-label">Horas trabajadas</div>
+        <div class="card-label">Registros de asistencia</div>
         <div class="card-value">{{ horas_trabajadas_total }}</div>
         <div class="card-sub">{{ horas_trabajadas_promedio }}</div>
       </div>
@@ -57,7 +63,7 @@
     </div>
     <div class="table-wrap">
       <div class="table-header">
-        <h3>Empleados del departamento</h3>
+        <h3>Profesores del departamento</h3>
       </div>
       <table>
         <thead>
@@ -66,7 +72,6 @@
             <th>Puesto</th>
             <th>Horas sem.</th>
             <th>Estado</th>
-            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -76,10 +81,9 @@
               <td>{{ empleado.puesto }}</td>
               <td>{{ empleado.horas_semana }}</td>
               <td><span class="pill {{ empleado.estado_clase }}">{{ empleado.estado_label }}</span></td>
-              <td><button class="btn-primary btn-sm">Ver</button></td>
             </tr>
           {% empty %}
-            <tr><td colspan="5">Sin empleados registrados.</td></tr>
+            <tr><td colspan="4">Sin empleados registrados.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -88,71 +92,149 @@
 
   <div class="page" id="page-asistencia">
     <div style="margin-bottom:1.5rem">
-      <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Control de Asistencia</div>
+      <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Gestion de Asistencias</div>
       <div style="font-size:.82rem;color:var(--gray-400);">{{ semana_label }}</div>
     </div>
     <div class="table-wrap">
-      <div class="table-header">
-        <h3>Registro semanal</h3>
-        <button class="btn-primary btn-sm">Exportar</button>
+      <div class="table-header table-header-stack">
+        <div>
+          <h3>Registros del departamento</h3>
+          <div class="table-subtitle">Filtra por profesor, fecha y estado sin salir del dashboard.</div>
+        </div>
+        <div class="filters-grid">
+          <select id="filtro-asistencia-profesor" class="form-select">
+            <option value="">Todos los profesores</option>
+            {% for profesor in profesores_filtro %}
+              <option value="{{ profesor.id }}">{{ profesor.usuario.nombre }} {{ profesor.usuario.apellido }}</option>
+            {% endfor %}
+          </select>
+          <input id="filtro-asistencia-inicio" class="form-input" type="date">
+          <input id="filtro-asistencia-fin" class="form-input" type="date">
+          <select id="filtro-asistencia-estado" class="form-select">
+            <option value="">Todos los estados</option>
+            <option value="ASISTENCIA">Asistencia</option>
+            <option value="RETARDO">Retardo</option>
+            <option value="FALTA">Falta</option>
+            <option value="JUSTIFICADA">Justificada</option>
+            <option value="CANCELADA">Cancelada</option>
+          </select>
+          <button type="button" class="btn-primary btn-sm" onclick="cargarAsistencias(1)">Filtrar</button>
+        </div>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Empleado</th>
-            <th>Lunes</th>
-            <th>Martes</th>
-            <th>Miércoles</th>
-            <th>Jueves</th>
-            <th>Viernes</th>
-            <th>Total</th>
+            <th>Profesor</th>
+            <th>Fecha</th>
+            <th>Horario</th>
+            <th>Estado</th>
+            <th>Observaciones</th>
+            <th>Acciones</th>
           </tr>
         </thead>
-        <tbody>
-          {% for registro in asistencia_semanal %}
-            <tr>
-              <td>{{ registro.empleado }}</td>
-              <td><span class="pill {{ registro.lunes_clase }}">{{ registro.lunes_label }}</span></td>
-              <td><span class="pill {{ registro.martes_clase }}">{{ registro.martes_label }}</span></td>
-              <td><span class="pill {{ registro.miercoles_clase }}">{{ registro.miercoles_label }}</span></td>
-              <td><span class="pill {{ registro.jueves_clase }}">{{ registro.jueves_label }}</span></td>
-              <td><span class="pill {{ registro.viernes_clase }}">{{ registro.viernes_label }}</span></td>
-              <td>{{ registro.total }}</td>
+        <tbody id="tabla-asistencias-body">
+          {% for registro in asistencia_registros %}
+            <tr data-asistencia-id="{{ registro.id }}">
+              <td>{{ registro.profesor.usuario.nombre }} {{ registro.profesor.usuario.apellido }}</td>
+              <td>{{ registro.fecha|date:"d/m/Y" }}</td>
+              <td>{{ registro.horario.hora_inicio|time:"H:i" }} - {{ registro.horario.hora_fin|time:"H:i" }}</td>
+              <td>
+                <span class="pill {% if registro.cancelada_institucional %}pill-gray{% elif registro.estado == 'JUSTIFICADA' %}pill-blue{% elif registro.estado == 'FALTA' %}pill-red{% elif registro.estado == 'RETARDO' %}pill-yellow{% else %}pill-green{% endif %}">
+                  {% if registro.cancelada_institucional %}Cancelada{% else %}{{ registro.get_estado_display }}{% endif %}
+                </span>
+              </td>
+              <td>{{ registro.observaciones|default:"-" }}</td>
+              <td class="actions-cell">
+                <button class="btn-outline btn-sm" type="button" onclick="abrirModalCorreccion({{ registro.id }}, '{{ registro.estado }}', `{{ registro.observaciones|default_if_none:''|escapejs }}`)">Corregir</button>
+                {% if not registro.cancelada_institucional %}
+                  <button class="btn-primary btn-sm" type="button" onclick="cancelarAsistencia({{ registro.id }})">Cancelar</button>
+                {% endif %}
+              </td>
             </tr>
           {% empty %}
-            <tr><td colspan="7">Sin registros de asistencia.</td></tr>
+            <tr><td colspan="6">Sin registros de asistencia.</td></tr>
           {% endfor %}
         </tbody>
       </table>
+      <div class="table-footer">
+        <button type="button" class="btn-outline btn-sm" id="asistencias-prev" onclick="cambiarPaginaAsistencias(-1)">Anterior</button>
+        <span id="asistencias-page-label">Pagina 1</span>
+        <button type="button" class="btn-outline btn-sm" id="asistencias-next" onclick="cambiarPaginaAsistencias(1)">Siguiente</button>
+      </div>
     </div>
   </div>
 
   <div class="page" id="page-solicitudes">
     <div style="margin-bottom:1.5rem">
-      <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Solicitudes Pendientes</div>
+      <div style="font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Solicitudes de Justificacion</div>
       <div style="font-size:.82rem;color:var(--gray-400);" id="sol-subtitle">{{ solicitudes_pendientes_label }}</div>
     </div>
-    <div class="solicitudes-list" id="solicitudes-list">
-      {% for solicitud in solicitudes %}
-        <div class="solicitud-card">
-          <div class="sol-icon">{{ solicitud.icono }}</div>
-          <div class="sol-info">
-            <div class="sol-name">{{ solicitud.titulo }}</div>
-            <div class="sol-desc">{{ solicitud.descripcion }}</div>
-          </div>
-          <div class="sol-actions">
-            <button class="btn-approve" onclick="resolverSolicitud(this,'aprobar')">Aprobar</button>
-            <button class="btn-reject" onclick="resolverSolicitud(this,'rechazar')">Rechazar</button>
-          </div>
+    <div class="table-wrap">
+      <div class="table-header table-header-stack">
+        <div>
+          <h3>Solicitudes del departamento</h3>
+          <div class="table-subtitle">Aprueba o rechaza incidencias pendientes con confirmacion inmediata.</div>
         </div>
-      {% empty %}
-        <div class="solicitud-card">
-          <div class="sol-info">
-            <div class="sol-name">Sin solicitudes pendientes</div>
-            <div class="sol-desc">No hay solicitudes por revisar.</div>
-          </div>
+        <div class="filters-grid">
+          <select id="filtro-incidencia-profesor" class="form-select">
+            <option value="">Todos los profesores</option>
+            {% for profesor in profesores_filtro %}
+              <option value="{{ profesor.id }}">{{ profesor.usuario.nombre }} {{ profesor.usuario.apellido }}</option>
+            {% endfor %}
+          </select>
+          <input id="filtro-incidencia-inicio" class="form-input" type="date">
+          <input id="filtro-incidencia-fin" class="form-input" type="date">
+          <select id="filtro-incidencia-estado" class="form-select">
+            <option value="">Todos los estados</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="APROBADA">Aprobada</option>
+            <option value="RECHAZADA">Rechazada</option>
+          </select>
+          <button type="button" class="btn-primary btn-sm" onclick="cargarIncidencias(1)">Filtrar</button>
         </div>
-      {% endfor %}
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Profesor</th>
+            <th>Fecha ausencia</th>
+            <th>Tipo</th>
+            <th>Motivo</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-incidencias-body">
+          {% for solicitud in incidencias_registros %}
+            <tr data-incidencia-id="{{ solicitud.id }}">
+              <td>{{ solicitud.asistencia.profesor.usuario.nombre }} {{ solicitud.asistencia.profesor.usuario.apellido }}</td>
+              <td>{{ solicitud.asistencia.fecha|date:"d/m/Y" }}</td>
+              <td>{{ solicitud.get_tipo_display }}</td>
+              <td>{{ solicitud.motivo }}</td>
+              <td>
+                <span class="pill {% if solicitud.estado == 'APROBADA' %}pill-blue{% elif solicitud.estado == 'RECHAZADA' %}pill-red{% else %}pill-yellow{% endif %}">
+                  {{ solicitud.get_estado_display }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                {% if solicitud.estado == "PENDIENTE" %}
+                  <button class="btn-approve" type="button" onclick="resolverSolicitud({{ solicitud.id }}, 'aprobar')">Aprobar</button>
+                  <button class="btn-reject" type="button" onclick="resolverSolicitud({{ solicitud.id }}, 'rechazar')">Rechazar</button>
+                {% else %}
+                  <span class="table-subtitle">Resuelta</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6">No hay solicitudes por revisar.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="table-footer">
+        <button type="button" class="btn-outline btn-sm" id="incidencias-prev" onclick="cambiarPaginaIncidencias(-1)">Anterior</button>
+        <span id="incidencias-page-label">Pagina 1</span>
+        <button type="button" class="btn-outline btn-sm" id="incidencias-next" onclick="cambiarPaginaIncidencias(1)">Siguiente</button>
+      </div>
     </div>
   </div>
 
@@ -189,6 +271,39 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="correccion-modal" onclick="closeCorrectionModal(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Corregir asistencia</div>
+          <div class="modal-sub">Actualiza el estado y documenta la observacion.</div>
+        </div>
+        <button class="modal-close" type="button" onclick="closeCorrectionModalDirect()">&#x2715;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="correccion-asistencia-id" value="">
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select id="correccion-estado" class="form-select">
+            <option value="ASISTENCIA">Asistencia</option>
+            <option value="RETARDO">Retardo</option>
+            <option value="FALTA">Falta</option>
+            <option value="JUSTIFICADA">Justificada</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observaciones</label>
+          <textarea id="correccion-observaciones" class="form-textarea" placeholder="Describe la correccion realizada"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" type="button" onclick="closeCorrectionModalDirect()">Cancelar</button>
+        <button class="btn-submit" type="button" onclick="guardarCorreccion()">Guardar correccion</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
 {% endblock %}
 
 {% block extra %}
@@ -198,7 +313,3 @@
 {% block page_js %}
 <script src="{% static 'js/jefatura_dashboard.js' %}"></script>
 {% endblock %}
-
-
-
-

@@ -66,6 +66,14 @@ class Incidencia(models.Model):
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     fecha_de_resolucion = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["estado"]),
+            models.Index(fields=["solicitante"]),
+            models.Index(fields=["fecha_solicitud"]),
+            models.Index(fields=["asistencia", "estado"]),
+        ]
+
     def __str__(self):
         return f"{self.asistencia} | {self.tipo} | {self.estado}"
 

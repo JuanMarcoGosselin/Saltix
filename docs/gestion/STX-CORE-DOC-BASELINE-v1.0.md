@@ -314,3 +314,13 @@ A partir del **18 de marzo de 2026**, ningún cambio puede realizarse sobre esto
 *Este documento forma parte de la Línea Base v1.0 del proyecto Saltix y está sujeto a control de configuración conforme a lo establecido en el estándar IEEE 828.*
 
 *STX-CORE-DOC-BASELINE-v1.0 | Saltix | 18 de marzo de 2026*
+---
+
+## Nota de Continuidad - Sprint 3
+
+La implementacion del Sprint 3 para gestion de asistencias por jefatura se realizo como una extension controlada de la linea base vigente:
+
+- se conservaron los componentes mayores ya definidos;
+- se extendio `Asistencias` con endpoints y servicios del flujo de jefatura;
+- se mantuvo `jefatura` como capa de orquestacion/presentacion;
+- se agrego documentacion y pruebas automatizadas iniciales para el nuevo alcance funcional.

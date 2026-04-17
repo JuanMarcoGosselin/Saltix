@@ -8,6 +8,18 @@ from .faltas import (
     unjustified_absences_max_week_offset,
     week_range,
 )
+from .jefatura import (
+    apply_asistencia_filters,
+    apply_incidencia_filters,
+    get_user_departamentos,
+    is_admin,
+    is_jefatura,
+    paginate_queryset,
+    scope_asistencias_for_user,
+    scope_incidencias_for_user,
+    serialize_asistencia,
+    serialize_incidencia,
+)
 
 __all__ = [
     "obtener_estado_clase",
@@ -19,4 +31,14 @@ __all__ = [
     "current_payroll_period",
     "period_stats",
     "week_range",
+    "is_admin",
+    "is_jefatura",
+    "get_user_departamentos",
+    "scope_asistencias_for_user",
+    "scope_incidencias_for_user",
+    "apply_asistencia_filters",
+    "apply_incidencia_filters",
+    "paginate_queryset",
+    "serialize_asistencia",
+    "serialize_incidencia",
 ]
