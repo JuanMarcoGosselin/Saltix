@@ -214,7 +214,9 @@ async function cargarIncidencias(page = 1) {
   incidenciaPage = data.page;
   incidenciaHasNext = data.has_next;
   incidenciaHasPrev = data.has_prev;
-  pendientes = data.results.filter(item => item.estado === 'PENDIENTE').length;
+  pendientes = typeof data.pending_total === 'number'
+    ? data.pending_total
+    : data.results.filter(item => item.estado === 'PENDIENTE').length;
   renderIncidencias(data.results);
   document.getElementById('incidencias-page-label').textContent = `Pagina ${data.page}`;
   document.getElementById('incidencias-prev').disabled = !data.has_prev;

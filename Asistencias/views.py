@@ -69,18 +69,18 @@ def _user_can_manage_incidencia(user, incidencia: Incidencia) -> bool:
     return any(scoped_ids)
 
 
-def _paginated_response(page_data, serializer):
-    return JsonResponse(
-        {
-            "ok": True,
-            "results": [serializer(item) for item in page_data.items],
-            "count": page_data.count,
-            "page": page_data.page,
-            "page_size": page_data.page_size,
-            "has_next": page_data.has_next,
-            "has_prev": page_data.has_prev,
-        }
-    )
+def _paginated_response(page_data, serializer, **extra):
+    payload = {
+        "ok": True,
+        "results": [serializer(item) for item in page_data.items],
+        "count": page_data.count,
+        "page": page_data.page,
+        "page_size": page_data.page_size,
+        "has_next": page_data.has_next,
+        "has_prev": page_data.has_prev,
+    }
+    payload.update(extra)
+    return JsonResponse(payload)
 
 
 @require_POST
@@ -171,16 +171,17 @@ def listar_asistencias_jefatura(request):
 @login_required
 @requiere_rol("jefatura", "administrador")
 def listar_incidencias_jefatura(request):
-    qs = scope_incidencias_for_user(request.user)
-    qs = apply_incidencia_filters(
-        qs,
+    scoped_qs = scope_incidencias_for_user(request.user)
+    pending_total = scoped_qs.filter(estado="PENDIENTE").count()
+    filtered_qs = apply_incidencia_filters(
+        scoped_qs,
         profesor_id=request.GET.get("profesor_id"),
         estado=request.GET.get("estado"),
         fecha_inicio=_parse_date(request.GET.get("fecha_inicio")),
         fecha_fin=_parse_date(request.GET.get("fecha_fin")),
     )
-    page_data = paginate_queryset(qs, page=request.GET.get("page"), page_size=request.GET.get("page_size"))
-    return _paginated_response(page_data, serialize_incidencia)
+    page_data = paginate_queryset(filtered_qs, page=request.GET.get("page"), page_size=request.GET.get("page_size"))
+    return _paginated_response(page_data, serialize_incidencia, pending_total=pending_total)
 
 
 @require_GET
