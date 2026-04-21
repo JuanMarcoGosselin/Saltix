@@ -1,56 +1,56 @@
-from __future__ import annotations
-
-from dataclasses import dataclass
-from datetime import date
-
 from django.core.paginator import Paginator
-from django.db.models import QuerySet
 
 from Asistencias.models import Asistencia, Incidencia
 from users.models import Departamento
 
 
-@dataclass(frozen=True)
 class PageData:
-    items: list
-    count: int
-    page: int
-    page_size: int
-    has_next: bool
-    has_prev: bool
+    def __init__(self, items, count, page, page_size, has_next, has_prev):
+        self.items = items
+        self.count = count
+        self.page = page
+        self.page_size = page_size
+        self.has_next = has_next
+        self.has_prev = has_prev
 
 
-def _safe_page_size(page_size: int | str | None, default: int = 10, max_size: int = 100) -> int:
+def _safe_page_size(page_size, default=10, max_size=100):
     try:
         size = int(page_size or default)
     except (TypeError, ValueError):
         return default
-    return max(1, min(size, max_size))
+    if size < 1:
+        size = 1
+    if size > max_size:
+        size = max_size
+    return size
 
 
-def _safe_page(page: int | str | None, default: int = 1) -> int:
+def _safe_page(page, default=1):
     try:
         value = int(page or default)
     except (TypeError, ValueError):
         return default
-    return max(1, value)
+    if value < 1:
+        return 1
+    return value
 
 
-def is_admin(user) -> bool:
+def is_admin(user):
     rol = getattr(getattr(user, "rol_id", None), "nombre", "") or ""
     return rol.lower() == "administrador"
 
 
-def is_jefatura(user) -> bool:
+def is_jefatura(user):
     rol = getattr(getattr(user, "rol_id", None), "nombre", "") or ""
     return rol.lower() == "jefatura"
 
 
-def get_user_departamentos(user) -> QuerySet[Departamento]:
+def get_user_departamentos(user):
     return Departamento.objects.select_related("plantel", "jefe").filter(jefe=user, activo=True)
 
 
-def scope_asistencias_for_user(user) -> QuerySet[Asistencia]:
+def scope_asistencias_for_user(user):
     qs = Asistencia.objects.select_related(
         "profesor",
         "profesor__usuario",
@@ -63,7 +63,7 @@ def scope_asistencias_for_user(user) -> QuerySet[Asistencia]:
     return qs.filter(profesor__departamentos__id__in=dept_ids).distinct()
 
 
-def scope_incidencias_for_user(user) -> QuerySet[Incidencia]:
+def scope_incidencias_for_user(user):
     qs = Incidencia.objects.select_related(
         "asistencia",
         "asistencia__profesor",
@@ -79,21 +79,24 @@ def scope_incidencias_for_user(user) -> QuerySet[Incidencia]:
 
 
 def apply_asistencia_filters(
-    qs: QuerySet[Asistencia],
-    *,
-    profesor_id: int | str | None = None,
-    estado: str | None = None,
-    fecha_inicio: date | None = None,
-    fecha_fin: date | None = None,
-) -> QuerySet[Asistencia]:
+    qs,
+    profesor_id=None,
+    estado=None,
+    fecha_inicio=None,
+    fecha_fin=None,
+):
     if profesor_id:
         qs = qs.filter(profesor_id=profesor_id)
     if estado:
         estado = estado.strip().upper()
         if estado == "CANCELADA":
             qs = qs.filter(cancelada_institucional=True)
-        elif estado in {choice[0] for choice in Asistencia.ESTADOS}:
-            qs = qs.filter(estado=estado)
+        else:
+            estados_validos = []
+            for choice in Asistencia.ESTADOS:
+                estados_validos.append(choice[0])
+            if estado in estados_validos:
+                qs = qs.filter(estado=estado)
     if fecha_inicio:
         qs = qs.filter(fecha__gte=fecha_inicio)
     if fecha_fin:
@@ -102,18 +105,20 @@ def apply_asistencia_filters(
 
 
 def apply_incidencia_filters(
-    qs: QuerySet[Incidencia],
-    *,
-    profesor_id: int | str | None = None,
-    estado: str | None = None,
-    fecha_inicio: date | None = None,
-    fecha_fin: date | None = None,
-) -> QuerySet[Incidencia]:
+    qs,
+    profesor_id=None,
+    estado=None,
+    fecha_inicio=None,
+    fecha_fin=None,
+):
     if profesor_id:
         qs = qs.filter(asistencia__profesor_id=profesor_id)
     if estado:
         estado = estado.strip().upper()
-        if estado in {choice[0] for choice in Incidencia.ESTADOS}:
+        estados_validos = []
+        for choice in Incidencia.ESTADOS:
+            estados_validos.append(choice[0])
+        if estado in estados_validos:
             qs = qs.filter(estado=estado)
     if fecha_inicio:
         qs = qs.filter(fecha_solicitud__date__gte=fecha_inicio)
@@ -122,39 +127,34 @@ def apply_incidencia_filters(
     return qs
 
 
-def paginate_queryset(qs, *, page: int | str | None = 1, page_size: int | str | None = 10) -> PageData:
+def paginate_queryset(qs, page=1, page_size=10):
     current_page = _safe_page(page)
     current_page_size = _safe_page_size(page_size)
     paginator = Paginator(qs, current_page_size)
     current = paginator.get_page(current_page)
-    return PageData(
-        items=list(current.object_list),
-        count=paginator.count,
-        page=current.number,
-        page_size=current_page_size,
-        has_next=current.has_next(),
-        has_prev=current.has_previous(),
-    )
+    items = list(current.object_list)
+    count = paginator.count
+    page_number = current.number
+    has_next = current.has_next()
+    has_prev = current.has_previous()
+    return PageData(items, count, page_number, current_page_size, has_next, has_prev)
 
 
-def format_full_name(usuario) -> str:
-    if not usuario:
-        return ""
-    return f"{usuario.nombre} {usuario.apellido}".strip()
-
-
-def serialize_asistencia(asistencia: Asistencia) -> dict:
+def serialize_asistencia(asistencia):
     profesor_usuario = getattr(asistencia.profesor, "usuario", None)
     horario = getattr(asistencia, "horario", None)
     horario_label = ""
     if horario:
         horario_label = f"{horario.hora_inicio.strftime('%H:%M')} - {horario.hora_fin.strftime('%H:%M')}"
+    profesor_nombre = ""
+    if profesor_usuario:
+        profesor_nombre = f"{profesor_usuario.nombre} {profesor_usuario.apellido}".strip()
     estado_label = "Cancelada" if asistencia.cancelada_institucional else asistencia.get_estado_display()
     estado_code = "CANCELADA" if asistencia.cancelada_institucional else asistencia.estado
     return {
         "id": asistencia.id,
         "profesor_id": asistencia.profesor_id,
-        "profesor_nombre": format_full_name(profesor_usuario),
+        "profesor_nombre": profesor_nombre,
         "fecha": asistencia.fecha.strftime("%Y-%m-%d"),
         "estado": estado_code,
         "estado_label": estado_label,
@@ -166,14 +166,25 @@ def serialize_asistencia(asistencia: Asistencia) -> dict:
     }
 
 
-def serialize_incidencia(incidencia: Incidencia) -> dict:
+def serialize_incidencia(incidencia):
     asistencia = incidencia.asistencia
     profesor_usuario = getattr(asistencia.profesor, "usuario", None)
+    profesor_nombre = ""
+    if profesor_usuario:
+        profesor_nombre = f"{profesor_usuario.nombre} {profesor_usuario.apellido}".strip()
+    aprobador_nombre = ""
+    if incidencia.aprobador:
+        aprobador_nombre = f"{incidencia.aprobador.nombre} {incidencia.aprobador.apellido}".strip()
+
+    fecha_resolucion = ""
+    if incidencia.fecha_de_resolucion:
+        fecha_resolucion = incidencia.fecha_de_resolucion.strftime("%Y-%m-%d %H:%M")
+
     return {
         "id": incidencia.id,
         "asistencia_id": incidencia.asistencia_id,
         "profesor_id": asistencia.profesor_id,
-        "profesor_nombre": format_full_name(profesor_usuario),
+        "profesor_nombre": profesor_nombre,
         "fecha_ausencia": asistencia.fecha.strftime("%Y-%m-%d"),
         "motivo": incidencia.motivo,
         "tipo": incidencia.tipo,
@@ -181,10 +192,6 @@ def serialize_incidencia(incidencia: Incidencia) -> dict:
         "estado": incidencia.estado,
         "estado_label": incidencia.get_estado_display(),
         "fecha_solicitud": incidencia.fecha_solicitud.strftime("%Y-%m-%d %H:%M"),
-        "aprobador": format_full_name(incidencia.aprobador),
-        "fecha_de_resolucion": (
-            incidencia.fecha_de_resolucion.strftime("%Y-%m-%d %H:%M")
-            if incidencia.fecha_de_resolucion
-            else ""
-        ),
+        "aprobador": aprobador_nombre,
+        "fecha_de_resolucion": fecha_resolucion,
     }
