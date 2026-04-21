@@ -1,9 +1,9 @@
-# STX-CORE-DOC-BASELINE-v1.0
+# STX-CORE-DOC-BASELINE-v1.1
 # Documento de Línea Base — Saltix
 # Sistema de Control de Asistencia y Cálculo de Nómina
 
 **Estándar de referencia:** IEEE 828 (SCMP) / IEEE 830 (SRS)  
-**Versión:** 1.0  
+**Versión:** 1.1  
 **Fecha de congelamiento:** 2026-03-18  
 **Estado:** CONGELADO — Línea Base Funcional  
 **Repositorio:** https://github.com/JuanMarcoGosselin/Saltix  
@@ -16,6 +16,7 @@
 | Versión | Fecha | Autor | Descripción |
 |---------|-------|-------|-------------|
 | 1.0 | 2026-03-18 | Iván Ramos de la Torre | Emisión inicial — Línea Base Sprint 1 |
+| 1.1 | 2026-04-21 | Ivan Ramos de la Torre | Actualizacion documental de continuidad Sprint 3 y alineacion de version |
 
 ---
 
@@ -313,4 +314,14 @@ A partir del **18 de marzo de 2026**, ningún cambio puede realizarse sobre esto
 
 *Este documento forma parte de la Línea Base v1.0 del proyecto Saltix y está sujeto a control de configuración conforme a lo establecido en el estándar IEEE 828.*
 
-*STX-CORE-DOC-BASELINE-v1.0 | Saltix | 18 de marzo de 2026*
+*STX-CORE-DOC-BASELINE-v1.1 | Saltix | 21 de abril de 2026*
+---
+
+## Nota de Continuidad - Sprint 3
+
+La implementacion del Sprint 3 para gestion de asistencias por jefatura se realizo como una extension controlada de la linea base vigente:
+
+- se conservaron los componentes mayores ya definidos;
+- se extendio `Asistencias` con endpoints y servicios del flujo de jefatura;
+- se mantuvo `jefatura` como capa de orquestacion/presentacion;
+- se agrego documentacion y pruebas automatizadas iniciales para el nuevo alcance funcional.

@@ -1,8 +1,8 @@
-# STX-CORE-RSK-MATRIZ-RIESGOS-v1.0
+# STX-CORE-RSK-MATRIZ-RIESGOS-v1.1
 
 **Proyecto:** Saltix — Sistema de Control de Asistencia y Cálculo de Nómina  
-**Versión:** 1.0  
-**Fecha:** 2026-03-13
+**Versión:** 1.1  
+**Fecha:** 2026-04-21
 
 ---
 
@@ -23,6 +23,7 @@
 | RSK-02 | Técnico | Falla del reloj checador que impide registrar asistencias automáticamente. | 4 | 4 | 16 | 🔴 ROJO | Líder Técnico | Implementar flujo de registro manual como respaldo desde la primera versión. | El administrador registra asistencias manualmente; se documenta la incidencia en la bitácora. |
 | RSK-03 | Técnico | Pérdida de datos por falta de respaldos de la base de datos SQLite en producción. | 3 | 5 | 15 | 🔴 ROJO | Líder Técnico | Configurar respaldos automáticos diarios del archivo db.sqlite3; documentar proceso de restauración. | Restaurar último respaldo disponible; registrar datos perdidos con fecha y hora del incidente. |
 | RSK-04 | Técnico | Migración fallida de Django al modificar modelos críticos (Nomina, Asistencia) en producción. | 3 | 4 | 12 | 🔴 ROJO | DBA | Probar todas las migraciones en entorno de desarrollo antes de aplicar en producción; mantener respaldo previo a cada migrate. | Revertir migración con `migrate --fake`; restaurar respaldo de BD; corregir y reaplicar. |
+| RSK-11 | Técnico | Las consultas de jefatura sobre incidencias y asistencias se vuelven lentas al crecer el volumen de registros. | 3 | 3 | 9 | 🟠 NARANJA | DBA / Backend | Agregar indices en `Incidencia`, paginacion y filtros acotados por departamento. | Revisar plan de ejecucion, ajustar indices y reducir tamaño de pagina. |
 | RSK-05 | Técnico | Vulnerabilidad de acceso por control de roles insuficiente en vistas del sistema. | 2 | 5 | 10 | 🔴 ROJO | Equipo Backend | Implementar decoradores de verificación de rol en cada vista; revisar en code review. | Bloquear el acceso al módulo afectado hasta corregir; revisar logs de acceso para detectar uso indebido. |
 | RSK-06 | Negocio | Cambio en la legislación fiscal (ISR, IMSS) que afecte el cálculo de nómina durante el desarrollo. | 2 | 4 | 8 | 🟡 AMARILLO | Líder de Proyecto | Diseñar el catálogo de conceptos fiscales como configurable para adaptarse sin cambios en el código. | Actualizar el catálogo de conceptos y re-calcular nóminas afectadas del periodo vigente. |
 | RSK-07 | Negocio | Requisitos de nómina incompletos o ambiguos que generen re-trabajo en el módulo de Contabilidad. | 4 | 3 | 12 | 🔴 ROJO | Product Owner | Validar RF-14 a RF-18 con el cliente antes de implementar; hacer demos tempranas del cálculo de nómina. | Iterar sobre los requisitos; ajustar el módulo en el sprint siguiente con prioridad alta. |

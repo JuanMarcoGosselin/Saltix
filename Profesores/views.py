@@ -11,7 +11,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from Asistencias.models import Asistencia
+from Asistencias.models import Asistencia, Incidencia
 from Asistencias.services import (
     current_payroll_period,
     obtener_color_estado,
@@ -187,6 +187,11 @@ def dashboard(request):
         "stat_retardos": stats.get("retardos", 0),
         "stat_faltas": stats.get("faltas", 0),
         "stat_justificadas": stats.get("justificadas", 0),
+        "incidencias_profesor": (
+            Incidencia.objects.select_related("asistencia", "aprobador")
+            .filter(asistencia__profesor=profesor)
+            .order_by("-fecha_solicitud", "-id")[:10]
+        ),
         **profesor_profile_context(profesor=profesor, hoy=hoy, horarios_clase=horarios_clase),
     }
 
