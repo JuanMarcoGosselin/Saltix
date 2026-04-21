@@ -1,8 +1,8 @@
-# STX-CORE-RSK-MATRIZ-RIESGOS-v1.0
+# STX-CORE-RSK-MATRIZ-RIESGOS-v1.1
 
 **Proyecto:** Saltix — Sistema de Control de Asistencia y Cálculo de Nómina  
-**Versión:** 1.0  
-**Fecha:** 2026-03-13
+**Versión:** 1.1  
+**Fecha:** 2026-04-21
 
 ---
 

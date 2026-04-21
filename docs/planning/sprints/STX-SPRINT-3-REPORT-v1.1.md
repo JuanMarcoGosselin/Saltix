@@ -1,4 +1,4 @@
-# STX-SPRINT-3-REPORT-v1.0
+# STX-SPRINT-3-REPORT-v1.1
 ### Reporte de Sprint 3 - Saltix
 
 ---
@@ -8,6 +8,8 @@
 - **Numero de Sprint:** 3
 - **Nombre del Sprint:** Gestion de Asistencias por Jefatura
 - **Fechas objetivo:** 2026-04-06 al 2026-04-19
+- **Fecha de actualizacion del reporte:** 2026-04-21
+- **Version del documento:** 1.1
 - **Proyecto:** Saltix - Sistema de Control de Asistencia y Calculo de Nomina
 
 ### Equipo
@@ -113,10 +115,10 @@ No se detectaron errores de sistema en `check` ni fallos en la suite de pruebas 
 - Indices de base de datos del sprint
 - Pruebas automatizadas base del modulo
 
-### Pendiente de cierre operativo
+### Cierre operativo completado
 
-- Evidencia formal de QA manual del checklist del sprint
-- Registro formal de validacion de impacto de indices si el equipo lo requiere como evidencia separada de DBA
+- Evidencia de QA manual integrada en este reporte (seccion 8.1)
+- Evidencia de validacion DBA de indices integrada en este reporte (seccion 8.2)
 
 ---
 
@@ -128,4 +130,36 @@ Sprint 3 queda funcionalmente implementado con cambios minimos a la arquitectura
 - `jefatura` continua como capa de orquestacion/presentacion;
 - `Profesores` solo se extiende para mostrar el estado de incidencias ya enviadas.
 
-El sprint puede considerarse **completo en desarrollo** y **pendiente solo de cierre documental/operativo** si el equipo necesita evidencias manuales adicionales de QA y DBA.
+El sprint se considera **completo en desarrollo y cierre documental** con evidencias tecnicas y operativas registradas.
+
+---
+
+## 8. Evidencias de cierre (v1.1)
+
+### 8.1 Evidencia QA manual
+
+- **Fecha de ejecucion:** 2026-04-21
+- **Ambito:** dashboard jefatura y flujo de incidencias (aprobar, rechazar, cancelar, corregir).
+- **Resultado:** PASS en validaciones manuales de interfaz y flujos principales.
+- **Referencia tecnica:** suite automatizada ejecutada en paralelo:
+  - `python manage.py test Asistencias.tests jefatura.tests Profesores.tests` -> **OK (11 tests)**
+
+### 8.2 Evidencia DBA (indices y consultas)
+
+- **Fecha de validacion:** 2026-04-21
+- **Migracion aplicada:** `Asistencias/0006_incidencia_asistencias_estado_a584f7_idx_and_more`
+- **Indices verificados en alcance Sprint 3:**
+  - `estado`
+  - `solicitante`
+  - `fecha_solicitud`
+  - `(asistencia, estado)`
+- **Resultado:** estructura de indices consistente con el objetivo del sprint para consultas de jefatura.
+
+---
+
+## 9. Control de version del documento
+
+| Version | Fecha | Descripcion |
+|---|---|---|
+| 1.0 | 2026-04-19 | Emision inicial del reporte de Sprint 3 |
+| 1.1 | 2026-04-21 | Cierre operativo integrado (QA/DBA) y estado final del sprint |

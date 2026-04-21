@@ -1,11 +1,11 @@
-# STX-CORE-ARC-COMPONENTES-v1.0
+# STX-CORE-ARC-COMPONENTES-v1.1
 # Arquitectura de Componentes del Sistema Saltix
 
 **Proyecto:** Saltix  
 **Sistema:** Control de Asistencia y Calculo de Nomina  
-**Version:** 1.0  
-**Fecha:** 2026-03-13  
-**Estado:** Baseline arquitectonica
+**Version:** 1.1  
+**Fecha:** 2026-04-21  
+**Estado:** Baseline arquitectonica actualizada
 
 ---
 
