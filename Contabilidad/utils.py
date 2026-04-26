@@ -1,6 +1,11 @@
+from time import timezone
+
 from Asistencias.models import Asistencia
 from Profesores.models import Profesor
 from Contabilidad.models import Periodo, Nomina
+
+def get_all_periodos():
+    return Periodo.objects.all().order_by("-fecha_inicio")
 
 def create_periodo(fecha_inicio, fecha_fin):
     if Periodo.objects.filter(activo=True).exists():
@@ -12,7 +17,7 @@ def create_periodo(fecha_inicio, fecha_fin):
 
 def deactivate_periodo():
     periodo_id = get_active_periodo().id
-    
+
     # Checar que no falte generar nominas para el periodo antes de desactivarlo
     profesores = get_all_active_profesores()
     nominas = Nomina.objects.filter(profesor__in=profesores, periodo_id=periodo_id)
@@ -24,6 +29,7 @@ def deactivate_periodo():
     try:
         periodo = Periodo.objects.get(id=periodo_id)
         periodo.activo = False
+        periodo.fecha_fin = timezone.now()
         periodo.save()
     except Periodo.DoesNotExist:
         raise Exception("El periodo no existe.")
