@@ -29,8 +29,8 @@ class Periodo(models.Model):
 
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
-    tipo = models.CharField(max_length=10, choices=TIPOS)
-    plantel = models.ForeignKey("core.Plantel", on_delete=models.PROTECT)
+    tipo = models.CharField(max_length=10, choices=TIPOS, default="QUINCENAL")
+    plantel = models.ForeignKey("core.Plantel", on_delete=models.PROTECT, default=1)
     estado = models.CharField(max_length=10, choices=ESTADOS, default="ABIERTO")
     fecha_cierre = models.DateTimeField(null=True, blank=True)
 
