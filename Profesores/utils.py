@@ -181,3 +181,9 @@ def profesor_profile_context(*, profesor: Profesor, hoy, horarios_clase):
             {"label": "Planteles", "value": ", ".join(profesor.planteles.values_list("nombre", flat=True)) or "â€”"},
         ],
     }
+
+def calculate_valid_hours(): 
+    #Correjir, en unos momentos sabre lo que debo de hacer
+    profesor = Profesor.objects()
+    obtener_horario(profesor)
+    
