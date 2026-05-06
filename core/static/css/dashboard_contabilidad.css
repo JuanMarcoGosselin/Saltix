@@ -17,6 +17,21 @@
   color: #fff;
 }
 
+.pill-CERRADO {
+  background: #91000c;
+  color: #fff;
+}
+
+.pill-pendiente {
+  background: #e17055;
+  color: #fff
+}
+
+.pill-pagada {
+  background: #00b894;
+  color: #fff;
+}
+
 .topbar-notif {
   position: relative;
   width: 36px;

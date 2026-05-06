@@ -2,6 +2,7 @@ from django.utils import timezone
 from Asistencias.models import Asistencia
 from Profesores.models import Profesor
 from Contabilidad.models import Periodo, Nomina
+from decimal import Decimal
 
 def get_all_periodos():
     return Periodo.objects.all().order_by("-fecha_inicio")
@@ -23,7 +24,9 @@ def deactivate_periodo(id):
     except Periodo.DoesNotExist:
         raise Exception("No se encontro un periodo abierto para cerrar.")
     
-
+    if periodo.fecha_fin > timezone.now().date():
+        raise Exception("No se puede cerrar un periodo antes de su fecha de fin.")
+    
     # Checar que no falte generar nominas para el periodo antes de desactivarlo
     profesores = get_all_active_profesores()
     nominas = Nomina.objects.filter(profesor__in=profesores, periodo=periodo)
@@ -96,4 +99,22 @@ def calculate_base_payment(profesor_id):
 
     valid_hours -= late % 3  # Cada 3 retardos se descuenta 1 hora de pago
 
-    return valid_hours * profesor.costo_por_hora
+    return Decimal(str(valid_hours)) * profesor.costo_por_hora
+
+def get_nominas_from_period():
+    periodo_actual = get_active_periodo()
+    if periodo_actual is None:
+        return []
+
+    return Nomina.objects.filter(periodo=periodo_actual)
+
+def get_pending_nomina():
+    nominas = get_nominas_from_period()
+    profesores = get_all_active_profesores()
+    profesores_con_nomina = set(nomina.profesor.id for nomina in nominas)
+
+    return [profesor for profesor in profesores if profesor.id not in profesores_con_nomina]    
+
+def generate_nomina_for_profesor(profesor_id):
+    # Generamos la nomina del profesor
+    pass

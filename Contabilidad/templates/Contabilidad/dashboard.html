@@ -167,11 +167,10 @@
 
 <div class="page" id="page-nomina">
   <div class="section-title">Procesar Nomina</div>
-  <div class="section-sub">{% firstof periodo_label "Sin periodo seleccionado" %}</div>
+  <div class="section-sub">{% if periodo_actual %}{{ periodo_actual.fecha_inicio }} - {{ periodo_actual.fecha_fin }}{% else %}Sin periodo seleccionado{% endif %}</div>
   <div class="tabs" id="nomina-tabs">
     <button class="tab-btn active" type="button" data-filter="todos" onclick="filterNomina('todos',this)">Todos</button>
     <button class="tab-btn" type="button" data-filter="pendiente" onclick="filterNomina('pendiente',this)">Pendientes</button>
-    <button class="tab-btn" type="button" data-filter="proceso" onclick="filterNomina('proceso',this)">En proceso</button>
     <button class="tab-btn" type="button" data-filter="pagada" onclick="filterNomina('pagada',this)">Pagadas</button>
   </div>
   <div class="table-wrap">
@@ -180,23 +179,18 @@
     </div>
     <table>
       <thead>
-        <tr><th>Departamento</th><th>Plantel</th><th>Empleados</th><th>Bruto</th><th>IMSS</th><th>ISR</th><th>Bonos</th><th>Neto</th><th>Estado</th><th>Accion</th></tr>
+        <tr><th>Empleado</th><th>Bruto</th><th>Neto</th><th>Estado</th><th>Accion</th></tr>
       </thead>
       <tbody id="nomina-tbody">
-        {% for row in nomina_rows %}
+        {% for row in nominas %}
           <tr data-status="{{ row.estado|default:'sin-estado' }}">
-            <td>{{ row.departamento }}</td>
-            <td><span class="pill pill-blue" style="font-size:.7rem;">{{ row.plantel }}</span></td>
-            <td>{{ row.empleados }}</td>
+            <td>{{ row.profesor }}</td>
             <td>{{ row.bruto }}</td>
-            <td class="amount-neg">{{ row.imss }}</td>
-            <td class="amount-neg">{{ row.isr }}</td>
-            <td class="amount-pos">{{ row.bonos }}</td>
             <td class="amount-neu">{{ row.neto }}</td>
-            <td><span class="pill {{ row.estado_clase|default:'pill-gray' }}">{{ row.estado_label|default:'Sin estado' }}</span></td>
+            <td><span class="pill pill-{{ row.estado|default:'pill-gray' }}">{{ row.estado|capfirst|default:'Sin estado' }}</span></td>
             <td>
-              {% if row.accion_url %}
-                <a class="btn-outline btn-sm" href="{{ row.accion_url }}">Ver</a>
+              {% if row.estado == "pendiente" %} 
+                <a class="btn-outline btn-sm" href="{% url 'pagar_nomina' row.id %}">Generar</a> {# Mandamos el ID del profesor para generar la nomina #}
               {% else %}
                 <span class="pill pill-gray">Sin accion</span>
               {% endif %}
