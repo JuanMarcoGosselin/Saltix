@@ -61,3 +61,35 @@ def get_all_asistencia(profesor_id):
     except Profesor.DoesNotExist:
         return None
 
+def calculate_class_hours(clase):
+    # Calcula la duración en horas de una clase dada su hora de inicio y fin.
+    hora_inicio = clase.hora_entrada
+    hora_fin = clase.hora_salida
+
+    duracion = (hora_fin.hour) - (hora_inicio.hour)
+    return max(duracion, 0)  # Asegura que no se devuelvan horas negativas
+
+def calculate_valid_hours(profesor_id):
+    asistencias = get_all_asistencia(profesor_id)
+    if asistencias is None:
+        return 0
+
+    total_hours = sum(calculate_class_hours(a) for a in asistencias if a.estado == "ASISTENCIA" or (a.estado == "JUSTIFICADA" and a.justificada) or (a.estado == "RETARDO" )) * 1.0
+    return total_hours
+
+def get_retardos(profesor_id):
+    asistencias = get_all_asistencia(profesor_id)
+    if asistencias is None:
+        return 0
+
+    total_retardos = sum(1 for a in asistencias if a.estado == "RETARDO")
+    return total_retardos
+
+def calculate_base_payment(profesor_id):
+    profesor = Profesor.objects.get(id=profesor_id)
+    valid_hours = calculate_valid_hours(profesor_id)
+    late = get_retardos(profesor_id)
+
+    valid_hours -= late % 3  # Cada 3 retardos se descuenta 1 hora de pago
+
+    return valid_hours * profesor.costo_por_hora
