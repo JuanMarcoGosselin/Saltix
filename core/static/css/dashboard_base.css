@@ -701,3 +701,11 @@ tr:hover td { background: #fafcff; }
   transform: translateY(0);
   opacity: 1;
 }
+
+.toast.toast-success {
+  background: #1f8f5f;
+}
+
+.toast.toast-error {
+  background: #c0392b;
+}

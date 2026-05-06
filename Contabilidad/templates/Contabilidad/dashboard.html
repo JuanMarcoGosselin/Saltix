@@ -24,9 +24,6 @@
         <span class="notif-dot">{{ notificaciones_count }}</span>
       {% endif %}
     </div>
-    <div class="avatar" style="width:34px;height:34px;font-size:.8rem;background:linear-gradient(135deg,#00b894,#00e5c9);">
-      {{ user.nombre|default:"C"|slice:":1" }}{{ user.apellido|default:""|slice:":1" }}
-    </div>
   </div>
 </header>
 {% endblock %}
@@ -133,6 +130,38 @@
         </div>
       {% endfor %}
     </div>
+  </div>
+</div>
+
+<div class="page" id="page-periodos">
+  <div class="section-title">Gestionar Periodos</div>
+  <div class="section-sub">Configura y administra los periodos de pago para la nomina</div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Periodos de nomina</h3>
+      <button class="btn-primary" type="button" onclick="location.href='{% url "abrir_periodo" %}'">Nuevo periodo</button>
+    </div>
+    <table>
+      <thead><tr><th>Fecha de inicio</th><th>Fecha de fin</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>
+        {% for periodo in periodos %}
+          <tr>
+            <td>{{ periodo.fecha_inicio }}</td>
+            <td>{{ periodo.fecha_fin }}</td>
+            <td><span class="pill pill-{{ periodo.estado|default:'gray' }}">{{ periodo.estado|default:'Sin estado' }}</span></td>
+            <td>
+              {% if periodo.estado == "ABIERTO" %}
+                <a class="btn-outline btn-sm btn-close" href="{% url 'cerrar_periodo' periodo.id %}">Cerrar</a>
+              {% else %}
+                <span class="pill pill-gray">Sin acciones</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:1.25rem;">No hay periodos registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -398,4 +427,14 @@
 
 {% block page_js %}
 <script src="{% static 'js/contabilidad_dashboard.js' %}"></script>
+{% for message in messages %}
+<script>
+  showToast('{{ message|escapejs }}', '{{ message.tags|default:"success"|escapejs }}');
+</script>
+{% endfor %}
+{% if toast_message %}
+<script>
+  showToast('{{ toast_message|escapejs }}', '{{ toast_type|default:"success"|escapejs }}');
+</script>
+{% endif %}
 {% endblock %}

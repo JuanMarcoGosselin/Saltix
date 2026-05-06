@@ -1,5 +1,6 @@
 const breadcrumbs = {
   inicio: 'Inicio',
+  periodos: 'Gestionar Periodos',
   nomina: 'Procesar Nomina',
   historial: 'Historial de Pagos',
   deducciones: 'Deducciones',
@@ -97,10 +98,11 @@ function openModalBono() {
   if (modal) modal.classList.add('open');
 }
 
-function showToast(message) {
+function showToast(message, type) {
   const toast = document.getElementById('toast');
   if (!toast) return;
   toast.textContent = message;
-  toast.classList.add('show');
+  toast.className = 'toast show';
+  if (type) toast.classList.add(`toast-${type}`);
   window.setTimeout(() => toast.classList.remove('show'), 3200);
 }

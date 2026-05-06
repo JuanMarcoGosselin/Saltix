@@ -6,6 +6,9 @@ from Contabilidad.models import Periodo, Nomina
 def get_all_periodos():
     return Periodo.objects.all().order_by("-fecha_inicio")
 
+def get_last_periodo():
+    return Periodo.objects.all().order_by("-fecha_inicio").first()
+
 def create_periodo(fecha_inicio, fecha_fin):
     if get_active_periodo() is not None:
         raise Exception("Ya existe un periodo abierto. Ciérralo antes de crear uno nuevo.")
@@ -14,10 +17,11 @@ def create_periodo(fecha_inicio, fecha_fin):
     periodo.save()
     return periodo
 
-def deactivate_periodo():
-    periodo = get_active_periodo()
-    if periodo is None:
-        raise Exception("No hay un periodo abierto para desactivar.")
+def deactivate_periodo(id):
+    try:
+        periodo = Periodo.objects.get(id=id, estado="ABIERTO")
+    except Periodo.DoesNotExist:
+        raise Exception("No se encontro un periodo abierto para cerrar.")
     
 
     # Checar que no falte generar nominas para el periodo antes de desactivarlo

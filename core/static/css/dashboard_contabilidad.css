@@ -12,6 +12,11 @@
   color: #c0392b;
 }
 
+.pill-ABIERTO {
+  background: #0C4E33;
+  color: #fff;
+}
+
 .topbar-notif {
   position: relative;
   width: 36px;
@@ -88,6 +93,17 @@
   background: var(--white);
   color: var(--navy);
   box-shadow: 0 1px 4px rgba(13,31,60,.1);
+}
+
+.btn-close {
+  background: #c0392b;
+  color: #fff;
+  padding: .35rem .75rem;
+  border-radius: 6px;
+  font-size: .75rem;
+  font-weight: 600;
+  transition: background .2s;
+  text-decoration: none;
 }
 
 .progress-bar-bg {
