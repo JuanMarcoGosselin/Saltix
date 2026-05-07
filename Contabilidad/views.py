@@ -78,11 +78,10 @@ def abrir_periodo(request):
     return redirect("contabilidad_dashboard")
 
 def pagar_nomina(request, profesor_id):
-    pass
     # Funcion para generar la nomina de un profesor. Solo se puede generar la nomina si el periodo esta abierto.
     try:
         nomina = generate_nomina_for_profesor(profesor_id)
-        message = f"Nómina de {nomina.profesor} generada correctamente."
+        message = f"Nómina de {nomina.profesor.usuario.get_full_name()} generada correctamente."
         messages.success(request, message)
     except Exception as exc:
         message = str(exc)

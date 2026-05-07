@@ -116,5 +116,14 @@ def get_pending_nomina():
     return [profesor for profesor in profesores if profesor.id not in profesores_con_nomina]    
 
 def generate_nomina_for_profesor(profesor_id):
-    # Generamos la nomina del profesor
-    pass
+    nomina = Nomina.objects.create(
+        profesor_id=profesor_id,
+        periodo=get_active_periodo(),
+        total_bruto=calculate_base_payment(profesor_id),
+        total_percepciones=Decimal("0.00"),  # Aquí se podrían agregar percepciones adicionales
+        total_impuestos=Decimal("0.00"),  # Aquí se podrían calcular impuestos basados en las percepciones
+        total_deducciones=Decimal("0.00"),  # Aquí se podrían agregar deducciones adicionales
+        total_neto=Decimal("0.00"),  # Este campo se actualizará después de calcular el neto
+        fecha_de_generacion=timezone.now(),
+    )
+    return nomina

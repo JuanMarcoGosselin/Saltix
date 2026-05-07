@@ -60,9 +60,9 @@
       <tbody id="nomina-tbody">
         {% for row in nominas %}
           <tr data-status="{{ row.estado|default:'sin-estado' }}">
-            <td>{{ row.profesor }}</td>
-            <td>{% firstof row.total_bruto row.bruto "--" %}</td>
-            <td class="amount-neu">{% firstof row.total_neto row.neto "--" %}</td>
+            <td>{%if row.estado == "pendiente" %} {{ row.profesor }}{% else %} {{ row.profesor.usuario.get_full_name }}{% endif %}</td>
+            <td>{% firstof row.bruto "--" %}</td>
+            <td class="amount-neu">{% firstof row.neto "--" %}</td>
             <td><span class="pill pill-{{ row.estado|default:'gray' }}">{{ row.estado|capfirst|default:"Sin estado" }}</span></td>
             <td>
               {% if row.estado == "pendiente" %}
