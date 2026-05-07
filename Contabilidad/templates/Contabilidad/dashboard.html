@@ -33,52 +33,13 @@
   <div class="welcome-banner welcome-banner-conta">
     <div class="welcome-text">
       <h2>Panel de Contabilidad</h2>
-      <p>Resumen financiero{% if periodo_label %} · {{ periodo_label }}{% endif %}</p>
+      <p>Resumen financiero{% if periodo_actual %} · {{ periodo_actual.fecha_inicio }} - {{ periodo_actual.fecha_fin }}{% endif %}</p>
     </div>
     <div class="welcome-chips">
       <div class="welcome-chip">
-        <div class="chip-val">{% firstof nomina_bruta_display "--" %}</div>
-        <div class="chip-label">Nomina bruta</div>
+        <div class="chip-val">{{ pagos_pendientes|default:'0' }}</div>
+        <div class="chip-label">Pagos pendientes</div>
       </div>
-      <div class="welcome-chip">
-        <div class="chip-val">{% firstof deducciones_total_display "--" %}</div>
-        <div class="chip-label">Deducciones</div>
-      </div>
-      <div class="welcome-chip">
-        <div class="chip-val">{% firstof neto_pagar_display "--" %}</div>
-        <div class="chip-label">Neto a pagar</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="cards-grid">
-    <div class="card card-kpi" style="position:relative;overflow:hidden;padding-top:1.6rem;">
-      <div class="card-bar bar-teal"></div>
-      <div class="card-top"><div class="card-icon-wrap icon-green">&#128181;</div></div>
-      <div class="card-label">Nomina del periodo</div>
-      <div class="card-value" style="font-size:1.5rem;">{% firstof nomina_mes_display "--" %}</div>
-      <div class="card-sub">{% firstof nomina_mes_subtitle "Sin informacion cargada" %}</div>
-    </div>
-    <div class="card card-kpi" style="position:relative;overflow:hidden;padding-top:1.6rem;">
-      <div class="card-bar bar-orange"></div>
-      <div class="card-top"><div class="card-icon-wrap icon-yellow">&#9203;</div></div>
-      <div class="card-label">Pagos pendientes</div>
-      <div class="card-value" style="font-size:1.5rem;">{% firstof pagos_pendientes_display "--" %}</div>
-      <div class="card-sub">{% firstof pagos_pendientes_subtitle "Sin informacion cargada" %}</div>
-    </div>
-    <div class="card card-kpi" style="position:relative;overflow:hidden;padding-top:1.6rem;">
-      <div class="card-bar bar-blue"></div>
-      <div class="card-top"><div class="card-icon-wrap icon-blue">&#127873;</div></div>
-      <div class="card-label">Bonos del periodo</div>
-      <div class="card-value" style="font-size:1.5rem;">{% firstof bonos_mes_display "--" %}</div>
-      <div class="card-sub">{% firstof bonos_mes_subtitle "Sin informacion cargada" %}</div>
-    </div>
-    <div class="card card-kpi" style="position:relative;overflow:hidden;padding-top:1.6rem;">
-      <div class="card-bar bar-red"></div>
-      <div class="card-top"><div class="card-icon-wrap" style="background:#fdecea;">&#128201;</div></div>
-      <div class="card-label">Deducciones totales</div>
-      <div class="card-value amount-neg" style="font-size:1.5rem;">{% firstof deducciones_mes_display "--" %}</div>
-      <div class="card-sub">{% firstof deducciones_mes_subtitle "Sin informacion cargada" %}</div>
     </div>
   </div>
 

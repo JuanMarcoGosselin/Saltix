@@ -21,10 +21,14 @@ def dashboard(request, *args, **kwargs):
         nomina.profesor = nomina.usuario.get_full_name()
         nominas.append(nomina)
 
+    pending_nominas = len(nominas_pendientes)
+
     context = {
+        "periodo_label": f"{periodo_actual.fecha_inicio.strftime('%d %B')} - {periodo_actual.fecha_fin.strftime('%d %B')}" if periodo_actual else None,
         "periodo_actual": periodo_actual,
         "periodos": periodos,
         "nominas": nominas,
+        "pagos_pendientes": pending_nominas,
         "toast_message": kwargs.get("toast_message"),
         "toast_type": kwargs.get("toast_type"),
     }
