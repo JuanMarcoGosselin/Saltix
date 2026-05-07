@@ -1,11 +1,6 @@
 const breadcrumbs = {
   inicio: 'Inicio',
-  periodos: 'Gestionar Periodos',
-  nomina: 'Procesar Nomina',
-  historial: 'Historial de Pagos',
-  deducciones: 'Deducciones',
-  bonos: 'Bonos',
-  planteles: 'Planteles',
+  periodos: 'Periodos de Nomina',
   reportes: 'Reportes Financieros',
 };
 
@@ -62,40 +57,12 @@ function filterNomina(filter, button) {
   });
 }
 
-function searchHistorial(value) {
+function searchPeriodos(value) {
   const term = (value || '').trim().toLowerCase();
-  const rows = document.querySelectorAll('#historial-tbody tr[data-search]');
+  const rows = document.querySelectorAll('#periodos-tbody tr[data-search]');
   rows.forEach((row) => {
     row.hidden = term && !(row.dataset.search || '').includes(term);
   });
-}
-
-function togglePlantel(id) {
-  const body = document.getElementById(`body-${id}`);
-  const chevron = document.getElementById(`chevron-${id}`);
-  if (!body) return;
-  const isOpen = body.classList.contains('open');
-  if (isOpen) {
-    body.style.maxHeight = `${body.scrollHeight}px`;
-    requestAnimationFrame(() => { body.style.maxHeight = '0'; });
-    body.classList.remove('open');
-    if (chevron) chevron.style.transform = 'rotate(-90deg)';
-  } else {
-    body.classList.add('open');
-    body.style.maxHeight = `${body.scrollHeight}px`;
-    window.setTimeout(() => { body.style.maxHeight = 'none'; }, 380);
-    if (chevron) chevron.style.transform = 'rotate(0deg)';
-  }
-}
-
-function openModalDeduccion() {
-  const modal = document.getElementById('modal-ded');
-  if (modal) modal.classList.add('open');
-}
-
-function openModalBono() {
-  const modal = document.getElementById('modal-bono');
-  if (modal) modal.classList.add('open');
 }
 
 function showToast(message, type) {

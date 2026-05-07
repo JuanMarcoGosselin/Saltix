@@ -7,6 +7,12 @@
   background: linear-gradient(135deg, #0d2a1f 0%, #0a5c3a 50%, #00b894 100%);
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
 .pill-red {
   background: #fdecea;
   color: #c0392b;
@@ -80,6 +86,60 @@
 .bar-teal { background: linear-gradient(90deg, #00b894, #00e5c9); }
 .bar-orange { background: linear-gradient(90deg, #f7971e, #ffd200); }
 .bar-red { background: linear-gradient(90deg, #e17055, #fd79a8); }
+
+.conta-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.conta-summary-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 1.35rem 1.25rem 1.1rem;
+  box-shadow: 0 2px 8px rgba(13,31,60,.04);
+}
+
+.summary-label {
+  color: var(--gray-400);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  margin-bottom: .4rem;
+  text-transform: uppercase;
+}
+
+.summary-value {
+  color: var(--navy);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: .45rem;
+}
+
+.summary-meta {
+  color: var(--gray-600);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.empty-cell {
+  color: var(--gray-400);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.period-actions {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 
 .tabs {
   display: flex;
@@ -357,8 +417,14 @@
 }
 
 @media (max-width: 768px) {
-  .modal-grid {
+  .conta-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .period-actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
   }
 
   .welcome-chips {
