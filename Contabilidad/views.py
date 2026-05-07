@@ -2,6 +2,8 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 from .utils import *
 import calendar
+import locale
+locale.setlocale(locale.LC_TIME, 'Spanish_Mexico')
 
 def dashboard(request, *args, **kwargs):
     periodo_actual = get_active_periodo()
@@ -11,7 +13,6 @@ def dashboard(request, *args, **kwargs):
     nominas_pendientes = get_pending_nomina()
 
     for nomina in nominas_periodo:
-        nomina.estado = "pagada"
         nomina.bruto = nomina.total_bruto
         nominas.append(nomina)
 
@@ -77,11 +78,32 @@ def abrir_periodo(request):
 
     return redirect("contabilidad_dashboard")
 
-def pagar_nomina(request, profesor_id):
-    # Funcion para generar la nomina de un profesor. Solo se puede generar la nomina si el periodo esta abierto.
+def procesar_nomina(request, profesor_id):
+    nomina = get_nomina_for_profesor(profesor_id)
+    profesor = Profesor.objects.get(id=profesor_id)
+    total_faltas = get_total_faltas(profesor_id)
+    periodo_label = f"{nomina.periodo.fecha_inicio.strftime('%d')} al {nomina.periodo.fecha_fin.strftime('%d %B %Y')}"
+    preview_total_percepciones = nomina.total_bruto + nomina.total_percepciones
+    preview_total_deducciones = nomina.total_impuestos + nomina.total_deducciones
+    preview_total_neto = preview_total_percepciones - preview_total_deducciones
+    context = {
+        "nomina": nomina,
+        "profesor": profesor,
+        "total_faltas": total_faltas,
+        "periodo_label": periodo_label,
+        "preview_total_percepciones": preview_total_percepciones,
+        "preview_total_deducciones": preview_total_deducciones,
+        "preview_total_neto": preview_total_neto,
+        "preview_total_neto_texto": money_to_spanish_text(preview_total_neto),
+    }    
+
+    return render(request, "Contabilidad/nomina_gen.html", context)
+
+def pagar_nomina(request, nomina_id):
+    # Funcion para marcar una nomina como pagada. Solo se puede marcar como pagada una nomina que este pendiente.
     try:
-        nomina = generate_nomina_for_profesor(profesor_id)
-        message = f"Nómina de {nomina.profesor.usuario.get_full_name()} generada correctamente."
+        nomina = mark_nomina_as_paid(nomina_id)
+        message = f"Nómina de {nomina.profesor.usuario.get_full_name()} marcada como pagada."
         messages.success(request, message)
     except Exception as exc:
         message = str(exc)

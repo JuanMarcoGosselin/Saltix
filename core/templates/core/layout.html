@@ -98,14 +98,14 @@
           </div>
           <nav>
             <div class="nav-label">Principal</div>
-            <button class="nav-item active" onclick="showPage('inicio',this)">
+            <button class="nav-item active" data-page="inicio" data-dashboard-url="{% url 'contabilidad_dashboard' %}" onclick="showPage('inicio',this)">
               <span class="icon">&#x1F3E0;</span> Inicio
             </button>
-            <button class="nav-item" onclick="showPage('periodos',this)">
+            <button class="nav-item" data-page="periodos" data-dashboard-url="{% url 'contabilidad_dashboard' %}" onclick="showPage('periodos',this)">
               <span class="icon">&#x1F4C5;</span> Gestionar Periodos
             </button>
             <div class="nav-label">Reportes</div>
-            <button class="nav-item" onclick="showPage('reportes',this)">
+            <button class="nav-item" data-page="reportes" data-dashboard-url="{% url 'contabilidad_dashboard' %}" onclick="showPage('reportes',this)">
               <span class="icon">&#x1F4CA;</span> Reportes financieros
             </button>
           </nav>

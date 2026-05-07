@@ -2,6 +2,11 @@ from django.db import models
 from django.db.models import Q
 
 class Nomina(models.Model): 
+    ESTADOS = [
+        ("pendiente", "Pendiente"),
+        ("procesando", "Procesando"),
+        ("pagada", "Pagada"),
+    ]
     # Resultado final de nomina por profesor y periodo (totales y fecha).
     profesor = models.ForeignKey("Profesores.Profesor", on_delete=models.PROTECT)
     periodo = models.ForeignKey("Periodo", on_delete=models.PROTECT)
@@ -11,6 +16,7 @@ class Nomina(models.Model):
     total_deducciones = models.DecimalField(max_digits=12, decimal_places=4) 
     total_neto = models.DecimalField(max_digits=12, decimal_places=4)
     fecha_de_generacion = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default="procesando")
 
     def __str__(self):
         return f"{self.profesor} | {self.periodo}"
@@ -45,6 +51,9 @@ class Periodo(models.Model):
 
     def __str__(self):
         return f"{self.plantel} | {self.tipo} | {self.fecha_inicio} - {self.fecha_fin}"
+
+    def display_label(self):
+        return f"{self.fecha_inicio.strftime('%d %B')} - {self.fecha_fin.strftime('%d %B')}"
 
 class CatalogoConcepto(models.Model):
     # Catalogo de conceptos de percepciones/deducciones y su clasificacion fiscal.

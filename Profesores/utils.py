@@ -170,7 +170,7 @@ def profesor_profile_context(*, profesor: Profesor, hoy, horarios_clase):
         "perfil_anios_experiencia": str(max(0, (hoy - profesor.fecha_ingreso).days // 365)) if profesor.fecha_ingreso else "â€”",
         "perfil_datos": [
             {"label": "Email", "value": profesor.usuario.email},
-            {"label": "TelÃ©fono", "value": profesor.telefono},
+            {"label": "Telefono", "value": profesor.telefono},
             {"label": "RFC", "value": profesor.rfc},
             {"label": "CURP", "value": profesor.curp},
             {"label": "Dirección", "value": profesor.direccion},

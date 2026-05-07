@@ -4,6 +4,16 @@ from Profesores.models import Profesor
 from Contabilidad.models import Periodo, Nomina
 from decimal import Decimal
 
+UNIDADES = (
+    "cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho",
+    "nueve", "diez", "once", "doce", "trece", "catorce", "quince", "dieciseis",
+    "diecisiete", "dieciocho", "diecinueve", "veinte", "veintiuno", "veintidos",
+    "veintitres", "veinticuatro", "veinticinco", "veintiseis", "veintisiete",
+    "veintiocho", "veintinueve",
+)
+DIEZ_DIEZ = ("", "", "", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa")
+CIENTOS = ("", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos")
+
 def get_all_periodos():
     return Periodo.objects.all().order_by("-fecha_inicio")
 
@@ -115,15 +125,68 @@ def get_pending_nomina():
 
     return [profesor for profesor in profesores if profesor.id not in profesores_con_nomina]    
 
-def generate_nomina_for_profesor(profesor_id):
+def get_nomina_for_profesor(profesor_id):
+    # Solo se puede generar una nomina por periodo y profesor. Si ya existe una nomina para el periodo y profesor, se devuelve esa nomina sin generar una nueva.
+    periodo_actual = get_active_periodo()
+    if periodo_actual is None:
+        raise Exception("No hay un periodo activo para generar la nómina.")
+    existing_nomina = Nomina.objects.filter(profesor_id=profesor_id, periodo=periodo_actual).first()
+    if existing_nomina:
+        return existing_nomina
+    
     nomina = Nomina.objects.create(
         profesor_id=profesor_id,
-        periodo=get_active_periodo(),
+        periodo=periodo_actual,
         total_bruto=calculate_base_payment(profesor_id),
         total_percepciones=Decimal("0.00"),  # Aquí se podrían agregar percepciones adicionales
         total_impuestos=Decimal("0.00"),  # Aquí se podrían calcular impuestos basados en las percepciones
         total_deducciones=Decimal("0.00"),  # Aquí se podrían agregar deducciones adicionales
         total_neto=Decimal("0.00"),  # Este campo se actualizará después de calcular el neto
         fecha_de_generacion=timezone.now(),
+        estado="procesando",
     )
     return nomina
+
+def get_total_faltas(profesor_id):
+    asistencias = get_all_asistencia(profesor_id)
+    if asistencias is None:
+        return 0
+
+    total_faltas = sum(1 for a in asistencias if a.estado == "FALTA")
+    total_retardos = get_retardos(profesor_id)
+    total_faltas += total_retardos // 3
+
+    return total_faltas
+
+def mark_nomina_as_paid(nomina_id):
+    nomina = Nomina.objects.get(id=nomina_id)
+    nomina.estado = "pagada"
+    nomina.save()
+    return nomina
+
+def number_to_spanish_words(number):
+    number = int(number)
+    if number < 30:
+        return UNIDADES[number]
+    if number < 100:
+        ten, unit = divmod(number, 10)
+        return DIEZ_DIEZ[ten] if unit == 0 else f"{DIEZ_DIEZ[ten]} y {UNIDADES[unit]}"
+    if number == 100:
+        return "cien"
+    if number < 1000:
+        hundred, rest = divmod(number, 100)
+        return CIENTOS[hundred] if rest == 0 else f"{CIENTOS[hundred]} {number_to_spanish_words(rest)}"
+    if number < 1000000:
+        thousand, rest = divmod(number, 1000)
+        prefix = "mil" if thousand == 1 else f"{number_to_spanish_words(thousand)} mil"
+        return prefix if rest == 0 else f"{prefix} {number_to_spanish_words(rest)}"
+    million, rest = divmod(number, 1000000)
+    prefix = "un millon" if million == 1 else f"{number_to_spanish_words(million)} millones"
+    return prefix if rest == 0 else f"{prefix} {number_to_spanish_words(rest)}"
+
+def money_to_spanish_text(amount):
+    amount = Decimal(amount or 0).quantize(Decimal("0.01"))
+    pesos = int(amount)
+    cents = int((amount - Decimal(pesos)) * 100)
+    peso_label = "peso" if pesos == 1 else "pesos"
+    return f"{number_to_spanish_words(pesos)} {peso_label} {cents:02d}/100 M.N.".upper()
