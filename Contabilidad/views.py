@@ -83,7 +83,8 @@ def procesar_nomina(request, profesor_id):
     profesor = Profesor.objects.get(id=profesor_id)
     total_faltas = get_total_faltas(profesor_id)
     periodo_label = f"{nomina.periodo.fecha_inicio.strftime('%d')} al {nomina.periodo.fecha_fin.strftime('%d %B %Y')}"
-    preview_total_percepciones = nomina.total_bruto + nomina.total_percepciones
+    preview_total_percepciones = nomina.total_percepciones
+    preview_descuento_faltas = get_deducciones_faltas(profesor_id)
     preview_total_deducciones = nomina.total_impuestos + nomina.total_deducciones
     preview_total_neto = preview_total_percepciones - preview_total_deducciones
     context = {
@@ -93,6 +94,7 @@ def procesar_nomina(request, profesor_id):
         "periodo_label": periodo_label,
         "preview_total_percepciones": preview_total_percepciones,
         "preview_total_deducciones": preview_total_deducciones,
+        "preview_descuento_faltas": preview_descuento_faltas,
         "preview_total_neto": preview_total_neto,
         "preview_total_neto_texto": money_to_spanish_text(preview_total_neto),
     }    

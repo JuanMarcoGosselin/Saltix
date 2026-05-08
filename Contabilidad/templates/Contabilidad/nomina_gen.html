@@ -57,7 +57,7 @@
                     </div>
                     <div class="paper-meta-block">
                         <span>Faltas</span>
-                        <strong>{{ total_faltas }}</strong>
+                        <strong>{{ total_faltas|floatformat:0 }}</strong>
                     </div>
                 </div>
 
@@ -118,6 +118,10 @@
                             <div class="paper-concepts-row">
                                 <strong>Impuestos</strong>
                                 <strong class="amount-neg">$ {{ nomina.total_impuestos|money }}</strong>
+                            </div>
+                            <div class="paper-concepts-row">
+                                <strong>Faltas</strong>
+                                <strong class="amount-neg">$ {{ preview_descuento_faltas|money }}</strong>
                             </div>
                         </div>
                         <div class="paper-concept-total">

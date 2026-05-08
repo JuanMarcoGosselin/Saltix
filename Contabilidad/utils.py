@@ -1,8 +1,9 @@
 from django.utils import timezone
 from Asistencias.models import Asistencia
-from Profesores.models import Profesor
+from Profesores.models import Profesor, Horario
 from Contabilidad.models import Periodo, Nomina
 from decimal import Decimal
+from Profesores.utils import expected_minutes_for_range
 
 UNIDADES = (
     "cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho",
@@ -86,14 +87,6 @@ def calculate_class_hours(clase):
     duracion = (hora_fin.hour) - (hora_inicio.hour)
     return max(duracion, 0)  # Asegura que no se devuelvan horas negativas
 
-def calculate_valid_hours(profesor_id):
-    asistencias = get_all_asistencia(profesor_id)
-    if asistencias is None:
-        return 0
-
-    total_hours = sum(calculate_class_hours(a) for a in asistencias if a.estado == "ASISTENCIA" or (a.estado == "JUSTIFICADA" and a.justificada) or (a.estado == "RETARDO" )) * 1.0
-    return total_hours
-
 def get_retardos(profesor_id):
     asistencias = get_all_asistencia(profesor_id)
     if asistencias is None:
@@ -103,13 +96,17 @@ def get_retardos(profesor_id):
     return total_retardos
 
 def calculate_base_payment(profesor_id):
+    horario = Horario.objects.filter(profesor_id=profesor_id, activo=True).order_by("dia_semana", "hora_inicio")
     profesor = Profesor.objects.get(id=profesor_id)
-    valid_hours = calculate_valid_hours(profesor_id)
-    late = get_retardos(profesor_id)
-
-    valid_hours -= late % 3  # Cada 3 retardos se descuenta 1 hora de pago
+    valid_hours = expected_minutes_for_range(horario, get_active_periodo().fecha_inicio, get_active_periodo().fecha_fin) / 60
 
     return Decimal(str(valid_hours)) * profesor.costo_por_hora
+
+def get_deducciones_faltas(profesor_id):
+    total_faltas = get_total_faltas(profesor_id)
+    profesor = Profesor.objects.get(id=profesor_id)
+
+    return Decimal(str(total_faltas)) * profesor.costo_por_hora
 
 def get_nominas_from_period():
     periodo_actual = get_active_periodo()
@@ -134,14 +131,17 @@ def get_nomina_for_profesor(profesor_id):
     if existing_nomina:
         return existing_nomina
     
+    total_bruto = calculate_base_payment(profesor_id)
+    total_deducciones = get_deducciones_faltas(profesor_id)
+
     nomina = Nomina.objects.create(
         profesor_id=profesor_id,
         periodo=periodo_actual,
-        total_bruto=calculate_base_payment(profesor_id),
-        total_percepciones=Decimal("0.00"),  # Aquí se podrían agregar percepciones adicionales
+        total_bruto=total_bruto,
+        total_percepciones=Decimal(str(total_bruto)),  # Aquí se podrían agregar percepciones adicionales
         total_impuestos=Decimal("0.00"),  # Aquí se podrían calcular impuestos basados en las percepciones
-        total_deducciones=Decimal("0.00"),  # Aquí se podrían agregar deducciones adicionales
-        total_neto=Decimal("0.00"),  # Este campo se actualizará después de calcular el neto
+        total_deducciones=Decimal(str(total_deducciones)),  # Aquí se podrían agregar deducciones adicionales
+        total_neto=Decimal(str(total_bruto - total_deducciones)),  # Este campo se actualizará después de calcular el neto
         fecha_de_generacion=timezone.now(),
         estado="procesando",
     )
@@ -152,7 +152,11 @@ def get_total_faltas(profesor_id):
     if asistencias is None:
         return 0
 
-    total_faltas = sum(1 for a in asistencias if a.estado == "FALTA")
+    horario = Horario.objects.filter(profesor_id=profesor_id, activo=True).order_by("dia_semana", "hora_inicio")
+    total_hours = expected_minutes_for_range(horario, get_active_periodo().fecha_inicio, get_active_periodo().fecha_fin) / 60
+    total_asistencias = sum(1 for a in asistencias if a.estado == "ASISTENCIA" or a.justificada or a.estado == "RETARDO")
+
+    total_faltas = total_hours - total_asistencias
     total_retardos = get_retardos(profesor_id)
     total_faltas += total_retardos // 3
 
