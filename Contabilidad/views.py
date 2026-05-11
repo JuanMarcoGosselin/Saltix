@@ -6,7 +6,7 @@ import locale
 locale.setlocale(locale.LC_TIME, 'Spanish_Mexico')
 
 def dashboard(request, *args, **kwargs):
-    periodo_actual = get_active_periodo()
+    periodo_actual = get_periodo_activo()
     periodos = get_all_periodos()
     nominas = []
     nominas_periodo = get_nominas_from_period()
@@ -18,7 +18,7 @@ def dashboard(request, *args, **kwargs):
 
     for nomina in nominas_pendientes:
         nomina.estado = "pendiente"
-        nomina.bruto = calculate_base_payment(nomina.id)
+        nomina.bruto = calcular_pago_base(nomina.id)
         nomina.profesor = nomina.usuario.get_full_name()
         nominas.append(nomina)
 
@@ -84,7 +84,7 @@ def procesar_nomina(request, profesor_id):
     total_faltas = get_total_faltas(profesor_id)
     periodo_label = f"{nomina.periodo.fecha_inicio.strftime('%d')} al {nomina.periodo.fecha_fin.strftime('%d %B %Y')}"
     preview_total_percepciones = nomina.total_percepciones
-    preview_descuento_faltas = get_deducciones_faltas(profesor_id)
+    preview_descuento_faltas = get_faltas_descontables(profesor_id)
     preview_total_deducciones = nomina.total_impuestos + nomina.total_deducciones
     preview_total_neto = preview_total_percepciones - preview_total_deducciones
     context = {

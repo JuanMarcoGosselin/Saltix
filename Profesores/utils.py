@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from Asistencias.models import *
 from .models import Horario, Profesor
-from Contabilidad.utils import get_active_periodo, total_horas_clase
+from Contabilidad.utils import get_periodo_activo, total_horas_periodo
 
 def obtener_horario_hoy(profesor):
     dias = {
@@ -83,7 +83,7 @@ def month_bounds(hoy):
     return hoy.replace(day=1), hoy.replace(day=month_end_day)
 
 def get_attendance_stats(profesor_id):
-    periodo = get_active_periodo()
+    periodo = get_periodo_activo()
     asistencias = Asistencia.objects.filter(profesor_id=profesor_id, fecha__range=(periodo.fecha_inicio - timedelta(weeks=1), periodo.fecha_fin))
     stats = {
         "total_asistencias": asistencias.filter(estado="ASISTENCIA").count(),
@@ -93,30 +93,46 @@ def get_attendance_stats(profesor_id):
     }
     return stats
 
-def get_horario_display(profesor_id):
-    periodo = get_active_periodo()
-    horario = Horario.objects.filter(profesor_id=profesor_id, activo=True).order_by("dia_semana", "hora_inicio")
-    asistencias = Asistencia.objects.filter(profesor_id=profesor_id, fecha__range=(periodo.fecha_inicio - timedelta(weeks=1), periodo.fecha_fin))
-    for clase in horario:
-        clase.asistencia = asistencias.filter(horario=clase).first()
-        clase.estado = clase.asistencia.estado if clase.asistencia else "PENDIENTE"
+def get_horario_display(profesor_id, inicio_semana, fin_semana):
+    dias_map = {
+        "LUN": 0,
+        "MAR": 1,
+        "MIE": 2,
+        "JUE": 3,
+        "VIE": 4,
+        "SAB": 5,
+    }
 
-    dias = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB"]
-    horas = list(range(6, 24))  # 7 AM to 10 PM
+    horario = Horario.objects.filter(profesor_id=profesor_id, activo=True).order_by("dia_semana", "hora_inicio")
+    asistencias = Asistencia.objects.filter(profesor_id=profesor_id, fecha__range=(inicio_semana, fin_semana))
+    ahora = timezone.localtime()
+
+    for clase in horario:
+        clase.asistencia = asistencias.filter(horario_id=clase.id).first()
+        if clase.asistencia:
+            clase.estado = clase.asistencia.estado
+            continue
+            
+        fecha_clase = inicio_semana + timezone.timedelta(days=dias_map[clase.dia_semana])
+        fecha_hora_clase = timezone.make_aware(datetime.combine(fecha_clase, clase.hora_inicio,))
+
+        if fecha_hora_clase < ahora:
+            clase.estado = "FALTA"
+        else:
+            clase.estado = "PENDIENTE"
+
     return {
-        "dias": dias,
-        "horas": horas,
+        "dias": ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB"],
+        "horas": list(range(6, 24)),
         "clases": horario,
     }
 
-def get_faltas(profesor_id):
-    fecha_inicio = get_active_periodo().fecha_inicio - timedelta(weeks=1)
-    fecha_fin = get_active_periodo().fecha_fin
+def get_faltas(profesor_id, inicio_semana, fin_semana):
     faltas = Asistencia.objects.filter(
         profesor_id=profesor_id,
         estado="FALTA",
         justificada=False,
-        fecha__range=(fecha_inicio, fecha_fin)
+        fecha__range=(inicio_semana, fin_semana)
     ).select_related("horario").order_by("-fecha", "-id")
 
     for falta in faltas:
@@ -127,8 +143,9 @@ def get_faltas(profesor_id):
     return faltas
 
 def get_incidencias(profesor_id):
+    periodo = get_periodo_activo()
     profesor = Profesor.objects.get(id=profesor_id)
-    faltas = get_faltas(profesor_id)
+    faltas = get_faltas(profesor_id, periodo.fecha_inicio, periodo.fecha_fin)
     incidencias = Incidencia.objects.filter(
         solicitante=profesor.usuario,
         asistencia__in=faltas,
@@ -144,7 +161,7 @@ def get_profesor_context(profesor_id):
     puesto = "Profesor"
     estado = profesor.estado_laboral
     tiempo_institucion = (timezone.localdate() - profesor.fecha_ingreso).days if profesor.fecha_ingreso else None
-    jornada_semanal = total_horas_clase(profesor_id)
+    jornada_semanal = total_horas_periodo(profesor_id)
     experiencia = tiempo_institucion // 365 if tiempo_institucion is not None else None
     perfil_datos = [
         {"label": "Email", "value": profesor.usuario.email},
@@ -168,3 +185,40 @@ def get_profesor_context(profesor_id):
         "jornada_semanal": f"{int(jornada_semanal)} horas" if jornada_semanal else "N/A",
         "perfil_datos": perfil_datos,
     }
+
+def get_recibo_detalle(ultima_nomina, detalle_nomina):
+        if not ultima_nomina:
+            return []
+
+        recibo_detalle = [
+            {
+                "concepto": "Salario base",
+                "tipo_label": "PERCEPCIÓN",
+                "tipo_clase": "percepcion",
+                "importe": ultima_nomina.total_bruto,
+            }
+        ]
+        recibo_detalle += [
+            {
+                "concepto": concepto.concepto.nombre,
+                "tipo_label": concepto.concepto.tipo,
+                "tipo_clase": concepto.concepto.tipo.lower(),
+                "importe": concepto.monto,
+            }
+            for concepto in detalle_nomina
+        ]
+        recibo_detalle += [
+            {
+                "concepto": "Deducciones por faltas",
+                "tipo_label": "DEDUCCIÓN",
+                "tipo_clase": "deduccion",
+                "importe": ultima_nomina.total_deducciones,
+            },
+            {
+                "concepto": "NETO A PAGAR",
+                "tipo_clase": "neto",
+                "importe": ultima_nomina.total_neto,
+            }
+        ]
+
+        return recibo_detalle

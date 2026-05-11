@@ -1,16 +1,19 @@
 from django.db import models
 
-class Asistencia(models.Model): 
+
+class Asistencia(models.Model):
     # Registro de asistencia por clase: entrada/salida, estado y si fue manual o normal.
     TIPO_REGISTRO = [
         ("RELOJ", "Reloj"),
         ("MANUAL", "Manual"),
+        ("COMPENSATORIA", "Compensatoria"),  # clase de compensación por una falta previa
     ]
     ESTADOS = [
         ("ASISTENCIA", "Asistencia"),
         ("RETARDO", "Retardo"),
         ("FALTA", "Falta"),
         ("JUSTIFICADA", "Justificada"),
+        ("COMPENSATORIA", "Compensatoria"),  # clase repuesta — no modifica la falta original
     ]
 
     profesor = models.ForeignKey("Profesores.Profesor", on_delete=models.PROTECT)
@@ -22,19 +25,36 @@ class Asistencia(models.Model):
     observaciones = models.TextField(max_length=1000, blank=True, null=True)
     horario = models.ForeignKey("Profesores.Horario", on_delete=models.PROTECT)
     tolerancia_minutos = models.PositiveSmallIntegerField(default=0)
-    tipo_registro = models.CharField(max_length=10, choices=TIPO_REGISTRO, default="RELOJ")
+    tipo_registro = models.CharField(max_length=15, choices=TIPO_REGISTRO, default="RELOJ")
     creado_por = models.ForeignKey("users.Usuario", on_delete=models.PROTECT, null=True, blank=True)
     cancelada_institucional = models.BooleanField(default=False)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     bitacora = models.ForeignKey("core.BitacoraAuditoria", on_delete=models.SET_NULL, null=True, blank=True)
 
+    # Si esta asistencia es una compensatoria, apunta a la falta que está compensando.
+    # Una compensatoria puede estar en un periodo distinto al de la falta original.
+    asistencia_original = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="compensatorias",
+        help_text="Falta original que esta clase compensatoria está cubriendo.",
+    )
+
     def __str__(self):
         return f"{self.profesor} | {self.fecha} | {self.estado}"
-    
+
+    @property
+    def es_compensatoria(self):
+        return self.tipo_registro == "COMPENSATORIA"
+
     @property
     def color_clase(self):
         if self.cancelada_institucional:
             return "inhabil"
+        if self.tipo_registro == "COMPENSATORIA":
+            return "compensatoria"
         if self.justificada or self.estado == "JUSTIFICADA":
             return "justificada"
         if self.estado == "ASISTENCIA":
@@ -45,8 +65,8 @@ class Asistencia(models.Model):
             return "retardo"
         return "pendiente"
 
-class Incidencia(models.Model): 
-    # Justificacion de faltas/retardos con su flujo de aprobacion.
+
+class Incidencia(models.Model):
     TIPOS = [
         ("FALTA", "Falta"),
         ("RETARDO", "Retardo"),
@@ -57,7 +77,7 @@ class Incidencia(models.Model):
         ("RECHAZADA", "Rechazada"),
     ]
 
-    asistencia = models.ForeignKey("Asistencia", on_delete=models.CASCADE)
+    asistencia = models.ForeignKey("Asistencia", on_delete=models.CASCADE, related_name="incidencias")
     motivo = models.TextField(max_length=1000)
     tipo = models.CharField(max_length=10, choices=TIPOS)
     estado = models.CharField(max_length=10, choices=ESTADOS, default="PENDIENTE")
@@ -65,6 +85,15 @@ class Incidencia(models.Model):
     aprobador = models.ForeignKey("users.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="incidencias_aprobadas")
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     fecha_de_resolucion = models.DateTimeField(null=True, blank=True)
+
+    asistencia_compensatoria = models.OneToOneField(
+        "Asistencia",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="incidencia_origen",
+        help_text="Asistencia compensatoria generada al aprobar esta incidencia.",
+    )
 
     class Meta:
         indexes = [
@@ -77,8 +106,8 @@ class Incidencia(models.Model):
     def __str__(self):
         return f"{self.asistencia} | {self.tipo} | {self.estado}"
 
+
 class EvidenciaIncidencia(models.Model):
-    # Evidencias adjuntas (archivos) para respaldar incidencias.
     incidencia = models.ForeignKey("Incidencia", on_delete=models.CASCADE)
     archivo = models.FileField(upload_to="incidencias/")
     descripcion = models.CharField(max_length=255, blank=True, null=True)
@@ -87,8 +116,8 @@ class EvidenciaIncidencia(models.Model):
     def __str__(self):
         return f"Evidencia {self.incidencia_id}"
 
+
 class SolicitudCorreccion(models.Model):
-    # Solicitud del profesor para corregir un registro de asistencia.
     ESTADOS = [
         ("PENDIENTE", "Pendiente"),
         ("APROBADA", "Aprobada"),
@@ -106,8 +135,8 @@ class SolicitudCorreccion(models.Model):
     def __str__(self):
         return f"{self.profesor} | {self.estado}"
 
+
 class CorreccionAsistencia(models.Model):
-    # Correccion por compensacion, no se edita la asistencia original.
     asistencia_original = models.ForeignKey("Asistencia", on_delete=models.PROTECT, related_name="correcciones")
     asistencia_compensatoria = models.ForeignKey("Asistencia", on_delete=models.PROTECT, related_name="compensaciones")
     motivo = models.TextField(max_length=1000)
@@ -115,4 +144,4 @@ class CorreccionAsistencia(models.Model):
     fecha_aprobacion = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Correccion {self.asistencia_original_id}"
+        return f"Corrección {self.asistencia_original_id}"

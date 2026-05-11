@@ -4,7 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils import timezone
 
+from Asistencias.models import Asistencia, Incidencia
 from Profesores.models import Profesor
+from users.models import Departamento
 from core.decorators import requiere_rol
 
 
@@ -12,65 +14,89 @@ from core.decorators import requiere_rol
 @requiere_rol("jefatura")
 def dashboard(request):
     hoy = timezone.localdate()
-    departamentos = []
-    dept_ids = [depto.id for depto in departamentos]
+    
+    # Departamentos que tiene a cargo este usuario de jefatura
+    departamentos = Departamento.objects.filter(jefe=request.user.id).select_related("plantel")
+    dept_ids = [d.id for d in departamentos]
 
-    profesores_qs = (
+    profesores = (
         Profesor.objects.select_related("usuario")
         .filter(departamentos__id__in=dept_ids)
         .distinct()
         .order_by("usuario__nombre", "usuario__apellido")
     )
 
-    equipo_empleados = []
-    for profesor in profesores_qs:
-        user = profesor.usuario
-        equipo_empleados.append(
-            {
-                "id": profesor.id,
-                "nombre": f"{user.nombre} {user.apellido}".strip(),
-                "puesto": "Profesor",
-                "horas_semana": profesor.horario_set.filter(activo=True).count(),
-                "estado_label": profesor.get_estado_laboral_display(),
-                "estado_clase": "pill-green" if profesor.estado_laboral == "ACTIVO" else "pill-red",
-            }
-        )
-
+    # Semana actual (lunes a viernes)
     inicio_semana = hoy - timedelta(days=hoy.weekday())
     fin_semana = inicio_semana + timedelta(days=4)
     semana_label = f"Semana del {inicio_semana.strftime('%d/%m/%Y')} al {fin_semana.strftime('%d/%m/%Y')}"
-    
-    total_horas_semana = 0
-    if departamentos:
-        depto_label = ", ".join(depto.nombre for depto in departamentos)
-    else:
-        depto_label = "Sin departamento"
 
-    planteles = sorted(list({depto.plantel.nombre for depto in departamentos if depto.plantel_id}))
+    # Incidencias pendientes del equipo
+    incidencias_pendientes = (
+        Incidencia.objects
+        .filter(asistencia__profesor__in=profesores, estado="PENDIENTE")
+        .select_related("asistencia__profesor__usuario")
+        .order_by("-fecha_solicitud")
+    )
+    total_pendientes = incidencias_pendientes.count()
+
+    # Asistencias de esta semana para el equipo
+    asistencias_semana = (
+        Asistencia.objects
+        .filter(profesor__in=profesores, fecha__range=(inicio_semana, fin_semana))
+        .select_related("profesor__usuario", "horario")
+        .order_by("fecha", "hora_entrada")
+    )
+
+    # Datos de cada profesor para la tabla del dashboard
+    equipo = []
+    for profesor in profesores:
+        user = profesor.usuario
+        equipo.append({
+            "id": profesor.id,
+            "nombre": f"{user.nombre} {user.apellido}".strip(),
+            "puesto": "Profesor",
+            "horas_semana": profesor.horario_set.filter(activo=True).count(),
+            "estado_label": profesor.get_estado_laboral_display(),
+            "estado_clase": "pill-green" if profesor.estado_laboral == "ACTIVO" else "pill-red",
+        })
+
+    # Etiquetas de contexto
+    depto_label = ", ".join(d.nombre for d in departamentos) if departamentos else "Sin departamento"
+    planteles = sorted({d.plantel.nombre for d in departamentos if d.plantel_id})
     ciclo_label = " / ".join(planteles) if planteles else "Sin plantel"
-    profesores_total = profesores_qs.count()
-    solicitudes_pendientes = 2  # Placeholder, reemplazar con consulta real a incidencias
-    incidencias_pendientes_qs = []  # Placeholder, reemplazar con consulta real a incidencias
+
+    total_profesores = profesores.count()
+    horas_semana_total = sum(p["horas_semana"] for p in equipo)
 
     context = {
         "fecha_actual": hoy.strftime("%d/%m/%Y"),
+        "semana_label": semana_label,
         "departamento_nombre": depto_label,
         "ciclo_label": ciclo_label,
-        "equipo_total": profesores_total,
+
+        # Tarjetas del dashboard
+        "equipo_total": total_profesores,
         "equipo_variacion": f"{len(departamentos)} departamento(s) a cargo",
-        "horas_trabajadas_total": total_horas_semana,
-        "horas_trabajadas_promedio": f"{round(total_horas_semana / profesores_total, 1) if profesores_total else 0} registros por profesor",
-        "solicitudes_pendientes_total": solicitudes_pendientes,
+
+        "horas_trabajadas_total": horas_semana_total,
+        "horas_trabajadas_promedio": (
+            f"{round(horas_semana_total / total_profesores, 1)} horas promedio por profesor"
+            if total_profesores else "Sin datos"
+        ),
+
+        "solicitudes_pendientes_total": total_pendientes,
         "solicitudes_pendientes_label": (
-            f"{solicitudes_pendientes} solicitud(es) esperan tu aprobacion"
-            if incidencias_pendientes_qs.exists()
+            f"{total_pendientes} solicitud(es) esperan tu aprobación"
+            if total_pendientes > 0
             else "Sin solicitudes pendientes"
         ),
-        "equipo_empleados": equipo_empleados,
-        "asistencia_registros": [],  # Placeholder, reemplazar con consulta real a asistencias
-        "incidencias_registros": [],  # Placeholder, reemplazar con consulta real a incidencias
-        "profesores_filtro": list(profesores_qs),
-        "week_label": semana_label,
-        "semana_label": semana_label,
+
+        # Tablas
+        "equipo_empleados": equipo,
+        "asistencia_registros": list(asistencias_semana),
+        "incidencias_registros": list(incidencias_pendientes),
+        "profesores_filtro": list(profesores),
     }
+
     return render(request, "jefatura/dashboard.html", context)

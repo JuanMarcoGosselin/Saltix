@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from Asistencias.models import Asistencia
-from Contabilidad.utils import get_active_periodo
+from Contabilidad.utils import get_periodo_activo
 from Profesores.models import Horario
 
 
@@ -53,12 +53,12 @@ class Command(BaseCommand):
         now = timezone.now()
         tz = timezone.get_current_timezone()
 
-        periodo = get_active_periodo()
-        if not periodo or not periodo.inicio or not periodo.fin:
+        periodo = get_periodo_activo()
+        if not periodo or not periodo.fecha_inicio or not periodo.fecha_fin:
             raise CommandError("No se pudo determinar el periodo vigente.")
 
-        desde = self._parse_fecha(options.get("desde")) if options.get("desde") else periodo.inicio
-        hasta = self._parse_fecha(options.get("hasta")) if options.get("hasta") else periodo.fin
+        desde = self._parse_fecha(options.get("desde")) if options.get("desde") else periodo.fecha_inicio
+        hasta = self._parse_fecha(options.get("hasta")) if options.get("hasta") else periodo.fecha_fin
 
         if hasta > hoy:
             hasta = hoy

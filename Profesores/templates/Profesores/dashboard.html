@@ -50,7 +50,7 @@
                 </div>
                 <div class="card-label">Horas trabajadas</div>
                 <div class="card-value">{{ horas_trabajadas }}</div>
-                <div class="card-sub">de {{ horas_esperadas }}h esperadas</div>
+                <div class="card-sub">de {{ horas_esperadas }} esperadas</div>
             </div>
             <div class="card">
                 <div class="card-top">
@@ -230,17 +230,23 @@
                 id="cal-week-prev"
                 data-week-offset="{{ week_offset_prev }}"
                 class="month-btn"
-                style="{% if week_offset >= max_week_offset %}pointer-events:none;opacity:.4{% endif %}"
+                {% if week_offset <= min_week_offset %}
+                    style="pointer-events:none;opacity:.4"
+                {% endif %}
             >‹</a>
+
             <span class="month-label">
                 Semana del {{ semana_inicio|date:"d/m/Y" }} al {{ semana_fin|date:"d/m/Y" }}
             </span>
+
             <a
                 href="?week_offset={{ week_offset_next }}"
                 id="cal-week-next"
                 data-week-offset="{{ week_offset_next }}"
                 class="month-btn"
-                style="{% if week_offset == 0 %}pointer-events:none;opacity:.4{% endif %}"
+                {% if week_offset >= max_week_offset %}
+                    style="pointer-events:none;opacity:.4"
+                {% endif %}
             >›</a>
         </div>
 
@@ -275,12 +281,10 @@
 
         <!-- Tabla de faltas pendientes de justificar -->
         <div class="faltas-pendientes">
-            <div class="faltas-header">
-                <div>
+            <div class="faltas-header" style="padding: 0.5rem 0;">
+                <div style="display: flex; justify-content: space-between; width: 100%; margin: 0 auto; padding: 0 2rem;">
                     <h3>⚠️ Faltas sin justificar</h3>
                     <div style="margin-top:.15rem;font-size:.78rem;color:var(--gray-400)">
-                        <span id="faltas-semana-label">Semana: {{ semana_inicio|date:"d/m/Y" }} – {{ semana_fin|date:"d/m/Y" }}</span>
-                        <span style="margin:0 .35rem;color:var(--gray-200)">|</span>
                         <span id="faltas-periodo-label">Periodo: {{ periodo_actual }}</span>
                     </div>
                 </div>
@@ -418,13 +422,12 @@
         </div>
     </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
-{# months_data se mantiene para compatibilidad futura de estadísticas #}
-{% if months_data %}{{ months_data|json_script:"months-data" }}{% else %}<script id="months-data" type="application/json">[]</script>{% endif %}
 {% endblock %}
 
 {% block page_js %}
+<script>
+    window.MAX_WEEK_OFFSET = {{ max_week_offset }};
+</script>
 <script src="{% static 'js/profesor_dashboard.js' %}"></script>
 {% endblock %}

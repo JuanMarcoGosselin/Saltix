@@ -12,6 +12,5 @@ urlpatterns = [
     path("jefatura/incidencias/rechazar/", views.rechazar_incidencia, name="rechazar_incidencia"),
     path("jefatura/asistencias/cancelar/", views.cancelar_asistencia_institucional, name="cancelar_asistencia_institucional"),
     path("jefatura/asistencias/corregir/", views.corregir_asistencia_jefatura, name="corregir_asistencia_jefatura"),
-    path("profesor/incidencias/", views.listar_incidencias_profesor, name="listar_incidencias_profesor"),
 ]
 
