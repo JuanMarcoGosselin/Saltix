@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            margin: 30px;
+            color: #222;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #444;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #eaeaea;
+        }
+
+        .money {
+            text-align: right;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <h1>Reporte General de Nóminas</h1>
+
+    <table>
+
+        <thead>
+            <tr>
+                <th>Periodo</th>
+                <th>Profesor</th>
+                <th>Salario Bruto</th>
+                <th>Penalizaciones</th>
+                <th>Salario Neto</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for item in reporte %}
+
+            <tr>
+
+                <td>
+                    {{ item.periodo }}
+                </td>
+
+                <td>
+                    {{ item.profesor }}
+                </td>
+
+                <td class="money">
+                    ${{ item.salario }}
+                </td>
+
+                <td class="money">
+                    ${{ item.penalizaciones }}
+                </td>
+
+                <td class="money">
+                    ${{ item.neto }}
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</body>
+</html>
