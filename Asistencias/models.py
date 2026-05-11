@@ -2,18 +2,17 @@ from django.db import models
 
 
 class Asistencia(models.Model):
-    # Registro de asistencia por clase: entrada/salida, estado y si fue manual o normal.
     TIPO_REGISTRO = [
         ("RELOJ", "Reloj"),
         ("MANUAL", "Manual"),
-        ("COMPENSATORIA", "Compensatoria"),  # clase de compensación por una falta previa
+        ("COMPENSATORIA", "Compensatoria"),
     ]
     ESTADOS = [
         ("ASISTENCIA", "Asistencia"),
         ("RETARDO", "Retardo"),
         ("FALTA", "Falta"),
         ("JUSTIFICADA", "Justificada"),
-        ("COMPENSATORIA", "Compensatoria"),  # clase repuesta — no modifica la falta original
+        ("COMPENSATORIA", "Compensatoria"),
     ]
 
     profesor = models.ForeignKey("Profesores.Profesor", on_delete=models.PROTECT)
@@ -30,17 +29,6 @@ class Asistencia(models.Model):
     cancelada_institucional = models.BooleanField(default=False)
     fecha_registro = models.DateTimeField(auto_now_add=True)
     bitacora = models.ForeignKey("core.BitacoraAuditoria", on_delete=models.SET_NULL, null=True, blank=True)
-
-    # Si esta asistencia es una compensatoria, apunta a la falta que está compensando.
-    # Una compensatoria puede estar en un periodo distinto al de la falta original.
-    asistencia_original = models.ForeignKey(
-        "self",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="compensatorias",
-        help_text="Falta original que esta clase compensatoria está cubriendo.",
-    )
 
     def __str__(self):
         return f"{self.profesor} | {self.fecha} | {self.estado}"
@@ -86,15 +74,6 @@ class Incidencia(models.Model):
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
     fecha_de_resolucion = models.DateTimeField(null=True, blank=True)
 
-    asistencia_compensatoria = models.OneToOneField(
-        "Asistencia",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="incidencia_origen",
-        help_text="Asistencia compensatoria generada al aprobar esta incidencia.",
-    )
-
     class Meta:
         indexes = [
             models.Index(fields=["estado"]),
@@ -137,11 +116,24 @@ class SolicitudCorreccion(models.Model):
 
 
 class CorreccionAsistencia(models.Model):
-    asistencia_original = models.ForeignKey("Asistencia", on_delete=models.PROTECT, related_name="correcciones")
-    asistencia_compensatoria = models.ForeignKey("Asistencia", on_delete=models.PROTECT, related_name="compensaciones")
+    asistencia_original = models.ForeignKey(
+        "Asistencia",
+        on_delete=models.PROTECT,
+        related_name="correcciones",
+    )
+    asistencia_compensatoria = models.ForeignKey(
+        "Asistencia",
+        on_delete=models.PROTECT,
+        related_name="compensaciones",
+    )
     motivo = models.TextField(max_length=1000)
-    aprobada_por = models.ForeignKey("users.Usuario", on_delete=models.PROTECT, null=True, blank=True)
+    aprobada_por = models.ForeignKey(
+        "users.Usuario",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
     fecha_aprobacion = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Corrección {self.asistencia_original_id}"
+        return f"Correccion {self.asistencia_original_id}"

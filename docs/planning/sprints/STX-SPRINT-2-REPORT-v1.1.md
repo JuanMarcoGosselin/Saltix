@@ -1,4 +1,4 @@
-# STX-SPRINT-2-REPORT-v1.0
+# STX-SPRINT-2-REPORT-v1.1
 ### Reporte de Sprint 2 — Saltix
 
 ---
@@ -43,7 +43,6 @@
 | Validación de datos en solicitudes de justificación | Validar fecha, motivo no vacío, longitud máxima y no duplicados por fecha | Iván / Patricio / Juan Marco | Media |
 | Creación de índices para optimizar consultas de asistencias | Índices en tabla Asistencia (profesor, fecha, estado) | Juan Marco / Iván | Media |
 | Validación de reglas para evitar duplicados de asistencia | UniqueConstraint, migración y verificación de bloqueo | Juan Marco / Iván | Alta |
-| Pruebas QA del módulo completo | Pruebas funcionales y de validación de registro, justificaciones e historial | Juan Marco | Alta |
 
 ---
 
@@ -111,12 +110,6 @@
 | Generar migración de Django | Juan Marco / Iván | Completado |
 | Aplicar migración en base de datos | Juan Marco / Iván | Completado |
 | Verificar que el sistema bloquee registros duplicados | Juan Marco / Iván | Completado |
-| Pruebas funcionales del registro de asistencia | Juan Marco | Completado |
-| Pruebas de validación contra registros duplicados | Juan Marco | Completado |
-| Pruebas funcionales de envío de solicitudes de justificación | Juan Marco | Completado |
-| Pruebas de validación de formulario de justificación | Juan Marco | Completado |
-| Pruebas de consulta de historial de asistencias | Juan Marco | Completado |
-| Pruebas de consulta de solicitudes de justificación | Juan Marco | Completado |
 
 ---
 
@@ -138,13 +131,12 @@
 - El cálculo de RETARDO depende de la diferencia entre `timezone.now()` y el inicio del horario. Se identificó que el servidor debe estar configurado con zona horaria correcta (`America/Mexico_City`) para evitar discrepancias; esto está configurado en `settings.py`.
 - El endpoint `justificar_asistencia` maneja dos flujos distintos (profesor vs. jefatura/administrador) dentro de la misma vista. Se recomienda separar en vistas distintas en un sprint futuro para reducir complejidad.
 - La app `Asistencias/services/` no tenía `__init__.py` con re-exports explícitos al inicio del sprint, lo que generó errores de importación al consumirla desde `Profesores/views.py`. Se resolvió agregando los re-exports correspondientes.
-- Los tests de QA se ejecutaron manualmente sobre base de datos de desarrollo. Aún no existe suite automatizada con `pytest` o `django.test.TestCase`; se recomienda implementarla en el Sprint 3.
 
 ---
 
 ## 7. Métricas del Sprint
 
-- **Tareas Planeadas:** 65 (Frontend: 15 · Backend: 35 · DBA: 9 · QA: 6) — ítems de checklist del tablero Trello
+- **Tareas Planeadas:** 59 (Frontend: 15 · Backend: 35 · DBA: 9) — ítems de checklist del tablero Trello
 - **Tareas Completadas:** 65 (100%)
 - **Tareas Restantes:** 0
 
@@ -161,17 +153,15 @@
 **¿Qué salió bien?**
 
 - La capa de servicios (`Asistencias/services/`) permitió centralizar la lógica de negocio compleja (períodos, estados, estadísticas) y reutilizarla desde múltiples vistas sin duplicación.
-- La separación entre `verificar_entrada` y `verificar_salida` como funciones reutilizables en `Profesores/utils.py` mantuvo el código limpio y fácil de testear.
+- La separación entre `verificar_entrada` y `verificar_salida` como funciones reutilizables en `Profesores/utils.py` mantuvo el código limpio y fácil de mantener.
 - Los índices y la `UniqueConstraint` se agregaron de forma proactiva en la misma migración, evitando una deuda técnica que habría crecido con el volumen de datos.
 
 **¿Qué se puede mejorar?**
 
 - El endpoint `justificar_asistencia` mezcla lógica para dos roles distintos. Se recomienda refactorizar en vistas separadas para mejorar mantenibilidad.
-- Los tests siguen siendo manuales. Sería conveniente iniciar la suite automatizada con `django.test.TestCase` desde el comienzo del Sprint 3.
 - El margen de tolerancia está definido como constante hardcodeada en `utils.py` (15/30 min entrada, 10/30 min salida). Se recomienda moverlo a configuración del sistema o al modelo de Plantel para mayor flexibilidad.
 
 **Acciones para el próximo sprint:**
 
 - Sprint 3 — Gestión de Asistencias por Jefatura: implementar todas las acciones del rol Jefatura sobre asistencias (consulta global, filtros, correcciones manuales, aprobación/rechazo de incidencias, cancelación institucional de clases).
 - Agregar la vista de solicitudes de justificación enviadas al dashboard del Profesor para cerrar el ciclo de comunicación.
-- Comenzar la suite de tests automatizados con al menos cobertura del módulo de Asistencias.

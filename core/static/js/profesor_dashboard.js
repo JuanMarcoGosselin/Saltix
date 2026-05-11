@@ -132,7 +132,7 @@ function submitJustificacion() {
     })
     .then(res => res.json().then(data => ({ ok: res.ok, data })))
     .then(({ ok, data }) => {
-        if (!ok) throw new Error(data.error || 'No se pudo justificar.');
+	        if (!ok) throw new Error(data.message || data.error || 'No se pudo justificar.');
         closeModalDirect();
         showToast('✅ Justificación enviada correctamente');
         setTimeout(() => refreshFaltas(), 350);
@@ -211,7 +211,7 @@ function loadFaltas(weekOffset, pushState = true) {
     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(res => res.json().then(data => ({ ok: res.ok, data })))
         .then(({ ok, data }) => {
-            if (!ok) throw new Error(data.error || 'No se pudo cargar.');
+	            if (!ok) throw new Error(data.message || data.error || 'No se pudo cargar.');
             applyFaltasResponse(data);
             if (pushState) {
                 history.pushState({ weekOffset: offset }, '', `?week_offset=${offset}`);

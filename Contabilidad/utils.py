@@ -143,7 +143,7 @@ def get_compensatorias_periodo(profesor_id):
         profesor_id=profesor_id,
         fecha__range=(periodo.fecha_inicio, periodo.fecha_fin),
         tipo_registro="COMPENSATORIA",
-    ).select_related("asistencia_original")
+    )
 
 
 def get_total_retardos(profesor_id):
@@ -163,7 +163,12 @@ def get_faltas_descontables(profesor_id):
     retardos = get_total_retardos(profesor_id)
     faltas_por_retardos = retardos // RETARDOS_POR_FALTA
 
-    horas_faltadas = sum(falta.hora_salida.hour - falta.hora_entrada.hour for falta in faltas)
+    horas_faltadas = 0
+    for falta in faltas.select_related("horario"):
+        if falta.hora_salida:
+            horas_faltadas += horas_de_asistencia(falta)
+        else:
+            horas_faltadas += horas_de_clase(falta.horario)
     descuento = horas_faltadas + faltas_por_retardos
 
     return descuento

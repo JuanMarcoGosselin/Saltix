@@ -4,7 +4,7 @@ from django.shortcuts import redirect, render
 def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
-        return redirect("login")
+    return redirect("login")
 
 def login_view(request):
     if request.user.is_authenticated:

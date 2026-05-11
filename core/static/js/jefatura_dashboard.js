@@ -191,7 +191,7 @@ async function cargarAsistencias(page = 1) {
   const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
   const data = await response.json();
   if (!response.ok || !data.ok) {
-    showToast(data.error || 'No se pudieron cargar las asistencias.', true);
+    showToast(data.message || data.error || 'No se pudieron cargar las asistencias.', true);
     return;
   }
   asistenciaPage = data.page;
@@ -208,7 +208,7 @@ async function cargarIncidencias(page = 1) {
   const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
   const data = await response.json();
   if (!response.ok || !data.ok) {
-    showToast(data.error || 'No se pudieron cargar las incidencias.', true);
+    showToast(data.message || data.error || 'No se pudieron cargar las incidencias.', true);
     return;
   }
   incidenciaPage = data.page;
@@ -252,7 +252,7 @@ async function postJSON(url, payload) {
   });
   const data = await response.json();
   if (!response.ok || !data.ok) {
-    throw new Error(data.error || 'Operacion no completada.');
+    throw new Error(data.message || data.error || 'Operacion no completada.');
   }
   return data;
 }

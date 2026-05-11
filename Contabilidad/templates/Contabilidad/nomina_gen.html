@@ -175,6 +175,12 @@
 
                 <button class="btn-submit" type="submit">Agregar al preview</button>
             </form>
+
+            {% if nomina.estado != "pagada" %}
+                <a class="btn-submit" style="display:block;text-align:center;margin-top:1rem;text-decoration:none" href="{% url 'pagar_nomina' nomina.id %}">
+                    Marcar como pagada
+                </a>
+            {% endif %}
         </aside>
     </div>
 </div>
