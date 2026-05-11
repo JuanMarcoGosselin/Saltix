@@ -1,4 +1,4 @@
-{% for falta in faltas_page.object_list %}
+{% for falta in faltas %}
 <tr
     data-asistencia-id="{{ falta.id }}"
     data-modal-label="{{ falta.fecha|date:'d/m/Y' }} | {{ falta.horario.hora_inicio|time:'H:i' }}-{{ falta.horario.hora_fin|time:'H:i' }}"
@@ -6,24 +6,21 @@
     style="cursor:pointer;background:#fff7f7"
 >
     <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
-        {{ falta.profesor.usuario.nombre }} {{ falta.profesor.usuario.apellido }}
-    </td>
-    <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
         {{ falta.fecha|date:"d/m/Y" }}
     </td>
     <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
         {{ falta.horario.dia_semana }} {{ falta.horario.hora_inicio|time:"H:i" }}–{{ falta.horario.hora_fin|time:"H:i" }}
         {% if falta.horario.aula %}(Aula {{ falta.horario.aula }}){% endif %}
     </td>
-	    <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
-	        {% if falta.tiene_incidencia_pendiente %}
-	            <span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#e7f1ff;color:#004085">
-	                Justificación pendiente
-	            </span>
-	        {% else %}
-	            <span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#fdecea;color:#c0392b">
-	                Falta sin justificar
-	            </span>
+        <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">
+            {% if falta.tiene_incidencia_pendiente %}
+                <span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#e7f1ff;color:#004085">
+                    Justificación pendiente
+                </span>
+            {% else %}
+                <span style="display:inline-block;padding:.18rem .65rem;border-radius:999px;font-size:.7rem;font-weight:700;background:#fdecea;color:#c0392b">
+                    Falta sin justificar
+                </span>
         {% endif %}
     </td>
     <td style="padding:.85rem 1.5rem;font-size:.85rem;border-bottom:1px solid var(--gray-100)">

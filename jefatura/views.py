@@ -4,12 +4,6 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils import timezone
 
-from Asistencias.services import (
-    get_user_departamentos,
-    paginate_queryset,
-    scope_asistencias_for_user,
-    scope_incidencias_for_user,
-)
 from Profesores.models import Profesor
 from core.decorators import requiere_rol
 
@@ -18,7 +12,7 @@ from core.decorators import requiere_rol
 @requiere_rol("jefatura")
 def dashboard(request):
     hoy = timezone.localdate()
-    departamentos = list(get_user_departamentos(request.user))
+    departamentos = []
     dept_ids = [depto.id for depto in departamentos]
 
     profesores_qs = (
@@ -27,13 +21,6 @@ def dashboard(request):
         .distinct()
         .order_by("usuario__nombre", "usuario__apellido")
     )
-
-    asistencias_qs = scope_asistencias_for_user(request.user)
-    incidencias_qs = scope_incidencias_for_user(request.user)
-    incidencias_pendientes_qs = incidencias_qs.filter(estado="PENDIENTE")
-
-    asistencias_page = paginate_queryset(asistencias_qs, 1, 10)
-    incidencias_page = paginate_queryset(incidencias_pendientes_qs, 1, 10)
 
     equipo_empleados = []
     for profesor in profesores_qs:
@@ -52,8 +39,8 @@ def dashboard(request):
     inicio_semana = hoy - timedelta(days=hoy.weekday())
     fin_semana = inicio_semana + timedelta(days=4)
     semana_label = f"Semana del {inicio_semana.strftime('%d/%m/%Y')} al {fin_semana.strftime('%d/%m/%Y')}"
-
-    total_horas_semana = asistencias_qs.filter(fecha__range=(inicio_semana, fin_semana)).count()
+    
+    total_horas_semana = 0
     if departamentos:
         depto_label = ", ".join(depto.nombre for depto in departamentos)
     else:
@@ -62,7 +49,8 @@ def dashboard(request):
     planteles = sorted(list({depto.plantel.nombre for depto in departamentos if depto.plantel_id}))
     ciclo_label = " / ".join(planteles) if planteles else "Sin plantel"
     profesores_total = profesores_qs.count()
-    solicitudes_pendientes = incidencias_pendientes_qs.count()
+    solicitudes_pendientes = 2  # Placeholder, reemplazar con consulta real a incidencias
+    incidencias_pendientes_qs = []  # Placeholder, reemplazar con consulta real a incidencias
 
     context = {
         "fecha_actual": hoy.strftime("%d/%m/%Y"),
@@ -79,8 +67,8 @@ def dashboard(request):
             else "Sin solicitudes pendientes"
         ),
         "equipo_empleados": equipo_empleados,
-        "asistencia_registros": asistencias_page.items,
-        "incidencias_registros": incidencias_page.items,
+        "asistencia_registros": [],  # Placeholder, reemplazar con consulta real a asistencias
+        "incidencias_registros": [],  # Placeholder, reemplazar con consulta real a incidencias
         "profesores_filtro": list(profesores_qs),
         "week_label": semana_label,
         "semana_label": semana_label,

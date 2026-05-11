@@ -5,9 +5,9 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db.models import Q
 from django.utils import timezone
 
-from Asistencias.models import Asistencia
-
+from Asistencias.models import *
 from .models import Horario, Profesor
+from Contabilidad.utils import get_active_periodo, total_horas_clase
 
 def obtener_horario_hoy(profesor):
     dias = {
@@ -24,7 +24,6 @@ def obtener_horario_hoy(profesor):
     if not dia:
         return Horario.objects.none()
     return Horario.objects.filter(profesor=profesor, dia_semana=dia, activo=True)
-
 
 def obtener_horario(profesor):
     dias = {
@@ -49,7 +48,6 @@ def obtener_horario(profesor):
         horario[dia] = horarios_por_dia.get(dias[dia], [])
     return (horario, horas_totales)
 
-
 def verificar_entrada(horario_id):
     ahora = timezone.now()
     hoy = ahora.date()
@@ -59,7 +57,6 @@ def verificar_entrada(horario_id):
     inicio = timezone.make_aware(datetime.combine(hoy, horario.hora_inicio), tz)
 
     return inicio - timedelta(minutes=15) <= ahora <= inicio + timedelta(minutes=30)
-
 
 def verificar_salida(horario_id):
     ahora = timezone.now()
@@ -71,119 +68,103 @@ def verificar_salida(horario_id):
 
     return fin - timedelta(minutes=10) <= ahora <= fin + timedelta(minutes=30)
 
-
-def minutes_between_times(start, end) -> int:
-    if start is None or end is None:
-        return 0
-    base = datetime(2000, 1, 1)
-    start_dt = datetime.combine(base.date(), start)
-    end_dt = datetime.combine(base.date(), end)
-    if end_dt < start_dt:
-        end_dt += timedelta(days=1)
-    return int((end_dt - start_dt).total_seconds() // 60)
-
-
 def format_hours(minutes: int) -> str:
     hours = (Decimal(minutes) / Decimal(60)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
     if hours == hours.to_integral():
         return str(hours.quantize(Decimal("0"), rounding=ROUND_HALF_UP))
     return str(hours)
 
-
 def format_money(amount: Decimal) -> str:
     amount = (amount or Decimal(0)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return f"{amount:,.2f}"
-
-
-def expected_minutes_for_range(horarios, inicio, fin) -> int:
-    if not inicio or not fin or fin < inicio:
-        return 0
-
-    minutos_por_dia = {}
-    for h in horarios:
-        minutos_por_dia.setdefault(h.dia_semana, 0)
-        minutos_por_dia[h.dia_semana] += minutes_between_times(h.hora_inicio, h.hora_fin)
-
-    total = 0
-    d = inicio
-    while d <= fin:
-        dia = ("LUN", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM")[d.weekday()]
-        total += minutos_por_dia.get(dia, 0)
-        d += timedelta(days=1)
-    return total
-
 
 def month_bounds(hoy):
     month_end_day = calendar.monthrange(hoy.year, hoy.month)[1]
     return hoy.replace(day=1), hoy.replace(day=month_end_day)
 
+def get_attendance_stats(profesor_id):
+    periodo = get_active_periodo()
+    asistencias = Asistencia.objects.filter(profesor_id=profesor_id, fecha__range=(periodo.fecha_inicio - timedelta(weeks=1), periodo.fecha_fin))
+    stats = {
+        "total_asistencias": asistencias.filter(estado="ASISTENCIA").count(),
+        "total_retardos": asistencias.filter(estado="RETARDO").count(),
+        "total_faltas": asistencias.filter(estado="FALTA", justificada=False).count(),
+        "total_justificadas": asistencias.filter(justificada=True).count(),
+    }
+    return stats
 
-def dashboard_kpis(*, profesor: Profesor, hoy, rango_periodo):
-    asistencias_periodo = (
-        Asistencia.objects.filter(
-            profesor=profesor,
-            fecha__range=(rango_periodo.inicio, rango_periodo.fin),
-            cancelada_institucional=False,
-        )
-        .filter(Q(estado__in=("ASISTENCIA", "RETARDO", "JUSTIFICADA")) | Q(justificada=True))
-        .exclude(estado="FALTA", justificada=False)
-        .select_related("horario")
-    )
-    minutos_trabajados_periodo = sum(
-        minutes_between_times(a.horario.hora_inicio, a.horario.hora_fin) for a in asistencias_periodo if a.horario_id
-    )
+def get_horario_display(profesor_id):
+    periodo = get_active_periodo()
+    horario = Horario.objects.filter(profesor_id=profesor_id, activo=True).order_by("dia_semana", "hora_inicio")
+    asistencias = Asistencia.objects.filter(profesor_id=profesor_id, fecha__range=(periodo.fecha_inicio - timedelta(weeks=1), periodo.fecha_fin))
+    for clase in horario:
+        clase.asistencia = asistencias.filter(horario=clase).first()
+        clase.estado = clase.asistencia.estado if clase.asistencia else "PENDIENTE"
 
-    horarios_clase = list(Horario.objects.filter(profesor=profesor, es_hora_clase=True, activo=True))
-    minutos_esperados_periodo = expected_minutes_for_range(
-        horarios_clase, rango_periodo.inicio, rango_periodo.fin
-    )
-
-    costo_por_hora = profesor.costo_por_hora or Decimal(0)
-
-    horas_trabajadas_periodo = Decimal(minutos_trabajados_periodo) / Decimal(60)
-    horas_esperadas_periodo = Decimal(minutos_esperados_periodo) / Decimal(60)
-
-    salario_bruto_real_periodo = horas_trabajadas_periodo * costo_por_hora
-    salario_bruto_estimado_periodo = horas_esperadas_periodo * costo_por_hora
-
+    dias = ["LUN", "MAR", "MIE", "JUE", "VIE", "SAB"]
+    horas = list(range(6, 24))  # 7 AM to 10 PM
     return {
-        "horarios_clase": horarios_clase,
-        "minutos_trabajados_periodo": minutos_trabajados_periodo,
-        "minutos_esperados_periodo": minutos_esperados_periodo,
-        # Para el dashboard del profesor, usamos el periodo vigente (inicio/fin) como rango principal.
-        "mes_inicio": rango_periodo.inicio,
-        "mes_fin": rango_periodo.fin,
-        "salario_bruto_estimado_mes": salario_bruto_estimado_periodo,
-        "salario_bruto_real_periodo": salario_bruto_real_periodo,
+        "dias": dias,
+        "horas": horas,
+        "clases": horario,
     }
 
+def get_faltas(profesor_id):
+    fecha_inicio = get_active_periodo().fecha_inicio - timedelta(weeks=1)
+    fecha_fin = get_active_periodo().fecha_fin
+    faltas = Asistencia.objects.filter(
+        profesor_id=profesor_id,
+        estado="FALTA",
+        justificada=False,
+        fecha__range=(fecha_inicio, fecha_fin)
+    ).select_related("horario").order_by("-fecha", "-id")
 
-def profesor_profile_context(*, profesor: Profesor, hoy, horarios_clase):
+    for falta in faltas:
+        falta.tiene_incidencia_pendiente = Incidencia.objects.filter(
+                asistencia=falta
+        ).exists()
+
+    return faltas
+
+def get_incidencias(profesor_id):
+    profesor = Profesor.objects.get(id=profesor_id)
+    faltas = get_faltas(profesor_id)
+    incidencias = Incidencia.objects.filter(
+        solicitante=profesor.usuario,
+        asistencia__in=faltas,
+        estado="PENDIENTE",
+    ).order_by("-asistencia__fecha", "-asistencia__id")
+
+    return incidencias
+
+def get_profesor_context(profesor_id):
+    profesor = Profesor.objects.get(id=profesor_id)
+    iniciales = f"{(profesor.usuario.nombre or 'U')[:1]}{(profesor.usuario.apellido or '')[:1]}".upper()
+    nombre = profesor.usuario.get_full_name()
+    puesto = "Profesor"
+    estado = profesor.estado_laboral
+    tiempo_institucion = (timezone.localdate() - profesor.fecha_ingreso).days if profesor.fecha_ingreso else None
+    jornada_semanal = total_horas_clase(profesor_id)
+    experiencia = tiempo_institucion // 365 if tiempo_institucion is not None else None
+    perfil_datos = [
+        {"label": "Email", "value": profesor.usuario.email},
+        {"label": "Teléfono", "value": profesor.telefono},
+        {"label": "RFC", "value": profesor.rfc},
+        {"label": "CURP", "value": profesor.curp},
+        {"label": "Dirección", "value": profesor.direccion},
+        {"label": "Fecha de ingreso", "value": profesor.fecha_ingreso.strftime("%d/%m/%Y") if profesor.fecha_ingreso else "N/A"},
+        {"label": "Tipo de contrato", "value": profesor.tipo_contrato},
+        {"label": "Costo por hora", "value": f"${format_money(profesor.costo_por_hora or Decimal(0))}"},
+        {"label": "Departamentos", "value": ", ".join(profesor.departamentos.values_list("nombre", flat=True)) or "N/A"},
+        {"label": "Planteles", "value": ", ".join(profesor.planteles.values_list("nombre", flat=True)) or "N/A"},
+    ]
+
     return {
-        "perfil_iniciales": f"{(profesor.usuario.nombre or 'U')[:1]}{(profesor.usuario.apellido or '')[:1]}".upper(),
-        "perfil_nombre": f"{profesor.usuario.nombre} {profesor.usuario.apellido}".strip(),
-        "perfil_puesto": "Profesor",
-        "perfil_estado": (profesor.estado_laboral or "").replace("_", " ").title() or "â€”",
-        "perfil_anios_institucion": str(max(0, (hoy - profesor.fecha_ingreso).days // 365)) if profesor.fecha_ingreso else "â€”",
-        "perfil_jornada_semanal": format_hours(sum(minutes_between_times(h.hora_inicio, h.hora_fin) for h in horarios_clase)),
-        "perfil_grupos": str(len(horarios_clase)),
-        "perfil_anios_experiencia": str(max(0, (hoy - profesor.fecha_ingreso).days // 365)) if profesor.fecha_ingreso else "â€”",
-        "perfil_datos": [
-            {"label": "Email", "value": profesor.usuario.email},
-            {"label": "Telefono", "value": profesor.telefono},
-            {"label": "RFC", "value": profesor.rfc},
-            {"label": "CURP", "value": profesor.curp},
-            {"label": "Dirección", "value": profesor.direccion},
-            {"label": "Fecha de ingreso", "value": profesor.fecha_ingreso.strftime("%d/%m/%Y") if profesor.fecha_ingreso else "â€”"},
-            {"label": "Tipo de contrato", "value": profesor.tipo_contrato},
-            {"label": "Costo por hora", "value": f"${format_money(profesor.costo_por_hora or Decimal(0))}"},
-            {"label": "Departamentos", "value": ", ".join(profesor.departamentos.values_list("nombre", flat=True)) or "â€”"},
-            {"label": "Planteles", "value": ", ".join(profesor.planteles.values_list("nombre", flat=True)) or "â€”"},
-        ],
+        "iniciales": iniciales,
+        "nombre": nombre,
+        "puesto": puesto,
+        "estado": estado,
+        "experiencia": experiencia,
+        "jornada_semanal": f"{int(jornada_semanal)} horas" if jornada_semanal else "N/A",
+        "perfil_datos": perfil_datos,
     }
-
-def calculate_valid_hours(): 
-    #Correjir, en unos momentos sabre lo que debo de hacer
-    profesor = Profesor.objects()
-    obtener_horario(profesor)
-    

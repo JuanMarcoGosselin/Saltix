@@ -30,21 +30,17 @@
         <div class="welcome-banner">
             <div class="welcome-text">
                 <h2>Bienvenido, {{ nombrep }}</h2>
-                <p>{{ resumen_mes_label }}</p>
-            </div>
-            <div class="welcome-badge">
-                <div class="amount">${{ salariomensualp }}</div>
-                <div class="amount-label">Salario del periodo</div>
+                <p>{{ periodo_actual }}</p>
             </div>
         </div>
         <div class="cards-grid">
             <div class="card">
                 <div class="card-top">
                     <div class="card-icon-wrap icon-blue">💰</div>
-                    <span class="card-trend trend-up">{{ salario_trend_label }}</span>
+                    <span class="card-trend trend-up">{{ pagoxhora }} x hora</span>
                 </div>
                 <div class="card-label">Mi salario</div>
-                <div class="card-value">${{ salariop }}</div>
+                <div class="card-value">${{ salario_bruto|floatformat:2 }}</div>
                 <div class="card-sub">Bruto del periodo</div>
             </div>
             <div class="card">
@@ -53,8 +49,8 @@
                     <span class="card-trend trend-same">{{ horas_trend_label }}</span>
                 </div>
                 <div class="card-label">Horas trabajadas</div>
-                <div class="card-value">{{ horasp }}</div>
-                <div class="card-sub">de {{ horasesperadasp }}h esperadas</div>
+                <div class="card-value">{{ horas_trabajadas }}</div>
+                <div class="card-sub">de {{ horas_esperadas }}h esperadas</div>
             </div>
             <div class="card">
                 <div class="card-top">
@@ -62,13 +58,13 @@
                     <span class="card-trend trend-up">{{ proximo_pago_fecha }}</span>
                 </div>
                 <div class="card-label">Próximo pago</div>
-                <div class="card-value">{{ salarionetop }}</div>
+                <div class="card-value">${{ salario_neto|floatformat:2 }}</div>
                 <div class="card-sub">Neto estimado</div>
             </div>
         </div>
         <div class="table-wrap">
             <div class="table-header">
-                <h3>Desglose del recibo - {{ recibo_periodo_label }}</h3>
+                <h3>Desglose del recibo - {{ periodo_actual }}</h3>
                 <button class="btn-primary">⬇ Descargar PDF</button>
             </div>
             <table>
@@ -82,9 +78,17 @@
                 <tbody>
                 {% for item in recibo_detalle %}
                     <tr>
-                        <td>{{ item.concepto }}</td>
-                        <td><span class="pill {{ item.tipo_clase }}">{{ item.tipo_label }}</span></td>
-                        <td>{{ item.importe }}</td>
+                        {% if item.tipo_clase == 'neto' %}
+                            <td style="font-weight:1000">{{ item.concepto }}</td>
+                        {% else %}
+                            <td>{{ item.concepto }}</td>
+                        {% endif %}
+                        <td><span class="pill {{ item.tipo_clase }}">{{ item.tipo_label|title }}</span></td>
+                        {% if item.tipo_clase == 'neto' %}
+                            <td style="color:var(--accent); font-weight:1000">{{ item.importe|floatformat:2 }}</td>
+                        {% else %}
+                            <td>{{ item.importe|floatformat:2 }}</td>
+                        {% endif %}
                     </tr>
                 {% empty %}
                     <tr><td colspan="3">Sin conceptos registrados.</td></tr>
@@ -197,7 +201,29 @@
             <a class="btn-primary" href="{% url 'profesores_registro_asistencia' %}">Registrar asistencia</a>
         </div>
 
-        <!-- Navegación de semana (calendario semanal) -->
+        <!-- Resumen rápido (contadores del periodo completo) -->
+        <div class="asist-summary">
+            <div class="asist-stat">
+                <div class="asist-stat-icon">✅</div>
+                <div class="asist-stat-val" id="stat-asist">{{ attendance_stats.total_asistencias }}</div>
+                <div class="asist-stat-lbl">Asistencias</div>
+            </div>
+            <div class="asist-stat">
+                <div class="asist-stat-icon">⏰</div>
+                <div class="asist-stat-val" id="stat-retardo" style="color:#856404">{{ attendance_stats.total_retardos }}</div>
+                <div class="asist-stat-lbl">Retardos</div>
+            </div>
+            <div class="asist-stat">
+                <div class="asist-stat-icon">❌</div>
+                <div class="asist-stat-val" id="stat-faltas" style="color:var(--red)">{{ attendance_stats.total_faltas }}</div>
+                <div class="asist-stat-lbl">Faltas</div>
+            </div>
+            <div class="asist-stat">
+                <div class="asist-stat-icon">📄</div>
+                <div class="asist-stat-val" id="stat-justif" style="color:#0062cc">{{ attendance_stats.total_justificadas }}</div>
+                <div class="asist-stat-lbl">Justificadas</div>
+            </div>
+        </div>
         <div class="month-selector">
             <a
                 href="?week_offset={{ week_offset_prev }}"
@@ -207,7 +233,7 @@
                 style="{% if week_offset >= max_week_offset %}pointer-events:none;opacity:.4{% endif %}"
             >‹</a>
             <span class="month-label">
-                Semana del {{ faltas_semana_inicio|date:"d/m/Y" }} al {{ faltas_semana_fin|date:"d/m/Y" }}
+                Semana del {{ semana_inicio|date:"d/m/Y" }} al {{ semana_fin|date:"d/m/Y" }}
             </span>
             <a
                 href="?week_offset={{ week_offset_next }}"
@@ -216,33 +242,6 @@
                 class="month-btn"
                 style="{% if week_offset == 0 %}pointer-events:none;opacity:.4{% endif %}"
             >›</a>
-        </div>
-
-        <!-- Resumen rápido (contadores del periodo completo) -->
-        <div class="asist-summary">
-            <div class="asist-stat">
-                <div class="asist-stat-icon">✅</div>
-                <div class="asist-stat-val" id="stat-asist">{{ stat_asistencias }}</div>
-                <div class="asist-stat-lbl">Asistencias</div>
-            </div>
-            <div class="asist-stat">
-                <div class="asist-stat-icon">⏰</div>
-                <div class="asist-stat-val" id="stat-retardo" style="color:#856404">{{ stat_retardos }}</div>
-                <div class="asist-stat-lbl">Retardos</div>
-            </div>
-            <div class="asist-stat">
-                <div class="asist-stat-icon">❌</div>
-                <div class="asist-stat-val" id="stat-faltas" style="color:var(--red)">{{ stat_faltas }}</div>
-                <div class="asist-stat-lbl">Faltas</div>
-            </div>
-            <div class="asist-stat">
-                <div class="asist-stat-icon">📄</div>
-                <div class="asist-stat-val" id="stat-justif" style="color:#0062cc">{{ stat_justificadas }}</div>
-                <div class="asist-stat-lbl">Justificadas</div>
-            </div>
-        </div>
-        <div style="font-size:.75rem;color:var(--gray-400);margin-bottom:.75rem">
-            Periodo: {{ faltas_periodo_inicio|date:"d/m/Y" }} – {{ faltas_periodo_fin|date:"d/m/Y" }}
         </div>
 
         <!-- Leyenda -->
@@ -280,43 +279,16 @@
                 <div>
                     <h3>⚠️ Faltas sin justificar</h3>
                     <div style="margin-top:.15rem;font-size:.78rem;color:var(--gray-400)">
-                        <span id="faltas-semana-label">Semana: {{ faltas_semana_inicio|date:"d/m/Y" }} – {{ faltas_semana_fin|date:"d/m/Y" }}</span>
+                        <span id="faltas-semana-label">Semana: {{ semana_inicio|date:"d/m/Y" }} – {{ semana_fin|date:"d/m/Y" }}</span>
                         <span style="margin:0 .35rem;color:var(--gray-200)">|</span>
-                        <span id="faltas-periodo-label">Periodo: {{ faltas_periodo_inicio|date:"d/m/Y" }} – {{ faltas_periodo_fin|date:"d/m/Y" }}</span>
+                        <span id="faltas-periodo-label">Periodo: {{ periodo_actual }}</span>
                     </div>
                 </div>
-                <div style="display:flex;gap:.5rem;align-items:center">
-                    <a
-                        id="faltas-week-prev"
-                        data-week-offset="{{ week_offset_prev }}"
-                        href="?week_offset={{ week_offset_prev }}"
-                        style="display:inline-flex;align-items:center;padding:.45rem .7rem;border:1px solid var(--gray-200);border-radius:10px;background:var(--white);font-size:.78rem;font-weight:700;color:var(--gray-700);text-decoration:none;{% if week_offset >= max_week_offset %}pointer-events:none;opacity:.5{% endif %}"
-                    >Semana anterior</a>
-                    <a
-                        id="faltas-week-next"
-                        data-week-offset="{{ week_offset_next }}"
-                        href="?week_offset={{ week_offset_next }}"
-                        style="display:inline-flex;align-items:center;padding:.45rem .7rem;border:1px solid var(--gray-200);border-radius:10px;background:var(--white);font-size:.78rem;font-weight:700;color:var(--gray-700);text-decoration:none;{% if week_offset == 0 %}pointer-events:none;opacity:.5{% endif %}"
-                    >Semana siguiente</a>
-                    <span id="faltas-count-total" style="font-size:.78rem;color:var(--gray-400)">
-                        {{ faltas_page.paginator.count }} pendiente{{ faltas_page.paginator.count|pluralize:"s" }}
-                    </span>
-                </div>
-            </div>
-
-            <!-- Paginación de la tabla -->
-            <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem">
-                <button class="month-btn" id="faltas-page-prev" type="button" onclick="changeFaltasPage(-1)" {% if not faltas_page.has_previous %}disabled{% endif %}>‹</button>
-                <span style="font-size:.78rem;color:var(--gray-500)" id="month-label">
-                    Página {{ faltas_page.number }} de {{ faltas_page.paginator.num_pages }}
-                </span>
-                <button class="month-btn" id="faltas-page-next" type="button" onclick="changeFaltasPage(1)" {% if not faltas_page.has_next %}disabled{% endif %}>›</button>
             </div>
 
             <table id="faltas-table" style="width:100%;border-collapse:collapse">
                 <thead>
                     <tr style="background:var(--gray-100)">
-                        <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Profesor</th>
                         <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Fecha</th>
                         <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Horario</th>
                         <th style="text-align:left;padding:.7rem 1.5rem;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-600);border-bottom:1px solid var(--gray-200)">Estado</th>
@@ -344,7 +316,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                {% for incidencia in incidencias_profesor %}
+                {% for incidencia in incidencias %}
                     <tr>
                         <td>{{ incidencia.asistencia.fecha|date:"d/m/Y" }}</td>
                         <td>{{ incidencia.motivo }}</td>
@@ -371,32 +343,24 @@
         </div>
         <div class="perfil-wrap">
             <div class="perfil-card">
-                <div class="perfil-avatar">{{ perfil_iniciales }}</div>
-                <div class="perfil-name">{{ perfil_nombre }}</div>
-                <div class="perfil-role">{{ perfil_puesto }}</div>
-                <span class="pill pill-green" style="margin-top:.25rem">{{ perfil_estado }}</span>
+                <div class="perfil-avatar">{{ perfil.iniciales }}</div>
+                <div class="perfil-name">{{ perfil.nombre }}</div>
+                <div class="perfil-role">{{ perfil.puesto }}</div>
+                <span class="pill pill-green" style="margin-top:.25rem">{{ perfil.estado }}</span>
                 <div class="perfil-stats">
                     <div class="pstat">
-                        <div class="pstat-val">{{ perfil_anios_institucion }}</div>
+                        <div class="pstat-val">{{ perfil.experiencia }}</div>
                         <div class="pstat-lbl">Años en inst.</div>
                     </div>
                     <div class="pstat">
-                        <div class="pstat-val">{{ perfil_jornada_semanal }}</div>
+                        <div class="pstat-val">{{ perfil.jornada_semanal }}</div>
                         <div class="pstat-lbl">Jornada sem.</div>
-                    </div>
-                    <div class="pstat">
-                        <div class="pstat-val">{{ perfil_grupos }}</div>
-                        <div class="pstat-lbl">Grupos</div>
-                    </div>
-                    <div class="pstat">
-                        <div class="pstat-val">{{ perfil_anios_experiencia }}</div>
-                        <div class="pstat-lbl">Años exp.</div>
                     </div>
                 </div>
             </div>
             <div class="perfil-data-card">
                 <h3>Datos personales y laborales</h3>
-                {% for dato in perfil_datos %}
+                {% for dato in perfil.perfil_datos %}
                 <div class="data-row">
                     <span class="data-label">{{ dato.label }}</span>
                     <span class="data-value">{{ dato.value }}</span>

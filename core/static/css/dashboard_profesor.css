@@ -219,6 +219,12 @@
   border-top-right-radius: 0;
 }
 
+.clase-asistencia {
+  background-color: #07B795;
+  border-left: 3px solid #28a745;
+  color: #155724;
+}
+
 .cal-event.cal-span.span-mid,
 .cal-event.cal-span.span-start {
   border-bottom-left-radius: 0;
@@ -240,7 +246,7 @@
 }
 
 /* ── Colores por tipo de asistencia ── */
-.cal-event.asistencia-presente {
+.cal-event.asistencia-asistencia {
   background-color: #d4edda;
   border-left: 3px solid #28a745;
   color: #155724;

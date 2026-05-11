@@ -3,7 +3,8 @@ from Asistencias.models import Asistencia
 from Profesores.models import Profesor, Horario
 from Contabilidad.models import Periodo, Nomina
 from decimal import Decimal
-from Profesores.utils import expected_minutes_for_range
+from datetime import datetime, timedelta
+
 
 UNIDADES = (
     "cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho",
@@ -14,6 +15,40 @@ UNIDADES = (
 )
 DIEZ_DIEZ = ("", "", "", "treinta", "cuarenta", "cincuenta", "sesenta", "setenta", "ochenta", "noventa")
 CIENTOS = ("", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos", "seiscientos", "setecientos", "ochocientos", "novecientos")
+
+DIAS = {
+    0: "LUN",
+    1: "MAR",
+    2: "MIE",
+    3: "JUE",
+    4: "VIE",
+    5: "SAB",
+    6: "DOM",
+}
+
+def horas_clase(clase):
+    inicio = datetime.combine(datetime.today(), clase.hora_inicio)
+    fin = datetime.combine(datetime.today(), clase.hora_fin)
+
+    return (fin - inicio).total_seconds() / 3600
+
+def total_horas_clase(profesor_id):
+    periodo = get_active_periodo()
+    profesor = Profesor.objects.get(id=profesor_id)
+    horarios = Horario.objects.filter(profesor=profesor, activo=True).order_by("dia_semana", "hora_inicio")
+
+    total_hours = 0
+    fecha_actual = periodo.fecha_inicio
+
+    while fecha_actual <= periodo.fecha_fin:
+        dia_actual = DIAS[fecha_actual.weekday()]
+        clases_dia = horarios.filter(dia_semana=dia_actual)
+
+        total_hours += sum(horas_clase(clase) for clase in clases_dia)
+
+        fecha_actual += timedelta(days=1)
+
+    return round(total_hours, 2)
 
 def get_all_periodos():
     return Periodo.objects.all().order_by("-fecha_inicio")
@@ -54,12 +89,14 @@ def deactivate_periodo(id):
 
     return periodo
 
-
 def get_active_periodo():
     try:
         return Periodo.objects.get(estado="ABIERTO")
     except Periodo.DoesNotExist:
         return None
+
+def get_last_closed_periodo():
+    return Periodo.objects.filter(estado="CERRADO").order_by("-fecha_fin").first()
 
 def get_all_active_profesores():
     return Profesor.objects.filter(estado_laboral="ACTIVO")
@@ -98,7 +135,7 @@ def get_retardos(profesor_id):
 def calculate_base_payment(profesor_id):
     horario = Horario.objects.filter(profesor_id=profesor_id, activo=True).order_by("dia_semana", "hora_inicio")
     profesor = Profesor.objects.get(id=profesor_id)
-    valid_hours = expected_minutes_for_range(horario, get_active_periodo().fecha_inicio, get_active_periodo().fecha_fin) / 60
+    valid_hours = total_horas_clase(profesor_id)
 
     return Decimal(str(valid_hours)) * profesor.costo_por_hora
 
@@ -153,7 +190,7 @@ def get_total_faltas(profesor_id):
         return 0
 
     horario = Horario.objects.filter(profesor_id=profesor_id, activo=True).order_by("dia_semana", "hora_inicio")
-    total_hours = expected_minutes_for_range(horario, get_active_periodo().fecha_inicio, get_active_periodo().fecha_fin) / 60
+    total_hours = total_horas_clase(profesor_id)
     total_asistencias = sum(1 for a in asistencias if a.estado == "ASISTENCIA" or a.justificada or a.estado == "RETARDO")
 
     total_faltas = total_hours - total_asistencias

@@ -8,15 +8,6 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from Asistencias.models import Asistencia, Incidencia
-from Asistencias.services import (
-    apply_asistencia_filters,
-    apply_incidencia_filters,
-    paginate_queryset,
-    scope_asistencias_for_user,
-    scope_incidencias_for_user,
-    serialize_asistencia,
-    serialize_incidencia,
-)
 from Profesores.models import Profesor
 from core.decorators import requiere_rol
 from core.models import BitacoraAuditoria

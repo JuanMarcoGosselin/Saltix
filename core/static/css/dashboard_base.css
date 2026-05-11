@@ -408,6 +408,11 @@ tr:hover td { background: #fafcff; }
 .pill-gray   { background: var(--gray-100); color: var(--gray-600); }
 .pill-red    { background: #fdecea; color: #c0392b; }
 
+
+.pill.percepcion { background: #e6f9f4; color: #00916e; }
+.pill.deduccion { background: #fdecea; color: #c0392b; }
+.pill.neto      { background: #e8f3ff; color: #0062cc; }
+
 .btn-sm { padding: .3rem .8rem; font-size: .75rem; border-radius: 6px; }
 
 /* --- PERFIL --- */
