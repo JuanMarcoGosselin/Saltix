@@ -1,7 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.http import HttpResponse
-from .reports import generar_reporte_nominas
 from .utils import *
 import calendar
 import locale
@@ -115,6 +114,8 @@ def pagar_nomina(request, nomina_id):
 
     return redirect("contabilidad_dashboard")
 def reporte_nominas_pdf(request):
+    from .reports import generar_reporte_nominas
+
     periodo_id = request.GET.get("periodo")
 
     pdf = generar_reporte_nominas(periodo_id)
