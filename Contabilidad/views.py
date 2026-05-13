@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.shortcuts import redirect, render
+from django.http import HttpResponse
+from .reports import generar_reporte_nominas
 from .utils import *
 import calendar
 import locale
@@ -112,3 +114,18 @@ def pagar_nomina(request, nomina_id):
         messages.error(request, message)
 
     return redirect("contabilidad_dashboard")
+def reporte_nominas_pdf(request):
+    periodo_id = request.GET.get("periodo")
+
+    pdf = generar_reporte_nominas(periodo_id)
+
+    response = HttpResponse(
+        pdf,
+        content_type="application/pdf"
+    )
+
+    response["Content-Disposition"] = (
+        'inline; filename="reporte_nominas.pdf"'
+    )
+
+    return response
