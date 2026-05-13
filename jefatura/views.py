@@ -15,15 +15,15 @@ from core.decorators import requiere_rol
 def dashboard(request):
     hoy = timezone.localdate()
     
-    # Departamentos que tiene a cargo este usuario de jefatura
-    departamentos = Departamento.objects.filter(jefe=request.user.id).select_related("plantel")
-    dept_ids = [d.id for d in departamentos]
+    # Departamento que tiene a cargo este usuario de jefatura.
+    departamento = Departamento.objects.filter(jefe=request.user.id).select_related("plantel").first()
 
     profesores = (
         Profesor.objects.select_related("usuario")
-        .filter(departamentos__id__in=dept_ids)
-        .distinct()
+        .filter(departamento=departamento)
         .order_by("usuario__nombre", "usuario__apellido")
+        if departamento
+        else Profesor.objects.none()
     )
 
     # Semana actual (lunes a viernes)
@@ -62,9 +62,8 @@ def dashboard(request):
         })
 
     # Etiquetas de contexto
-    depto_label = ", ".join(d.nombre for d in departamentos) if departamentos else "Sin departamento"
-    planteles = sorted({d.plantel.nombre for d in departamentos if d.plantel_id})
-    ciclo_label = " / ".join(planteles) if planteles else "Sin plantel"
+    depto_label = departamento.nombre if departamento else "Sin departamento"
+    ciclo_label = departamento.plantel.nombre if departamento and departamento.plantel_id else "Sin plantel"
 
     total_profesores = profesores.count()
     horas_semana_total = sum(p["horas_semana"] for p in equipo)
@@ -77,7 +76,7 @@ def dashboard(request):
 
         # Tarjetas del dashboard
         "equipo_total": total_profesores,
-        "equipo_variacion": f"{len(departamentos)} departamento(s) a cargo",
+        "equipo_variacion": depto_label,
 
         "horas_trabajadas_total": horas_semana_total,
         "horas_trabajadas_promedio": (

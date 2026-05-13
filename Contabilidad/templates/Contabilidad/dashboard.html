@@ -92,14 +92,13 @@
       </div>
     </div>
     <table>
-      <thead><tr><th>Inicio</th><th>Fin</th><th>Tipo</th><th>Plantel</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>Inicio</th><th>Fin</th><th>Tipo</th><th>Estado</th><th>Acciones</th></tr></thead>
       <tbody id="periodos-tbody">
         {% for periodo in periodos %}
-          <tr data-search="{{ periodo.fecha_inicio }} {{ periodo.fecha_fin }} {{ periodo.tipo|lower }} {{ periodo.plantel|lower }} {{ periodo.estado|lower }}">
+          <tr data-search="{{ periodo.fecha_inicio }} {{ periodo.fecha_fin }} {{ periodo.tipo|lower }} {{ periodo.estado|lower }}">
             <td>{{ periodo.fecha_inicio }}</td>
             <td>{{ periodo.fecha_fin }}</td>
             <td>{{ periodo.tipo }}</td>
-            <td>{{ periodo.plantel }}</td>
             <td><span class="pill pill-{{ periodo.estado|default:'gray' }}">{{ periodo.estado|default:"Sin estado" }}</span></td>
             <td>
               {% if periodo.estado == "ABIERTO" %}
@@ -110,7 +109,7 @@
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="6" class="empty-cell">No hay periodos registrados.</td></tr>
+          <tr><td colspan="5" class="empty-cell">No hay periodos registrados.</td></tr>
         {% endfor %}
       </tbody>
     </table>

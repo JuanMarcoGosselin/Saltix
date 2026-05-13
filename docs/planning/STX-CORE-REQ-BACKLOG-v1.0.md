@@ -247,13 +247,13 @@ El contador podrá configurar periodos de nómina: semanal, quincenal o mensual.
 
 ### RF-18 — Control de Periodo Abierto
 
-Solo podrá existir un periodo de nómina activo por plantel.
+Solo podrá existir un periodo de nómina activo general. Los planteles pueden usarse como filtro o referencia, pero no separan nóminas independientes.
 
 **Justificación:** Evita duplicidad de cálculos.
 
 | Condición | Acción |
 |---|---|
-| Periodo activo existente | Bloquear creación |
+| Periodo activo existente | Bloquear creación de otro periodo general |
 | Periodo cerrado | Permitir nuevo periodo |
 
 ---

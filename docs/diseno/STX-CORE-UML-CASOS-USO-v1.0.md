@@ -193,7 +193,7 @@ flowchart LR
 
     subgraph MOD3["💰 Nómina y Contabilidad"]
         UC17["RF-17\nConfigurar periodo\n(Semanal / Quincenal / Mensual)"]
-        UC18["RF-18\nControlar periodo abierto\n(solo 1 activo por plantel)"]
+        UC18["RF-18\nControlar periodo abierto\n(solo 1 activo general)"]
         UC05["RF-05\nConfigurar catálogo\nde percepciones"]
         UC06["RF-06\nClasificar percepciones\n(Gravada / Exenta / Mixta)"]
         UC04["RF-04\nCalcular nómina\n(procesar asistencias del periodo)"]

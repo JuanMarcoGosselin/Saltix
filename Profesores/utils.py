@@ -110,7 +110,9 @@ def get_attendance_stats(profesor_id):
 
     return {
         "total_asistencias": asistencias.filter(estado="ASISTENCIA").count(),
-        "total_retardos": asistencias.filter(estado="RETARDO").count(),
+        "total_retardos": asistencias.filter(estado="RETARDO").exclude(
+            id__in=incidencias_aprobadas
+        ).count(),
         "total_faltas": asistencias.filter(estado="FALTA").exclude(
             Q(justificada=True) | Q(id__in=incidencias_aprobadas)
         ).count(),
@@ -218,8 +220,8 @@ def build_profile_data(profesor):
         {"label": "Fecha de ingreso", "value": profesor.fecha_ingreso.strftime("%d/%m/%Y") if profesor.fecha_ingreso else "N/A"},
         {"label": "Tipo de contrato", "value": profesor.tipo_contrato},
         {"label": "Costo por hora", "value": f"${format_money(profesor.costo_por_hora or Decimal(0))}"},
-        {"label": "Departamentos", "value": ", ".join(profesor.departamentos.values_list("nombre", flat=True)) or "N/A"},
-        {"label": "Planteles", "value": ", ".join(profesor.planteles.values_list("nombre", flat=True)) or "N/A"},
+        {"label": "Departamento", "value": profesor.departamento.nombre if profesor.departamento_id else "N/A"},
+        {"label": "Plantel", "value": profesor.plantel.nombre if profesor.plantel_id else "N/A"},
     ]
 
 

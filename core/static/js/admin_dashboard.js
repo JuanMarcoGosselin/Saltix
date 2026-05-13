@@ -404,7 +404,7 @@ function appendHorarioInput(name, value){
 }
 
 function getSelectedValues(sel){
-  return Array.from(sel.selectedOptions).map(o=>o.value);
+  return Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean);
 }
 
 function updateDeptsByPlantel(plantelSelId, deptSelId){

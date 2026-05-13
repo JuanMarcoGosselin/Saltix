@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from django.utils import timezone
 
-from Asistencias.models import Asistencia
+from Asistencias.models import Asistencia, Incidencia
 from Profesores.models import Profesor, Horario
 from Contabilidad.models import Periodo, Nomina
 
@@ -28,10 +28,7 @@ CIENTOS = ("", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinient
 # ── Periodos ───────────────────────────────────────────────────────────────────
 
 def get_periodo_activo():
-    try:
-        return Periodo.objects.get(estado="ABIERTO")
-    except Periodo.DoesNotExist:
-        return None
+    return Periodo.objects.filter(estado="ABIERTO").order_by("-fecha_inicio", "-id").first()
 
 
 def get_todos_los_periodos():
@@ -150,7 +147,11 @@ def get_total_retardos(profesor_id):
     asistencias = get_asistencias_periodo(profesor_id)
     if asistencias is None:
         return 0
-    return asistencias.filter(estado="RETARDO").count()
+    justificadas = Incidencia.objects.filter(
+        asistencia__in=asistencias,
+        estado="APROBADA",
+    ).values_list("asistencia_id", flat=True)
+    return asistencias.filter(estado="RETARDO").exclude(id__in=justificadas).count()
 
 
 def get_faltas_descontables(profesor_id):
@@ -159,8 +160,12 @@ def get_faltas_descontables(profesor_id):
     if asistencias is None:
         return 0
 
-    faltas = asistencias.filter(estado="FALTA", justificada=False)
-    retardos = get_total_retardos(profesor_id)
+    justificadas = Incidencia.objects.filter(
+        asistencia__in=asistencias,
+        estado="APROBADA",
+    ).values_list("asistencia_id", flat=True)
+    faltas = asistencias.filter(estado="FALTA", justificada=False).exclude(id__in=justificadas)
+    retardos = asistencias.filter(estado="RETARDO").exclude(id__in=justificadas).count()
     faltas_por_retardos = retardos // RETARDOS_POR_FALTA
 
     horas_faltadas = 0
@@ -179,7 +184,15 @@ def get_horas_trabajadas(profesor_id):
     asistencias = get_asistencias_periodo(profesor_id)
     if asistencias is None:
         return 0
-    asistencias_validas = asistencias.filter(estado__in=["ASISTENCIA", "RETARDO"], justificada=False, fecha__lte=timezone.localdate())
+    justificadas = Incidencia.objects.filter(
+        asistencia__in=asistencias,
+        estado="APROBADA",
+    ).values_list("asistencia_id", flat=True)
+    asistencias_validas = asistencias.filter(
+        estado__in=["ASISTENCIA", "RETARDO"],
+        justificada=False,
+        fecha__lte=timezone.localdate(),
+    ).exclude(id__in=justificadas)
     return sum(horas_de_asistencia(a) for a in asistencias_validas)
 
 def get_horas_compensatorias(profesor_id):

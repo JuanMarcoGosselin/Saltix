@@ -20,9 +20,8 @@ class NominaAdmin(admin.ModelAdmin):
 
 @admin.register(Periodo)
 class PeriodoAdmin(admin.ModelAdmin):
-    list_display = ("plantel", "tipo", "fecha_inicio", "fecha_fin", "estado")
-    list_filter = ("plantel", "tipo", "estado")
-    list_select_related = ("plantel",)
+    list_display = ("tipo", "fecha_inicio", "fecha_fin", "estado")
+    list_filter = ("tipo", "estado")
 
 
 @admin.register(CatalogoConcepto)

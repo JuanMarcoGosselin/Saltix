@@ -18,8 +18,8 @@ class Profesor(models.Model):
     estado_laboral = models.CharField(max_length=20, choices=ESTADOS, default="ACTIVO")
     costo_por_hora = models.DecimalField(max_digits=12, decimal_places=4)
     tipo_contrato = models.CharField(max_length=25)
-    departamentos = models.ManyToManyField("users.Departamento", related_name="profesores")
-    planteles = models.ManyToManyField("core.Plantel", related_name="profesores")
+    departamento = models.ForeignKey("users.Departamento", on_delete=models.PROTECT, related_name="profesores")
+    plantel = models.ForeignKey("core.Plantel", on_delete=models.PROTECT, related_name="profesores")
 
     class Meta:
         indexes = [

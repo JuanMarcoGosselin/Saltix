@@ -38,6 +38,27 @@ def _crear_compensatoria(asistencia, user, motivo):
     )
 
 
+def _asistencia_ya_compensada(asistencia):
+    return CorreccionAsistencia.objects.filter(asistencia_original=asistencia).exists()
+
+
+def _registrar_justificacion_aprobada(incidencia, user):
+    if not _asistencia_ya_compensada(incidencia.asistencia):
+        compensatoria = _crear_compensatoria(incidencia.asistencia, user, incidencia.motivo)
+        CorreccionAsistencia.objects.create(
+            asistencia_original=incidencia.asistencia,
+            asistencia_compensatoria=compensatoria,
+            motivo=incidencia.motivo,
+            aprobada_por=user,
+            fecha_aprobacion=timezone.now(),
+        )
+
+    incidencia.estado = "APROBADA"
+    incidencia.aprobador = user
+    incidencia.fecha_de_resolucion = timezone.now()
+    incidencia.save(update_fields=["estado", "aprobador", "fecha_de_resolucion"])
+
+
 def _es_profesor(user):
     rol = getattr(getattr(user, "rol_id", None), "nombre", "") or ""
     return rol.lower() == "profesor"
@@ -60,8 +81,8 @@ def justificar_asistencia(user, asistencia_id, motivo):
         return False, "Asistencia no encontrada.", 404
     if asistencia.cancelada_institucional:
         return False, "La asistencia esta cancelada institucionalmente.", 400
-    if asistencia.estado != "FALTA":
-        return False, "Solo se pueden justificar faltas.", 400
+    if asistencia.estado not in {"FALTA", "RETARDO"}:
+        return False, "Solo se pueden justificar faltas o retardos.", 400
 
     if _es_profesor(user):
         existe = Incidencia.objects.filter(asistencia=asistencia, estado="PENDIENTE").exists()
@@ -71,20 +92,29 @@ def justificar_asistencia(user, asistencia_id, motivo):
         Incidencia.objects.create(
             asistencia=asistencia,
             motivo=motivo,
-            tipo="FALTA",
+            tipo=asistencia.estado,
             estado="PENDIENTE",
             solicitante=user,
         )
         return True, "Justificacion enviada.", 200
 
-    if asistencia.justificada:
+    if not usuario_puede_ver_asistencia(user, asistencia):
+        return False, "Sin acceso a esta asistencia.", 403
+
+    incidencia = Incidencia.objects.filter(asistencia=asistencia, estado="APROBADA").first()
+    if incidencia or _asistencia_ya_compensada(asistencia):
         return True, "La asistencia ya estaba justificada.", 200
 
-    asistencia.justificada = True
-    asistencia.estado = "JUSTIFICADA"
-    asistencia.observaciones = motivo
-    asistencia.creado_por = user
-    asistencia.save(update_fields=["justificada", "estado", "observaciones", "creado_por"])
+    incidencia = Incidencia.objects.filter(asistencia=asistencia, estado="PENDIENTE").first()
+    if not incidencia:
+        incidencia = Incidencia.objects.create(
+            asistencia=asistencia,
+            motivo=motivo,
+            tipo=asistencia.estado,
+            estado="PENDIENTE",
+            solicitante=asistencia.profesor.usuario,
+        )
+    _registrar_justificacion_aprobada(incidencia, user)
     return True, "Asistencia justificada.", 200
 
 
@@ -103,19 +133,7 @@ def aprobar_incidencia(incidencia_id, user):
     if incidencia.estado != "PENDIENTE":
         return False, "La incidencia ya fue resuelta.", 400
 
-    compensatoria = _crear_compensatoria(incidencia.asistencia, user, incidencia.motivo)
-    CorreccionAsistencia.objects.create(
-        asistencia_original=incidencia.asistencia,
-        asistencia_compensatoria=compensatoria,
-        motivo=incidencia.motivo,
-        aprobada_por=user,
-        fecha_aprobacion=timezone.now(),
-    )
-
-    incidencia.estado = "APROBADA"
-    incidencia.aprobador = user
-    incidencia.fecha_de_resolucion = timezone.now()
-    incidencia.save(update_fields=["estado", "aprobador", "fecha_de_resolucion"])
+    _registrar_justificacion_aprobada(incidencia, user)
 
     return True, "Incidencia aprobada.", 200
 

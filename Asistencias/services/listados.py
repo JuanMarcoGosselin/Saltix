@@ -10,13 +10,13 @@ def _rol(user):
 def _filtrar_asistencias_por_usuario(qs, user):
     if _rol(user) in {"administrador", "admin"}:
         return qs
-    return qs.filter(profesor__departamentos__jefe=user).distinct()
+    return qs.filter(profesor__departamento__jefe=user)
 
 
 def _filtrar_incidencias_por_usuario(qs, user):
     if _rol(user) in {"administrador", "admin"}:
         return qs
-    return qs.filter(asistencia__profesor__departamentos__jefe=user).distinct()
+    return qs.filter(asistencia__profesor__departamento__jefe=user)
 
 
 def listar_asistencias(params, user=None):
@@ -76,7 +76,7 @@ def listar_incidencias(params, user=None):
 def usuario_puede_ver_asistencia(user, asistencia):
     if _rol(user) in {"administrador", "admin"}:
         return True
-    return asistencia.profesor.departamentos.filter(jefe=user).exists()
+    return asistencia.profesor.departamento.jefe_id == user.id
 
 
 def usuario_puede_ver_incidencia(user, incidencia):

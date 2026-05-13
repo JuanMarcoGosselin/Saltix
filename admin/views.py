@@ -20,8 +20,8 @@ from core.decorators import requiere_rol, requiere_permiso
 def dashboard(request):
     now = timezone.localtime()
     profesores_qs = Profesor.objects.select_related(
-        "usuario"
-    ).prefetch_related("planteles", "departamentos")
+        "usuario", "plantel", "departamento", "departamento__plantel"
+    )
     empleados_total = profesores_qs.count()
     empleados_activos = profesores_qs.filter(estado_laboral="ACTIVO").count()
     empleados_bajas = max(0, empleados_total - empleados_activos)
@@ -120,8 +120,7 @@ def dashboard(request):
     profes_by_user = {
         p.usuario_id: p
         for p in Profesor.objects.filter(usuario_id__in=usuarios_ids)
-        .select_related("usuario")
-        .prefetch_related("planteles", "departamentos")
+        .select_related("usuario", "plantel", "departamento", "departamento__plantel")
     }
     horarios_by_user = {}
     profesor_ids = [p.id for p in profes_by_user.values()]
@@ -136,8 +135,7 @@ def dashboard(request):
         )
     dept_by_jefe = {
         d.jefe_id: d
-        for d in Departamento.objects.filter(jefe_id__in=usuarios_ids)
-        .select_related("plantel")
+        for d in Departamento.objects.filter(jefe_id__in=usuarios_ids).select_related("plantel")
     }
     dept_by_jefe_all = {
         d.jefe_id: d
@@ -174,20 +172,12 @@ def dashboard(request):
         else:
             profesor = profes_by_user.get(u.id)
             if profesor:
-                if profesor.planteles.exists():
-                    plantel_ids = [str(p.id) for p in profesor.planteles.all()]
-                    plantel_nombres = [p.nombre for p in profesor.planteles.all()]
-                    plantel_nombre = ", ".join(plantel_nombres)
-                    plantel_key = plantel_nombres[0].lower().replace(" ", "-")
-                elif profesor.departamentos.exists():
-                    dept_planteles = {d.plantel for d in profesor.departamentos.select_related("plantel")}
-                    plantel_ids = [str(p.id) for p in dept_planteles]
-                    plantel_nombres = [p.nombre for p in dept_planteles]
-                    plantel_nombre = ", ".join(plantel_nombres)
-                    if plantel_nombres:
-                        plantel_key = plantel_nombres[0].lower().replace(" ", "-")
-                depto_ids = [str(d.id) for d in profesor.departamentos.all()]
-                depto_nombres = [d.nombre for d in profesor.departamentos.all()]
+                if profesor.plantel_id:
+                    plantel_ids = [str(profesor.plantel_id)]
+                    plantel_nombre = profesor.plantel.nombre
+                    plantel_key = profesor.plantel.nombre.lower().replace(" ", "-")
+                depto_ids = [str(profesor.departamento_id)] if profesor.departamento_id else []
+                depto_nombres = [profesor.departamento.nombre] if profesor.departamento_id else []
                 prof_data = {
                     "rfc": profesor.rfc,
                     "curp": profesor.curp,
@@ -253,12 +243,8 @@ def dashboard(request):
 
     empleados_data = []
     for p in profesores_qs:
-        if p.planteles.exists():
-            plantel_nombre = ", ".join([pl.nombre for pl in p.planteles.all()])
-        else:
-            plantel_nombre = "Sin plantel"
-        dept_names = [d.nombre for d in p.departamentos.all()]
-        dept_label = ", ".join(dept_names) if dept_names else "Sin departamento"
+        plantel_nombre = p.plantel.nombre if p.plantel_id else "Sin plantel"
+        dept_label = p.departamento.nombre if p.departamento_id else "Sin departamento"
         empleados_data.append(
             {
                 "id": p.id,
@@ -284,10 +270,10 @@ def dashboard(request):
         )
 
     dept_prof_counts = (
-        Profesor.objects.values("departamentos")
+        Profesor.objects.values("departamento")
         .annotate(total=Count("id"), activos=Count("id", filter=Q(estado_laboral="ACTIVO")))
     )
-    dept_counts = {d["departamentos"]: d for d in dept_prof_counts if d["departamentos"]}
+    dept_counts = {d["departamento"]: d for d in dept_prof_counts if d["departamento"]}
 
     color_cycle = ["bar-blue", "bar-teal", "bar-orange", "bar-red"]
     planteles_data = []
@@ -322,7 +308,7 @@ def dashboard(request):
                 "nombre": plantel.nombre,
                 "icon": plantel.nombre[:1].upper(),
                 "color": color_cycle[idx % len(color_cycle)],
-                "empleados": profesores_qs.filter(planteles=plantel).count(),
+                "empleados": profesores_qs.filter(plantel=plantel).count(),
                 "jefe": jefe_nombre,
                 "dir": plantel.direccion,
                 "activo": plantel.activo,
@@ -680,9 +666,7 @@ def create_departamento(request):
         jefe = Usuario.objects.select_related("rol_id").filter(id=jefe_id).first()
         if not jefe or not jefe.rol_id or jefe.rol_id.nombre.lower() != "jefatura":
             return redirect(_redirect_with_message(request, error="Jefe invalido para departamento."))
-        if Departamento.objects.filter(jefe=jefe).exists():
-            return redirect(_redirect_with_message(request, error="Ese jefe ya esta asignado a un plantel."))
-
+        _clear_jefatura_if_needed(request, jefe)
     Departamento.objects.create(
         nombre=nombre,
         descripcion=descripcion or nombre,
@@ -724,8 +708,7 @@ def update_departamento(request):
         jefe = Usuario.objects.select_related("rol_id").filter(id=jefe_id).first()
         if not jefe or not jefe.rol_id or jefe.rol_id.nombre.lower() != "jefatura":
             return redirect(_redirect_with_message(request, error="Jefe invalido para departamento."))
-        if Departamento.objects.filter(jefe=jefe).exclude(id=depto.id).exists():
-            return redirect(_redirect_with_message(request, error="Ese jefe ya esta asignado a un plantel."))
+        _clear_jefatura_if_needed(request, jefe, keep_id=depto.id)
     else:
         jefe = request.user
 
@@ -801,18 +784,18 @@ def _upsert_profesor_from_request(request, user, is_new):
     direccion = (request.POST.get("direccion") or "").strip()
     fecha_ingreso = (request.POST.get("fecha_ingreso") or "").strip()
     tipo_contrato = (request.POST.get("tipo_contrato") or "").strip()
-    dept_ids = request.POST.getlist("departamentos")
-    plantel_ids = request.POST.getlist("planteles")
+    dept_id = (request.POST.get("departamento") or "").strip()
+    plantel_id = (request.POST.get("plantel") or "").strip()
     salario = (request.POST.get("salario") or "").strip()
 
     if not all([rfc, curp, telefono, direccion, fecha_ingreso, tipo_contrato]):
         return "Completa todos los campos de profesor."
 
-    if not plantel_ids:
-        return "Selecciona al menos un plantel para profesor."
+    if not plantel_id:
+        return "Selecciona un plantel para profesor."
 
-    if not dept_ids:
-        return "Selecciona al menos un departamento para profesor."
+    if not dept_id:
+        return "Selecciona un departamento para profesor."
 
     if not re.match(r"^\d+(\.\d{2})?$", salario):
         return "Salario invalido. Usa formato 0000.00."
@@ -826,18 +809,16 @@ def _upsert_profesor_from_request(request, user, is_new):
     except ValueError:
         return "Fecha de ingreso invalida."
 
-    planteles = list(Plantel.objects.filter(id__in=plantel_ids))
-    if len(planteles) != len(plantel_ids):
+    plantel = Plantel.objects.filter(id=plantel_id).first()
+    if not plantel:
         return "Plantel invalido."
 
-    departamentos = list(Departamento.objects.filter(id__in=dept_ids).select_related("plantel"))
-    if len(departamentos) != len(dept_ids):
+    departamento = Departamento.objects.filter(id=dept_id).select_related("plantel").first()
+    if not departamento:
         return "Departamento invalido."
 
-    plantel_id_set = set([p.id for p in planteles])
-    for depto in departamentos:
-        if depto.plantel_id not in plantel_id_set:
-            return "Todos los departamentos deben pertenecer a los planteles seleccionados."
+    if departamento.plantel_id != plantel.id:
+        return "El departamento debe pertenecer al plantel seleccionado."
 
     profesor, _ = Profesor.objects.get_or_create(usuario=user, defaults={
         "rfc": rfc,
@@ -848,6 +829,8 @@ def _upsert_profesor_from_request(request, user, is_new):
         "estado_laboral": "ACTIVO",
         "costo_por_hora": costo_por_hora,
         "tipo_contrato": tipo_contrato,
+        "plantel": plantel,
+        "departamento": departamento,
     })
 
     profesor.rfc = rfc
@@ -857,9 +840,9 @@ def _upsert_profesor_from_request(request, user, is_new):
     profesor.fecha_ingreso = fecha_ingreso_dt
     profesor.costo_por_hora = costo_por_hora
     profesor.tipo_contrato = tipo_contrato
+    profesor.plantel = plantel
+    profesor.departamento = departamento
     profesor.save()
-    profesor.planteles.set(planteles)
-    profesor.departamentos.set(departamentos)
 
     horario_error = _update_horarios(request, profesor)
     if horario_error:

@@ -343,15 +343,16 @@
                   {% endfor %}
                 </select>
               </div>
-              <div class="form-group" id="usr-plantel-wrap"><label class="form-label">Planteles</label>
-                <select class="form-select" id="usr-plantel" name="planteles" multiple onchange="updateDeptsByPlantel('usr-plantel','usr-dept')">
+              <div class="form-group" id="usr-plantel-wrap"><label class="form-label">Plantel</label>
+                <select class="form-select" id="usr-plantel" name="plantel" onchange="updateDeptsByPlantel('usr-plantel','usr-dept')">
+                  <option value="">&#x2014; Selecciona plantel &#x2014;</option>
                   {% for plantel in planteles_data %}
                     <option value="{{ plantel.id }}">{{ plantel.nombre }}</option>
                   {% endfor %}
                 </select>
               </div>
-              <div class="form-group" id="usr-dept-wrap"><label class="form-label">Departamentos</label>
-                <select class="form-select" id="usr-dept" name="departamentos" multiple><option value="">&#x2014; Selecciona planteles &#x2014;</option></select>
+              <div class="form-group" id="usr-dept-wrap"><label class="form-label">Departamento</label>
+                <select class="form-select" id="usr-dept" name="departamento"><option value="">&#x2014; Selecciona plantel &#x2014;</option></select>
               </div>
               <div class="form-group"><label class="form-label">Contrasena</label><input class="form-input" id="usr-pass" name="password" type="password" placeholder="********"></div>
               <div class="form-group"><label class="form-label">Confirmar contrasena</label><input class="form-input" id="usr-pass2" name="password2" type="password" placeholder="********"></div>
@@ -393,7 +394,7 @@
                   <option value="">&#x2014; Selecciona plantel &#x2014;</option>
                 </select>
               </div>
-              <div class="role-note">El jefe de departamento queda ligado 1 a 1 con el departamento seleccionado.</div>
+              <div class="role-note">El jefe de departamento queda ligado a un solo departamento.</div>
             </div>
           </div>
 

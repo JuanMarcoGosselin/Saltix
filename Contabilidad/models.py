@@ -1,5 +1,4 @@
 from django.db import models
-from django.db.models import Q
 
 class Nomina(models.Model): 
     ESTADOS = [
@@ -22,7 +21,7 @@ class Nomina(models.Model):
         return f"{self.profesor} | {self.periodo}"
 
 class Periodo(models.Model):
-    # Periodos de nomina por plantel (solo uno abierto a la vez).
+    # Periodos generales de nomina.
     TIPOS = [
         ("SEMANAL", "Semanal"),
         ("QUINCENAL", "Quincenal"),
@@ -36,21 +35,11 @@ class Periodo(models.Model):
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField()
     tipo = models.CharField(max_length=10, choices=TIPOS, default="QUINCENAL")
-    plantel = models.ForeignKey("core.Plantel", on_delete=models.PROTECT, default=1)
     estado = models.CharField(max_length=10, choices=ESTADOS, default="ABIERTO")
     fecha_cierre = models.DateTimeField(null=True, blank=True)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["plantel"],
-                condition=Q(estado="ABIERTO"),
-                name="un_periodo_abierto_por_plantel",
-            )
-        ]
-
     def __str__(self):
-        return f"{self.plantel} | {self.tipo} | {self.fecha_inicio} - {self.fecha_fin}"
+        return f"{self.tipo} | {self.fecha_inicio} - {self.fecha_fin}"
 
     def display_label(self):
         return f"{self.fecha_inicio.strftime('%d %B')} - {self.fecha_fin.strftime('%d %B')}"
