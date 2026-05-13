@@ -1,4 +1,5 @@
 from io import BytesIO
+from decimal import Decimal
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import (
@@ -48,7 +49,7 @@ def generar_reporte_nominas(periodo_id=None):
     elementos = []
 
     titulo = Paragraph(
-        "Reporte General de Nómina",
+        "Reporte General de Nóminas",
         styles["Title"]
     )
 
@@ -63,7 +64,7 @@ def generar_reporte_nominas(periodo_id=None):
         "Neto"
     ]]
 
-    total_general = 0
+    total_general = Decimal("0.00")
 
     for nomina in nominas:
 
@@ -77,9 +78,9 @@ def generar_reporte_nominas(periodo_id=None):
             f"{nomina.profesor.usuario.apellido}"
         )
 
-        bruto = float(nomina.total_bruto)
-        deducciones = float(nomina.total_deducciones)
-        neto = float(nomina.total_neto)
+        bruto = Decimal(nomina.total_bruto)
+        deducciones = Decimal(nomina.total_deducciones)
+        neto = Decimal(nomina.total_neto)
 
         total_general += neto
 

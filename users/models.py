@@ -36,6 +36,9 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.nombre} {self.apellido} <{self.email}>"
+    
+    def get_full_name(self):
+        return f"{self.nombre} {self.apellido}"
 
 class Rol(models.Model): 
     # Rol funcional del sistema (admin, jefatura, profesor, etc).
