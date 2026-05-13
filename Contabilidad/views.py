@@ -122,16 +122,19 @@ def pagar_nomina(request, nomina_id):
     return redirect("contabilidad_dashboard")
 def reporte_nominas_pdf(request):
     periodo_id = request.GET.get("periodo")
-    if periodo_id:
-        try:
-            periodo_id = int(periodo_id)
-        except (TypeError, ValueError):
-            messages.error(request, "El periodo seleccionado no es válido.")
-            return redirect("contabilidad_dashboard")
+    if not periodo_id:
+        messages.error(request, "Debes seleccionar un periodo para generar el reporte.")
+        return redirect("contabilidad_dashboard")
 
-        if not Periodo.objects.filter(id=periodo_id).exists():
-            messages.error(request, "El periodo seleccionado no existe.")
-            return redirect("contabilidad_dashboard")
+    try:
+        periodo_id = int(periodo_id)
+    except (TypeError, ValueError):
+        messages.error(request, "El periodo seleccionado no es válido.")
+        return redirect("contabilidad_dashboard")
+
+    if not Periodo.objects.filter(id=periodo_id).exists():
+        messages.error(request, "El periodo seleccionado no existe.")
+        return redirect("contabilidad_dashboard")
 
     if generar_reporte_nominas is None:
         messages.error(request, "No se pudo generar el reporte en este entorno.")
