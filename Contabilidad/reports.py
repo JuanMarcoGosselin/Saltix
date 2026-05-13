@@ -1,15 +1,21 @@
 from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Table,
+    TableStyle,
+    Paragraph,
+    Spacer
+)
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import cm
 
-from django.template.loader import render_to_string
-from weasyprint import HTML
 
 from .models import Nomina
 
 
 def generar_reporte_nominas(periodo_id=None):
-    """
-    Genera un reporte general de nóminas.
-    """
 
     nominas = (
         Nomina.objects
@@ -18,7 +24,6 @@ def generar_reporte_nominas(periodo_id=None):
             "profesor__usuario",
             "periodo"
         )
-        .all()
         .order_by(
             "periodo__fecha_inicio",
             "profesor__usuario__nombre"
@@ -28,46 +33,99 @@ def generar_reporte_nominas(periodo_id=None):
     if periodo_id:
         nominas = nominas.filter(periodo_id=periodo_id)
 
-    reporte = []
+    buffer = BytesIO()
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(letter),
+        leftMargin=30,
+        rightMargin=30,
+        topMargin=30,
+        bottomMargin=30
+    )
+
+    styles = getSampleStyleSheet()
+    elementos = []
+
+    titulo = Paragraph(
+        "Reporte General de Nómina",
+        styles["Title"]
+    )
+
+    elementos.append(titulo)
+    elementos.append(Spacer(1, 20))
+
+    datos = [[
+        "Periodo",
+        "Profesor",
+        "Salario",
+        "Penalizaciones",
+        "Neto"
+    ]]
+
+    total_general = 0
 
     for nomina in nominas:
 
-        reporte.append({
-            "periodo": (
-                f"{nomina.periodo.fecha_inicio} "
-                f"- "
-                f"{nomina.periodo.fecha_fin}"
-            ),
+        periodo = (
+            f"{nomina.periodo.fecha_inicio.strftime('%d/%m/%Y')} - "
+            f"{nomina.periodo.fecha_fin.strftime('%d/%m/%Y')}"
+        )
 
-            "profesor": (
-                f"{nomina.profesor.usuario.nombre} "
-                f"{nomina.profesor.usuario.apellido}"
-            ),
+        profesor = (
+            f"{nomina.profesor.usuario.nombre} "
+            f"{nomina.profesor.usuario.apellido}"
+        )
 
-            "salario": nomina.total_bruto,
+        bruto = float(nomina.total_bruto)
+        deducciones = float(nomina.total_deducciones)
+        neto = float(nomina.total_neto)
 
-            "penalizaciones": (
-                nomina.total_deducciones
-            ),
+        total_general += neto
 
-            "neto": nomina.total_neto,
-        })
+        datos.append([
+            periodo,
+            profesor,
+            f"${bruto:,.2f}",
+            f"${deducciones:,.2f}",
+            f"${neto:,.2f}",
+        ])
 
-    context = {
-        "reporte": reporte,
-    }
+    datos.append([
+        "",
+        "",
+        "",
+        "TOTAL",
+        f"${total_general:,.2f}"
+    ])
 
-    html_string = render_to_string(
-        "Contabilidad/reports/reporte_nominas.html",
-        context
+    tabla = Table(
+        datos,
+        colWidths=[
+            4.5 * cm,
+            6 * cm,
+            3 * cm,
+            3.5 * cm,
+            3 * cm
+        ]
     )
 
-    pdf_file = BytesIO()
+    tabla.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (2, 1), (-1, -1), "RIGHT"),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+        ("BACKGROUND", (0, 1), (-1, -2), colors.beige),
+        ("BACKGROUND", (0, -1), (-1, -1), colors.lightgrey),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+    ]))
 
-    HTML(
-        string=html_string
-    ).write_pdf(pdf_file)
+    elementos.append(tabla)
 
-    pdf_file.seek(0)
+    doc.build(elementos)
 
-    return pdf_file.getvalue()
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    return pdf

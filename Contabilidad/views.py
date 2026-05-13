@@ -7,7 +7,6 @@ def dashboard(request):
     return render(request, "Contabilidad/dashboard.html")
 
 
-
 def reporte_nominas_pdf(request):
     periodo_id = request.GET.get("periodo")
 
