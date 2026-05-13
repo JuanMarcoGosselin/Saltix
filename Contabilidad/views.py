@@ -137,7 +137,7 @@ def reporte_nominas_pdf(request):
         return redirect("contabilidad_dashboard")
 
     if generar_reporte_nominas is None:
-        messages.error(request, "No se pudo generar el reporte en este entorno.")
+        messages.error(request, "El módulo de reportes no está disponible. Contacte al administrador del sistema.")
         return redirect("contabilidad_dashboard")
 
     pdf = generar_reporte_nominas(periodo_id)
