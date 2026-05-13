@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.http import HttpResponse
+from .models import Periodo
 from .utils import *
 import calendar
 import locale
@@ -117,6 +118,9 @@ def reporte_nominas_pdf(request):
     from .reports import generar_reporte_nominas
 
     periodo_id = request.GET.get("periodo")
+    if periodo_id and not Periodo.objects.filter(id=periodo_id).exists():
+        messages.error(request, "El periodo seleccionado no existe.")
+        return redirect("contabilidad_dashboard")
 
     pdf = generar_reporte_nominas(periodo_id)
 
