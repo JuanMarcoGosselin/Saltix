@@ -118,9 +118,16 @@ def reporte_nominas_pdf(request):
     from .reports import generar_reporte_nominas
 
     periodo_id = request.GET.get("periodo")
-    if periodo_id and not Periodo.objects.filter(id=periodo_id).exists():
-        messages.error(request, "El periodo seleccionado no existe.")
-        return redirect("contabilidad_dashboard")
+    if periodo_id:
+        try:
+            periodo_id = int(periodo_id)
+        except (TypeError, ValueError):
+            messages.error(request, "El periodo seleccionado no es válido.")
+            return redirect("contabilidad_dashboard")
+
+        if not Periodo.objects.filter(id=periodo_id).exists():
+            messages.error(request, "El periodo seleccionado no existe.")
+            return redirect("contabilidad_dashboard")
 
     pdf = generar_reporte_nominas(periodo_id)
 

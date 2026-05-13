@@ -78,9 +78,9 @@ def generar_reporte_nominas(periodo_id=None):
             f"{nomina.profesor.usuario.apellido}"
         )
 
-        bruto = nomina.total_bruto
-        deducciones = nomina.total_deducciones
-        neto = nomina.total_neto
+        bruto = Decimal(nomina.total_bruto)
+        deducciones = Decimal(nomina.total_deducciones)
+        neto = Decimal(nomina.total_neto)
 
         total_general += neto
 
