@@ -49,7 +49,7 @@ def generar_reporte_nominas(periodo_id=None):
     elementos = []
 
     titulo = Paragraph(
-        "Reporte General de Nómina",
+        "Reporte General de Nóminas",
         styles["Title"]
     )
 

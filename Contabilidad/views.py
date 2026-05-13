@@ -5,6 +5,12 @@ from .models import Periodo
 from .utils import *
 import calendar
 import locale
+
+try:
+    from .reports import generar_reporte_nominas
+except ModuleNotFoundError:
+    generar_reporte_nominas = None
+
 locale.setlocale(locale.LC_TIME, 'Spanish_Mexico')
 
 def dashboard(request, *args, **kwargs):
@@ -115,8 +121,6 @@ def pagar_nomina(request, nomina_id):
 
     return redirect("contabilidad_dashboard")
 def reporte_nominas_pdf(request):
-    from .reports import generar_reporte_nominas
-
     periodo_id = request.GET.get("periodo")
     if periodo_id:
         try:
@@ -128,6 +132,10 @@ def reporte_nominas_pdf(request):
         if not Periodo.objects.filter(id=periodo_id).exists():
             messages.error(request, "El periodo seleccionado no existe.")
             return redirect("contabilidad_dashboard")
+
+    if generar_reporte_nominas is None:
+        messages.error(request, "No se pudo generar el reporte en este entorno.")
+        return redirect("contabilidad_dashboard")
 
     pdf = generar_reporte_nominas(periodo_id)
 
