@@ -52,6 +52,7 @@ def asistencia_to_json(asistencia):
 def incidencia_to_json(incidencia):
     asistencia = incidencia.asistencia
     profesor = asistencia.profesor
+    aprobador = incidencia.aprobador.get_full_name() if incidencia.aprobador_id else ""
 
     return {
         "id": incidencia.id,
@@ -62,6 +63,9 @@ def incidencia_to_json(incidencia):
         "motivo": incidencia.motivo,
         "estado": incidencia.estado,
         "estado_label": incidencia.get_estado_display(),
+        "aprobador": aprobador,
+        "fecha_solicitud": incidencia.fecha_solicitud.isoformat() if incidencia.fecha_solicitud else "",
+        "fecha_resolucion": incidencia.fecha_de_resolucion.isoformat() if incidencia.fecha_de_resolucion else "",
     }
 
 

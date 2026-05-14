@@ -9,7 +9,8 @@ from django.utils.timesince import timesince
 from django.urls import reverse
 
 from core.models import BitacoraAuditoria, Notificacion, Plantel
-from Profesores.models import Profesor, Horario, TransferenciaDepartamento
+from Profesores.models import Profesor, Horario
+from jefatura.models import SolicitudTransferencia
 from users.models import Departamento, Permiso, Rol, RolPermiso, Usuario
 
 from core.decorators import requiere_rol, requiere_permiso
@@ -627,7 +628,7 @@ def delete_plantel(request):
     for depto in departamentos:
         if depto.profesores.exists():
             return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene profesores asignados."))
-        if TransferenciaDepartamento.objects.filter(
+        if SolicitudTransferencia.objects.filter(
             Q(departamento_origen=depto) | Q(departamento_destino=depto)
         ).exists():
             return redirect(_redirect_with_message(request, error=f"No puedes eliminar el plantel porque el departamento \"{depto.nombre}\" tiene historial de transferencias."))
@@ -739,7 +740,7 @@ def delete_departamento(request):
     if depto.profesores.exists():
         return redirect(_redirect_with_message(request, error="No puedes eliminar el departamento porque tiene profesores asignados."))
 
-    if TransferenciaDepartamento.objects.filter(
+    if SolicitudTransferencia.objects.filter(
         Q(departamento_origen=depto) | Q(departamento_destino=depto)
     ).exists():
         return redirect(_redirect_with_message(request, error="No puedes eliminar el departamento porque tiene historial de transferencias."))

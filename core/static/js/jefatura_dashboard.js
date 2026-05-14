@@ -73,6 +73,7 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeSidebar();
     closeCorrectionModalDirect();
+    closeAllHorarioModals();
   }
 });
 
@@ -250,6 +251,10 @@ async function postJSON(url, payload) {
     },
     body: JSON.stringify(payload)
   });
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('El servidor devolvio una respuesta inesperada. Recarga la pagina e intenta de nuevo.');
+  }
   const data = await response.json();
   if (!response.ok || !data.ok) {
     throw new Error(data.message || data.error || 'Operacion no completada.');
@@ -261,9 +266,8 @@ async function resolverSolicitud(incidenciaId, accion) {
   const url = accion === 'aprobar' ? getUrl('url-aprobar-incidencia') : getUrl('url-rechazar-incidencia');
   try {
     await postJSON(url, { incidencia_id: incidenciaId });
-    showToast(`Solicitud ${accion === 'aprobar' ? 'aprobada' : 'rechazada'} correctamente.`);
-    await cargarIncidencias(incidenciaPage);
-    await cargarAsistencias(asistenciaPage);
+    const message = accion === 'aprobar' ? 'Solicitud aprobada correctamente.' : 'Solicitud rechazada correctamente.';
+    window.location.href = `?page=solicitudes&ok=${encodeURIComponent(message)}`;
   } catch (error) {
     showToast(error.message, true);
   }
@@ -297,6 +301,28 @@ function closeCorrectionModalDirect() {
   if (modal) modal.classList.remove('visible');
 }
 
+function openHorarioModal(profesorId) {
+  const modal = document.getElementById('horario-modal-' + profesorId);
+  if (modal) modal.classList.add('visible');
+}
+
+function closeHorarioModal(event, profesorId) {
+  if (event.target.id === 'horario-modal-' + profesorId) {
+    closeHorarioModalDirect(profesorId);
+  }
+}
+
+function closeHorarioModalDirect(profesorId) {
+  const modal = document.getElementById('horario-modal-' + profesorId);
+  if (modal) modal.classList.remove('visible');
+}
+
+function closeAllHorarioModals() {
+  document.querySelectorAll('[id^="horario-modal-"]').forEach(modal => {
+    modal.classList.remove('visible');
+  });
+}
+
 async function guardarCorreccion() {
   const asistenciaId = parseInt(document.getElementById('correccion-asistencia-id').value, 10);
   const estado = document.getElementById('correccion-estado').value;
@@ -318,6 +344,14 @@ async function guardarCorreccion() {
 document.addEventListener('DOMContentLoaded', function() {
   pendientes = parseInt((document.getElementById('card-sol-val')?.textContent || '0').trim(), 10) || 0;
   syncSolicitudesUI();
-  document.getElementById('asistencias-prev').disabled = true;
-  document.getElementById('incidencias-prev').disabled = true;
+  const asistenciasPrev = document.getElementById('asistencias-prev');
+  const incidenciasPrev = document.getElementById('incidencias-prev');
+  if (asistenciasPrev) asistenciasPrev.disabled = true;
+  if (incidenciasPrev) incidenciasPrev.disabled = true;
+  if (window.SALTIX_INITIAL_PAGE && window.SALTIX_INITIAL_PAGE !== 'equipo') {
+    const navButton = Array.from(document.querySelectorAll('.nav-item')).find(btn =>
+      (btn.getAttribute('onclick') || '').includes("'" + window.SALTIX_INITIAL_PAGE + "'")
+    );
+    showPage(window.SALTIX_INITIAL_PAGE, navButton);
+  }
 });

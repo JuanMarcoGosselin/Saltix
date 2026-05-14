@@ -53,6 +53,12 @@ def _registrar_justificacion_aprobada(incidencia, user):
             fecha_aprobacion=timezone.now(),
         )
 
+    asistencia = incidencia.asistencia
+    if not asistencia.justificada or asistencia.estado != "JUSTIFICADA":
+        asistencia.justificada = True
+        asistencia.estado = "JUSTIFICADA"
+        asistencia.save(update_fields=["justificada", "estado"])
+
     incidencia.estado = "APROBADA"
     incidencia.aprobador = user
     incidencia.fecha_de_resolucion = timezone.now()

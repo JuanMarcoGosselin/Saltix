@@ -47,9 +47,9 @@ class ProfesorDashboardTests(TestCase):
             fecha_ingreso=date(2024, 1, 1),
             costo_por_hora=Decimal("200.00"),
             tipo_contrato="Asignatura",
+            departamento=depto,
+            plantel=plantel,
         )
-        self.profesor.departamentos.add(depto)
-        self.profesor.planteles.add(plantel)
         horario = Horario.objects.create(
             profesor=self.profesor,
             dia_semana="LUN",

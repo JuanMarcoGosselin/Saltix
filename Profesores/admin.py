@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Profesor, Horario, TransferenciaDepartamento
+from .models import Profesor, Horario
 
 
 @admin.register(Profesor)
@@ -18,10 +18,3 @@ class HorarioAdmin(admin.ModelAdmin):
     search_fields = ("profesor__usuario__nombre", "aula")
     list_select_related = ("profesor",)
 
-
-@admin.register(TransferenciaDepartamento)
-class TransferenciaDepartamentoAdmin(admin.ModelAdmin):
-    list_display = ("profesor", "departamento_origen", "departamento_destino", "fecha", "aprobado_por")
-    list_filter = ("departamento_origen", "departamento_destino")
-    search_fields = ("profesor__usuario__nombre",)
-    list_select_related = ("profesor", "departamento_origen", "departamento_destino", "aprobado_por")

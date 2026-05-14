@@ -1,5 +1,6 @@
 from Asistencias.models import Asistencia, Incidencia
 from Asistencias.utils import parse_date
+from users.models import Departamento
 
 
 def _rol(user):
@@ -10,13 +11,15 @@ def _rol(user):
 def _filtrar_asistencias_por_usuario(qs, user):
     if _rol(user) in {"administrador", "admin"}:
         return qs
-    return qs.filter(profesor__departamento__jefe=user)
+    departamentos = Departamento.objects.filter(jefe=user, activo=True)
+    return qs.filter(profesor__departamento__in=departamentos).distinct()
 
 
 def _filtrar_incidencias_por_usuario(qs, user):
     if _rol(user) in {"administrador", "admin"}:
         return qs
-    return qs.filter(asistencia__profesor__departamento__jefe=user)
+    departamentos = Departamento.objects.filter(jefe=user, activo=True)
+    return qs.filter(asistencia__profesor__departamento__in=departamentos).distinct()
 
 
 def listar_asistencias(params, user=None):
@@ -76,7 +79,8 @@ def listar_incidencias(params, user=None):
 def usuario_puede_ver_asistencia(user, asistencia):
     if _rol(user) in {"administrador", "admin"}:
         return True
-    return asistencia.profesor.departamento.jefe_id == user.id
+    departamento = getattr(asistencia.profesor, "departamento", None)
+    return bool(departamento and departamento.activo and departamento.jefe_id == user.id)
 
 
 def usuario_puede_ver_incidencia(user, incidencia):
