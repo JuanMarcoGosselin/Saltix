@@ -21,12 +21,7 @@
     <div class="breadcrumb"><strong id="breadcrumb-text">Inicio</strong></div>
   </div>
   <div class="topbar-actions">
-    <div class="topbar-notif" title="Notificaciones">
-      &#128276;
-      {% if notificaciones_count %}
-        <span class="notif-dot">{{ notificaciones_count }}</span>
-      {% endif %}
-    </div>
+    {% include "Notifications/partials/bell.html" %}
   </div>
 </header>
 {% endblock %}

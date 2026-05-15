@@ -10,7 +10,7 @@ function showAttendanceToast(message, type) {
     if (!toast) return;
     toast.textContent = message;
     toast.className   = 'toast show' + (type ? ' toast-' + type : '');
-    setTimeout(() => toast.classList.remove('show'), 3500);
+    setTimeout(() => toast.classList.remove('show'), 10000);
 }
 
 function handleAsistencia(button) {

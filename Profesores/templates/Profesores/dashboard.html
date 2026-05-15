@@ -19,7 +19,10 @@
             <strong>Inicio</strong>
         </div>
     </div>
-    <div class="topbar-date">{{ fecha_actual }}</div>
+    <div class="topbar-actions">
+        <div class="topbar-date">{{ fecha_actual }}</div>
+        {% include "Notifications/partials/bell.html" %}
+    </div>
 </header>
 {% endblock %}
 

@@ -30,8 +30,11 @@ function showPage(id, btn) {
 
 function restoreActivePage() {
     let pageId = '';
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('page')) pageId = params.get('page') || '';
+    if (!pageId) pageId = decodeURIComponent((window.location.hash || '').replace('#', '')) || '';
     try {
-        pageId = localStorage.getItem('profesor_active_page') || '';
+        pageId = pageId || localStorage.getItem('profesor_active_page') || '';
     } catch (_) {}
 
     if (!pageId || !document.getElementById('page-' + pageId)) {
@@ -150,7 +153,7 @@ function showToast(msg) {
     if (!t) return;
     t.textContent = msg;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3500);
+    setTimeout(() => t.classList.remove('show'), 10000);
 }
 
 // Navegación de semanas

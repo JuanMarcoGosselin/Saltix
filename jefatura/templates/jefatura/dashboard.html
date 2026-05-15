@@ -17,14 +17,14 @@
     <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">&#x2630;</button>
     <span class="breadcrumb"><strong id="breadcrumb-text">Mi equipo</strong></span>
   </div>
-  <div class="topbar-date">{{ fecha_actual }}</div>
+  <div class="topbar-actions">
+    <div class="topbar-date">{{ fecha_actual }}</div>
+    {% include "Notifications/partials/bell.html" %}
+  </div>
 </header>
 {% endblock %}
 
 {% block content %}
-{% if ok %}<div class="alert alert-ok">{{ ok }}</div>{% endif %}
-{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
-
 <div class="page active" id="page-equipo">
   <div class="section-head">
     <div>
@@ -434,4 +434,13 @@
   window.SALTIX_INITIAL_PAGE = "{{ initial_page|escapejs }}";
 </script>
 <script src="{% static 'js/jefatura_dashboard.js' %}"></script>
+{% if ok or error %}
+<script>
+  showToast("{% if ok %}{{ ok|escapejs }}{% else %}{{ error|escapejs }}{% endif %}", {% if error %}true{% else %}false{% endif %});
+  const cleanUrl = new URL(window.location.href);
+  cleanUrl.searchParams.delete('ok');
+  cleanUrl.searchParams.delete('error');
+  history.replaceState(null, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+</script>
+{% endif %}
 {% endblock %}

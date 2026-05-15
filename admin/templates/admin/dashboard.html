@@ -17,43 +17,8 @@
     <button class="hamburger-btn" onclick="document.getElementById('sidebar').classList.toggle('open')">&#x2630;</button>
     <div class="breadcrumb" id="breadcrumb"><strong>Inicio</strong></div>
   </div>
-  <div style="display:flex;align-items:center;gap:.75rem;">
-    <div class="notif-wrap">
-      <button class="topbar-notif" id="notif-btn" type="button">
-        &#x1F514;
-        {% if notificaciones_count %}
-          <span class="notif-dot">{{ notificaciones_count }}</span>
-        {% endif %}
-      </button>
-      <div class="notif-panel" id="notif-panel" data-read-all-url="{% url 'admin_notif_read_all' %}" data-read-one-url="{% url 'admin_notif_read' %}">
-        <div class="notif-panel-header">
-          <span>Notificaciones &#x00B7; Ultimos 7 dias</span>
-          <button type="button" class="notif-mark-read" id="notif-mark-read">Marcar todas</button>
-        </div>
-        <div class="notif-list">
-          {% for n in notificaciones %}
-            <div class="notif-item{% if not n.leida %} notif-unread{% endif %}" data-id="{{ n.id }}">
-              <div class="notif-msg">{{ n.mensaje }}</div>
-              <div class="notif-meta">
-                {% if n.tipo == "INCIDENCIA" %}
-                  <span class="pill pill-red">Incidencia</span>
-                {% elif n.tipo == "NOMINA" %}
-                  <span class="pill pill-yellow">Nomina</span>
-                {% elif n.tipo == "RECIBO" %}
-                  <span class="pill pill-blue">Recibo</span>
-                {% else %}
-                  <span class="pill pill-gray">Sistema</span>
-                {% endif %}
-                <span class="notif-time">{{ n.cuando }}</span>
-              </div>
-              <button type="button" class="notif-dismiss" title="Quitar">&#x2715;</button>
-            </div>
-          {% empty %}
-            <div class="notif-empty">Sin notificaciones recientes.</div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
+  <div class="topbar-actions">
+    {% include "Notifications/partials/bell.html" %}
   </div>
 </header>
 {% endblock %}

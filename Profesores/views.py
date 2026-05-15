@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 
 from Asistencias.models import Asistencia
 from core.decorators import requiere_rol
+from Notifications.utils import notify_user
 from Profesores.services.dashboard import get_dashboard_context
 
 from .models import Horario, Profesor
@@ -160,6 +161,13 @@ def asistencia_accion(request):
                 estado=estado,
                 tolerancia_minutos=tolerancia_minutos,
                 creado_por=request.user,
+            )
+            notify_user(
+                request.user,
+                "Asistencia registrada",
+                f"Se registro tu entrada como {estado.lower()} para el {hoy:%d/%m/%Y}.",
+                "warning" if estado == "RETARDO" else "success",
+                "/profesores/?page=asistencias",
             )
 
             return JsonResponse({

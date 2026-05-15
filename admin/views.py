@@ -8,7 +8,9 @@ from django.utils import timezone
 from django.utils.timesince import timesince
 from django.urls import reverse
 
-from core.models import BitacoraAuditoria, Notificacion, Plantel
+from core.models import BitacoraAuditoria, Plantel
+from Notifications.models import Notificacion
+from Notifications.utils import notify_role, notify_user
 from Profesores.models import Profesor, Horario
 from jefatura.models import SolicitudTransferencia
 from users.models import Departamento, Permiso, Rol, RolPermiso, Usuario
@@ -50,9 +52,9 @@ def dashboard(request):
 
     notificaciones_qs = Notificacion.objects.filter(
         usuario=request.user,
-        fecha__gte=now - timedelta(days=7),
+        creada_en__gte=now - timedelta(days=7),
         leida=False,
-    ).order_by("-fecha")
+    ).order_by("-creada_en")
     notificaciones_count = notificaciones_qs.count()
 
     modelo_to_modulo = {
@@ -347,9 +349,10 @@ def dashboard(request):
         "notificaciones": [
             {
                 "id": n.id,
+                "titulo": n.titulo,
                 "mensaje": n.mensaje,
                 "tipo": n.tipo,
-                "cuando": f"Hace {timesince(n.fecha).split(',')[0]}",
+                "cuando": f"Hace {timesince(n.creada_en).split(',')[0]}",
             }
             for n in notificaciones_qs[:20]
         ],
@@ -386,8 +389,7 @@ def _redirect_with_message(request, ok=None, error=None):
     base = reverse("admin_dashboard")
     msg = ok or error
     if msg and getattr(request, "user", None) and request.user.is_authenticated:
-        tipo = "SISTEMA" if ok else "INCIDENCIA"
-        Notificacion.objects.create(usuario=request.user, tipo=tipo, mensaje=msg, leida=False)
+        notify_user(request.user, "Panel admin", msg, "success" if ok else "danger")
     return base
 
 
@@ -440,6 +442,20 @@ def create_user(request):
             user.delete()
             return redirect(_redirect_with_message(request, error=jefe_err))
 
+    notify_user(
+        user,
+        "Usuario creado",
+        "Tu cuenta de Saltix fue creada.",
+        "success",
+        "/",
+    )
+    notify_role(
+        "admin",
+        "Usuario creado",
+        f"Se creo el usuario {user.get_full_name()} con rol {rol.nombre}.",
+        "info",
+        "/panel-admin/",
+    )
     return redirect(_redirect_with_message(request, ok="Usuario creado."))
 
 
@@ -480,6 +496,7 @@ def update_user(request):
     user.email = email
     user.nombre = nombre
     user.apellido = apellido
+    rol_anterior = user.rol_id.nombre if user.rol_id else "Sin rol"
     user.rol_id = rol
     if password:
         user.set_password(password)
@@ -498,6 +515,21 @@ def update_user(request):
     else:
         _clear_jefatura_if_needed(request, user)
 
+    notify_user(
+        user,
+        "Usuario actualizado",
+        "Tu informacion de usuario fue actualizada.",
+        "info",
+        "/",
+    )
+    if rol_anterior.lower() != rol.nombre.lower():
+        notify_role(
+            "admin",
+            "Cambio de permisos",
+            f"{user.get_full_name()} cambio de rol {rol_anterior} a {rol.nombre}.",
+            "warning",
+            "/panel-admin/",
+        )
     return redirect(_redirect_with_message(request, ok="Usuario actualizado."))
 
 
@@ -750,7 +782,7 @@ def delete_departamento(request):
 
 
 @requiere_rol("administrador")
-@requiere_permiso("notificaciones.manage_notificacion")
+@requiere_permiso("notificaciones.enviar")
 def marcar_notificacion_leida(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -764,7 +796,7 @@ def marcar_notificacion_leida(request):
 
 
 @requiere_rol("administrador")
-@requiere_permiso("notificaciones.manage_notificacion")
+@requiere_permiso("notificaciones.enviar")
 def marcar_notificaciones_leidas(request):
     if request.method != "POST":
         return redirect("admin_dashboard")
@@ -772,7 +804,7 @@ def marcar_notificaciones_leidas(request):
     now = timezone.localtime()
     Notificacion.objects.filter(
         usuario=request.user,
-        fecha__gte=now - timedelta(days=7),
+        creada_en__gte=now - timedelta(days=7),
         leida=False,
     ).update(leida=True)
     return redirect("admin_dashboard")

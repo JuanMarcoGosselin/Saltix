@@ -4,6 +4,8 @@ const breadcrumbs = {
   reportes: 'Reportes Financieros',
 };
 
+const PAGE_STORAGE_KEY = 'contabilidad_active_page';
+
 let nominaFilter = 'todos';
 
 function getContabilidadNavButtons() {
@@ -37,7 +39,23 @@ function showPage(id, btn) {
   if (window.location.hash !== `#${id}`) {
     history.replaceState(null, '', `#${id}`);
   }
+  saveActivePage(id);
   closeSidebar();
+}
+
+function saveActivePage(pageId) {
+  if (!pageId) return;
+  try { localStorage.setItem(PAGE_STORAGE_KEY, pageId); } catch (error) {}
+}
+
+function getStoredPage() {
+  try { return localStorage.getItem(PAGE_STORAGE_KEY) || ''; } catch (error) { return ''; }
+}
+
+function getRequestedPage() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('page')) return params.get('page') || '';
+  return decodeURIComponent((window.location.hash || '').replace('#', '')) || '';
 }
 
 function setupContabilidadSidebar() {
@@ -47,7 +65,7 @@ function setupContabilidadSidebar() {
     return;
   }
 
-  const initialPage = decodeURIComponent((window.location.hash || '').replace('#', '')) || 'inicio';
+  const initialPage = getRequestedPage() || getStoredPage() || 'inicio';
   const pageExists = document.getElementById(`page-${initialPage}`);
   const pageId = pageExists ? initialPage : 'inicio';
   showPage(pageId, findContabilidadNavButton(pageId));
@@ -107,7 +125,7 @@ function showToast(message, type) {
   toast.textContent = message;
   toast.className = 'toast show';
   if (type) toast.classList.add(`toast-${type}`);
-  window.setTimeout(() => toast.classList.remove('show'), 3200);
+  window.setTimeout(() => toast.classList.remove('show'), 10000);
 }
 
 const numberWords = [

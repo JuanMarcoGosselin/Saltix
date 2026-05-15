@@ -1,0 +1,107 @@
+{% extends "core/layout.html" %}
+{% load static %}
+
+{% block title %}Notificaciones | SALTIX{% endblock %}
+
+{% block fonts %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard_base.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard_shared.css' %}">
+<link rel="stylesheet" href="{% static 'Notifications/css/notifications.css' %}">
+{% endblock %}
+
+{% block topbar %}
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger-btn" onclick="toggleSidebar()">&#9776;</button>
+    <div>
+      <div class="breadcrumb">SALTIX / <strong>Notificaciones</strong></div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <form action="{% url 'notifications:mark_all_read' %}" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'notifications:list' %}">
+      <button class="btn-outline" type="submit">Marcar todas como leidas</button>
+    </form>
+    {% include "Notifications/partials/bell.html" %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="notifications-page">
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Tus notificaciones</h3>
+      <span class="topbar-date">{{ notification_unread_count }} sin leer</span>
+    </div>
+
+    <div class="notification-list">
+      {% for notificacion in notificaciones %}
+        <article class="notification-row {% if notificacion.leida %}is-read{% else %}is-unread{% endif %}">
+          <span class="notification-dot type-{{ notificacion.tipo }}"></span>
+          <div class="notification-copy">
+            <div class="notification-title">{{ notificacion.titulo }}</div>
+            <p>{{ notificacion.mensaje }}</p>
+            <span>{{ notificacion.creada_en|date:"d/m/Y H:i" }}</span>
+          </div>
+          <div class="notification-actions">
+            {% if notificacion.url %}
+              <a class="btn-outline btn-sm" data-notification-link="1" data-mark-read-url="{% url 'notifications:mark_read' notificacion.id %}" href="{{ notificacion.url }}">Abrir</a>
+            {% endif %}
+            {% if not notificacion.leida %}
+              <form action="{% url 'notifications:mark_read' notificacion.id %}" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'notifications:list' %}">
+                <button class="btn-primary btn-sm" type="submit">Leida</button>
+              </form>
+            {% endif %}
+          </div>
+        </article>
+      {% empty %}
+        <div class="notification-empty">No tienes notificaciones.</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra %}
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  function dashboardUrlFor(pageId) {
+    const role = "{{ user.rol_id.nombre|default:''|lower|escapejs }}";
+    const urls = {
+      profesor: "{% url 'profesores_dashboard' %}",
+      jefatura: "{% url 'jefatura_dashboard' %}",
+      contabilidad: "{% url 'contabilidad_dashboard' %}",
+      administrador: "{% url 'admin_dashboard' %}",
+      admin: "{% url 'admin_dashboard' %}",
+    };
+    const baseUrl = urls[role] || "/";
+    try {
+      localStorage.setItem(role + "_active_page", pageId);
+    } catch (error) {}
+    return baseUrl + "?page=" + encodeURIComponent(pageId);
+  }
+
+  function showPage(id) {
+    window.location.href = dashboardUrlFor(id);
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (!sidebar || !overlay) return;
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('visible');
+  }
+</script>
+{% endblock %}

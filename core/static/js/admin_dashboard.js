@@ -23,9 +23,16 @@ function saveActivePage(pageId){
   try { localStorage.setItem(PAGE_STORAGE_KEY, pageId); } catch (e) {}
 }
 
+function getRequestedPage(){
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('page')) return params.get('page') || '';
+  const hashPage = decodeURIComponent((window.location.hash || '').replace('#', ''));
+  return hashPage || '';
+}
+
 function restoreActivePage(){
-  let pageId = '';
-  try { pageId = localStorage.getItem(PAGE_STORAGE_KEY) || ''; } catch (e) {}
+  let pageId = getRequestedPage();
+  try { pageId = pageId || localStorage.getItem(PAGE_STORAGE_KEY) || ''; } catch (e) {}
   if (!pageId || !document.getElementById('page-' + pageId)) {
     const defaultBtn = getNavButtons().find(btn => btn.classList.contains('active'));
     pageId = getPageFromButton(defaultBtn) || 'inicio';
@@ -531,7 +538,7 @@ function renderJefesOptions(plantelId, deptId){
 
 function showToast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),3500);
+  setTimeout(()=>t.classList.remove('show'),10000);
 }
 
 function deletePlantel(plantelId){
@@ -584,79 +591,3 @@ document.getElementById('user-form').addEventListener('submit', (e) => {
   }
 });
 
-const notifBtn = document.getElementById('notif-btn');
-const notifPanel = document.getElementById('notif-panel');
-if (notifBtn && notifPanel) {
-  const readAllUrl = notifPanel.dataset.readAllUrl;
-  const readOneUrl = notifPanel.dataset.readOneUrl;
-  const markAllBtn = document.getElementById('notif-mark-read');
-
-  function getCsrfToken(){
-    const m = document.cookie.match(/csrftoken=([^;]+)/);
-    return m ? m[1] : '';
-  }
-
-  function clearNotifDot(){
-    const dot = notifBtn.querySelector('.notif-dot');
-    if (dot) dot.remove();
-  }
-
-  async function postNotif(url, body){
-    if (!url) return;
-    await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-CSRFToken': getCsrfToken()
-      },
-      body
-    });
-  }
-
-  async function markAllRead(){
-    await postNotif(readAllUrl, '');
-    clearNotifDot();
-    notifPanel.querySelectorAll('.notif-item').forEach(item => {
-      item.classList.remove('notif-unread');
-    });
-  }
-
-  notifBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    notifPanel.classList.toggle('open');
-    if (notifPanel.classList.contains('open')) {
-      markAllRead();
-    }
-  });
-  document.addEventListener('click', (e) => {
-    if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
-      notifPanel.classList.remove('open');
-    }
-  });
-
-  if (markAllBtn) {
-    markAllBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      markAllRead();
-    });
-  }
-
-  notifPanel.querySelectorAll('.notif-dismiss').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const item = btn.closest('.notif-item');
-      const id = item ? item.dataset.id : '';
-      if (!id) return;
-      await postNotif(readOneUrl, `notif_id=${encodeURIComponent(id)}`);
-      item.remove();
-      const remaining = notifPanel.querySelectorAll('.notif-item').length;
-      if (!remaining) {
-        const empty = document.createElement('div');
-        empty.className = 'notif-empty';
-        empty.textContent = 'Sin notificaciones recientes.';
-        notifPanel.querySelector('.notif-list').appendChild(empty);
-      }
-      clearNotifDot();
-    });
-  });
-}

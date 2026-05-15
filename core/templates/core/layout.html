@@ -7,6 +7,7 @@
   <title>{% block title %}SALTIX{% endblock %}</title>
   {% block fonts %}{% endblock %}
   {% block page_css %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'Notifications/css/notifications.css' %}">
 </head>
 <body>
   {% if user.is_authenticated %}
@@ -172,6 +173,9 @@
   </div>
 
   {% block extra %}{% endblock %}
+  {% if user.is_authenticated %}
+    <script src="{% static 'Notifications/js/notifications_polling.js' %}"></script>
+  {% endif %}
   {% block page_js %}{% endblock %}
 </body>
 </html>

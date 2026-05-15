@@ -8,6 +8,7 @@ from Contabilidad.utils import horas_de_asistencia, horas_de_clase
 from Profesores.models import Horario, Profesor
 from users.models import Departamento
 from core.decorators import requiere_rol
+from Notifications.utils import notify_user
 from .models import SolicitudTransferencia
 from .utils import *
 
@@ -86,6 +87,13 @@ def guardar_horario(request):
 
     if not reemplazar_horarios_profesor(profesor, request.POST.getlist("horario_slot")):
         return dashboard_redirect("equipo", error="Selecciona al menos un bloque de horario.")
+    notify_user(
+        profesor.usuario,
+        "Horario actualizado",
+        "Jefatura actualizo tu horario de clases.",
+        "info",
+        "/profesores/?page=inicio",
+    )
     return dashboard_redirect("equipo", ok="Horario guardado.")
 
 
@@ -99,6 +107,13 @@ def eliminar_horario(request):
         return dashboard_redirect("equipo", error="Horario no encontrado.")
     horario.activo = False
     horario.save(update_fields=["activo"])
+    notify_user(
+        profesor.usuario,
+        "Horario actualizado",
+        "Jefatura elimino un bloque de tu horario.",
+        "warning",
+        "/profesores/?page=inicio",
+    )
     return dashboard_redirect("equipo", ok="Horario eliminado.")
 
 
@@ -118,7 +133,7 @@ def crear_transferencia(request):
     if SolicitudTransferencia.objects.filter(profesor=profesor, estado="PENDIENTE").exists():
         return dashboard_redirect("solicitudes", error="Ese profesor ya tiene una transferencia pendiente.")
 
-    SolicitudTransferencia.objects.create(
+    transferencia = SolicitudTransferencia.objects.create(
         profesor=profesor,
         departamento_origen=profesor.departamento,
         departamento_destino=destino,
@@ -126,6 +141,13 @@ def crear_transferencia(request):
         plantel_destino=destino.plantel,
         motivo=motivo,
         solicitante=request.user,
+    )
+    notify_user(
+        destino.jefe,
+        "Transferencia pendiente",
+        f"{request.user.get_full_name()} solicito transferir a {profesor.usuario.get_full_name()}.",
+        "warning",
+        "/jefatura/?page=solicitudes",
     )
     return dashboard_redirect("solicitudes", ok="Transferencia creada.")
 
@@ -158,6 +180,20 @@ def resolver_transferencia(request):
         profesor.departamento = transferencia.departamento_destino
         profesor.plantel = transferencia.plantel_destino
         profesor.save(update_fields=["departamento", "plantel"])
+        notify_user(
+            profesor.usuario,
+            "Cambio de asignacion",
+            "Tu departamento o plantel asignado fue actualizado.",
+            "info",
+            "/profesores/?page=perfil",
+        )
+    notify_user(
+        transferencia.solicitante,
+        "Transferencia resuelta",
+        f"La transferencia de {transferencia.profesor.usuario.get_full_name()} fue marcada como {accion.lower()}.",
+        "success" if accion == "APROBADA" else "danger",
+        "/jefatura/?page=solicitudes",
+    )
     return dashboard_redirect("solicitudes", ok="Transferencia resuelta.")
 
 

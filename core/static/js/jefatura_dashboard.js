@@ -5,6 +5,8 @@ const breadcrumbs = {
   reportes: 'Reportes'
 };
 
+const PAGE_STORAGE_KEY = 'jefatura_active_page';
+
 let pendientes = 0;
 let asistenciaPage = 1;
 let asistenciaHasNext = false;
@@ -33,16 +35,59 @@ function showToast(message, isError = false) {
   toast.textContent = message;
   toast.style.background = isError ? '#c0392b' : '#1f8f5f';
   toast.classList.add('visible');
-  setTimeout(() => toast.classList.remove('visible'), 2500);
+  setTimeout(() => toast.classList.remove('visible'), 10000);
 }
 
 function showPage(id, btn) {
+  const page = document.getElementById('page-' + id);
+  if (!page) return;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
+  page.classList.add('active');
   if (btn) btn.classList.add('active');
   document.getElementById('breadcrumb-text').textContent = breadcrumbs[id] || id;
   closeSidebar();
+  saveActivePage(id);
+}
+
+function getNavButtons() {
+  return Array.from(document.querySelectorAll('.nav-item'));
+}
+
+function getPageFromButton(btn) {
+  if (!btn) return '';
+  if (btn.dataset.page) return btn.dataset.page;
+  const onClick = btn.getAttribute('onclick') || '';
+  const match = onClick.match(/showPage\('([^']+)'/);
+  return match ? match[1] : '';
+}
+
+function findNavButton(pageId) {
+  return getNavButtons().find(btn => getPageFromButton(btn) === pageId);
+}
+
+function saveActivePage(pageId) {
+  if (!pageId) return;
+  try { localStorage.setItem(PAGE_STORAGE_KEY, pageId); } catch (e) {}
+}
+
+function getRequestedPage() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('page')) return params.get('page') || '';
+  const hashPage = decodeURIComponent((window.location.hash || '').replace('#', ''));
+  return hashPage || '';
+}
+
+function restoreActivePage() {
+  let pageId = getRequestedPage();
+  if (!pageId) {
+    try { pageId = localStorage.getItem(PAGE_STORAGE_KEY) || ''; } catch (e) {}
+  }
+  if (!pageId || !document.getElementById('page-' + pageId)) {
+    const defaultBtn = getNavButtons().find(btn => btn.classList.contains('active'));
+    pageId = getPageFromButton(defaultBtn) || 'equipo';
+  }
+  showPage(pageId, findNavButton(pageId));
 }
 
 function toggleSidebar() {
@@ -348,10 +393,5 @@ document.addEventListener('DOMContentLoaded', function() {
   const incidenciasPrev = document.getElementById('incidencias-prev');
   if (asistenciasPrev) asistenciasPrev.disabled = true;
   if (incidenciasPrev) incidenciasPrev.disabled = true;
-  if (window.SALTIX_INITIAL_PAGE && window.SALTIX_INITIAL_PAGE !== 'equipo') {
-    const navButton = Array.from(document.querySelectorAll('.nav-item')).find(btn =>
-      (btn.getAttribute('onclick') || '').includes("'" + window.SALTIX_INITIAL_PAGE + "'")
-    );
-    showPage(window.SALTIX_INITIAL_PAGE, navButton);
-  }
+  restoreActivePage();
 });

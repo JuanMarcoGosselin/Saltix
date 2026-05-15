@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'core',
     'Contabilidad',
     'Asistencias',
+    'Notifications',
     'admin.apps.AdminConfig',
 ]
 
@@ -70,6 +71,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'Notifications.context_processors.notifications',
             ],
         },
     },

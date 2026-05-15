@@ -9,6 +9,7 @@ from Asistencias.services.listados import (
 )
 from Asistencias.utils import get_profesor, obtener_periodo_actual
 from core.models import BitacoraAuditoria
+from Notifications.utils import notify_role, notify_user
 
 
 def _fecha_compensatoria():
@@ -95,12 +96,26 @@ def justificar_asistencia(user, asistencia_id, motivo):
         if existe:
             return True, "La justificacion ya esta en revision.", 200
 
-        Incidencia.objects.create(
+        incidencia = Incidencia.objects.create(
             asistencia=asistencia,
             motivo=motivo,
             tipo=asistencia.estado,
             estado="PENDIENTE",
             solicitante=user,
+        )
+        notify_user(
+            user,
+            "Justificacion enviada",
+            "Tu solicitud de justificacion fue enviada a revision.",
+            "info",
+            "/profesores/",
+        )
+        notify_role(
+            "jefatura",
+            "Nueva justificacion pendiente",
+            f"{user.get_full_name()} envio una justificacion por {incidencia.tipo.lower()}.",
+            "warning",
+            "/jefatura/?page=solicitudes",
         )
         return True, "Justificacion enviada.", 200
 
@@ -140,6 +155,13 @@ def aprobar_incidencia(incidencia_id, user):
         return False, "La incidencia ya fue resuelta.", 400
 
     _registrar_justificacion_aprobada(incidencia, user)
+    notify_user(
+        incidencia.solicitante,
+        "Justificacion aprobada",
+        "Tu solicitud de justificacion fue aprobada.",
+        "success",
+        "/profesores/?page=asistencias",
+    )
 
     return True, "Incidencia aprobada.", 200
 
@@ -163,6 +185,13 @@ def rechazar_incidencia(incidencia_id, user):
     incidencia.aprobador = user
     incidencia.fecha_de_resolucion = timezone.now()
     incidencia.save(update_fields=["estado", "aprobador", "fecha_de_resolucion"])
+    notify_user(
+        incidencia.solicitante,
+        "Justificacion rechazada",
+        "Tu solicitud de justificacion fue rechazada.",
+        "danger",
+        "/profesores/?page=asistencias",
+    )
 
     return True, "Incidencia rechazada.", 200
 
@@ -186,6 +215,13 @@ def cancelar_asistencia_institucional(asistencia_id, observaciones, user):
     if observaciones:
         asistencia.observaciones = observaciones
     asistencia.save(update_fields=["cancelada_institucional", "observaciones"])
+    notify_user(
+        asistencia.profesor.usuario,
+        "Cambio en asistencia",
+        f"Una asistencia del {asistencia.fecha:%d/%m/%Y} fue cancelada institucionalmente.",
+        "warning",
+        "/profesores/?page=asistencias",
+    )
 
     return True, "Asistencia cancelada institucionalmente.", 200
 
@@ -237,6 +273,13 @@ def corregir_asistencia_jefatura(asistencia_id, estado, observaciones, user):
         estado="RECHAZADA",
         aprobador=user,
         fecha_de_resolucion=timezone.now(),
+    )
+    notify_user(
+        asistencia.profesor.usuario,
+        "Asistencia modificada",
+        f"Tu asistencia del {asistencia.fecha:%d/%m/%Y} fue actualizada a {estado}.",
+        "info",
+        "/profesores/?page=asistencias",
     )
 
     return True, "Asistencia corregida correctamente.", 200

@@ -190,6 +190,10 @@ body {
   border-radius: 12px;
   font-size: .875rem;
   font-weight: 600;
+  line-height: 1.45;
+  max-width: min(520px, calc(100vw - 4rem));
+  white-space: normal;
+  overflow-wrap: anywhere;
   box-shadow: 0 8px 30px rgba(13,31,60,.25);
   transform: translateY(80px);
   opacity: 0;

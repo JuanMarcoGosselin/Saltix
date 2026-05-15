@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from Notifications.utils import notify_role, notify_user
 from Profesores.models import Profesor
 from .utils import (
     calcular_pago_base,
@@ -54,6 +55,13 @@ def dashboard(request, *args, **kwargs):
 def cerrar_periodo(request, periodo_id):
     try:
         periodo = cerrar_periodo_activo(periodo_id)
+        notify_role(
+            "contabilidad",
+            "Nomina cerrada",
+            f"El periodo {periodo.fecha_inicio} - {periodo.fecha_fin} fue cerrado.",
+            "success",
+            "/contabilidad/",
+        )
         messages.success(request, f"Periodo {periodo.fecha_inicio} - {periodo.fecha_fin} cerrado correctamente.")
     except Exception as exc:
         messages.error(request, str(exc))
@@ -89,6 +97,20 @@ def abrir_periodo(request):
 def procesar_nomina(request, profesor_id):
     nomina = generar_nomina(profesor_id)
     profesor = Profesor.objects.get(id=profesor_id)
+    notify_user(
+        profesor.usuario,
+        "Nomina disponible",
+        "Tu nomina fue generada y esta disponible para revision.",
+        "success",
+        "/profesores/?page=recibos",
+    )
+    notify_role(
+        "contabilidad",
+        "Nomina lista para revision",
+        f"Se genero la nomina de {profesor.usuario.get_full_name()}.",
+        "info",
+        "/contabilidad/",
+    )
     descuento_faltas = get_faltas_descontables(profesor_id)
     total_deducciones = nomina.total_impuestos + nomina.total_deducciones
     total_neto = nomina.total_percepciones - total_deducciones

@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'css/registro_asistencia_profesor.css' %}">
+    <link rel="stylesheet" href="{% static 'Notifications/css/notifications.css' %}">
 </head>
 <body>
     <div class="container">
@@ -20,6 +21,7 @@
                 <h1 class="page-title">Registro de Asistencia</h1>
             </div>
             <div class="header-right">
+                {% include "Notifications/partials/bell.html" %}
                 <div class="profile-info">
                     <div class="avatar">{{ profesor_iniciales }}</div>
                     <div>
@@ -97,6 +99,7 @@
     </div>
 
     <div class="toast" id="toast"></div>
+    <script src="{% static 'Notifications/js/notifications_polling.js' %}"></script>
     <script src="{% static 'js/asistencia_profesor.js' %}"></script>
 </body>
 </html>
