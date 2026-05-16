@@ -2,7 +2,7 @@
 {% load static %}
 {% load money_filters %}
 
-{% block title %}SALTIX - Contabilidad{% endblock %}
+{% block title %}SALTIX - Detalle de Nomina{% endblock %}
 
 {% block fonts %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,174 +17,240 @@
 
 {% block topbar %}
 <header class="topbar">
-    <div class="topbar-left">
-        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">&#x2630;</button>
-    <div class="breadcrumb"><strong id="breadcrumb-text">Recibo Nómina "{{profesor.usuario.get_full_name}}"</strong></div>
-    </div>
+  <div class="topbar-left">
+    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">&#x2630;</button>
+    <div class="breadcrumb"><strong id="breadcrumb-text">Detalle nomina "{{ profesor.usuario.get_full_name }}"</strong></div>
+  </div>
+  <div class="topbar-actions">
+    {% include "Notifications/partials/bell.html" %}
+  </div>
 </header>
 {% endblock %}
 
 {% block content %}
-
 <div class="page active" id="page-nomina-gen">
-    <div class="nomina-gen-shell">
-        <section class="nomina-preview-stage" aria-label="Vista previa del recibo de nomina">
-            <div class="nomina-paper" id="preview">
-                <header class="nomina-paper-header">
-                    <div>
-                        <span class="paper-kicker">SALTIX</span>
-                        <h2>Recibo de nomina</h2>
-                        <p>Vista previa del comprobante del periodo</p>
-                    </div>
-                    <div class="paper-folio">
-                        <span>Folio</span>
-                        <strong>NOM-{{ nomina.id|stringformat:"05d" }}</strong>
-                    </div>
-                </header>
+  <div class="nomina-gen-shell">
+    <section class="nomina-preview-stage" aria-label="Detalle del recibo de nomina">
+      <div class="nomina-paper" id="preview">
+        <header class="nomina-paper-header">
+          <div>
+            <span class="paper-kicker">SALTIX</span>
+            <h2>Recibo de nomina</h2>
+            <p>Detalle calculado del periodo</p>
+          </div>
+          <div class="paper-folio">
+            <span>Folio</span>
+            <strong>NOM-{{ nomina.id|stringformat:"05d" }}</strong>
+          </div>
+        </header>
 
-                <div class="paper-meta-grid">
-                    <div class="paper-meta-block">
-                        <span>Receptor</span>
-                        <strong>{{ profesor.usuario.get_full_name }}</strong>
-                    </div>
-                    <div class="paper-meta-block">
-                        <span>No. empleado</span>
-                        <strong>{{ profesor.id }}</strong>
-                    </div>
-                    <div class="paper-meta-block">
-                        <span>Periodo</span>
-                        <strong>{{ periodo_label }}</strong>
-                    </div>
-                    <div class="paper-meta-block">
-                        <span>Faltas</span>
-                        <strong>{{ total_faltas|floatformat:0 }}</strong>
-                    </div>
-                </div>
+        <div class="paper-meta-grid paper-meta-grid-wide">
+          <div class="paper-meta-block">
+            <span>Receptor</span>
+            <strong>{{ profesor.usuario.get_full_name }}</strong>
+          </div>
+          <div class="paper-meta-block">
+            <span>Periodo</span>
+            <strong>{{ periodo_label }}</strong>
+          </div>
+          <div class="paper-meta-block">
+            <span>Horas</span>
+            <strong>{{ nomina.horas_trabajadas }}</strong>
+          </div>
+          <div class="paper-meta-block">
+            <span>Faltas</span>
+            <strong>{{ nomina.faltas }}</strong>
+          </div>
+          <div class="paper-meta-block">
+            <span>Retardos</span>
+            <strong>{{ nomina.retardos }}</strong>
+          </div>
+          <div class="paper-meta-block">
+            <span>Eq. retardos</span>
+            <strong>{{ nomina.faltas_equivalentes }}</strong>
+          </div>
+        </div>
 
-                <div class="paper-info-grid">
-                    <div>
-                        <span>RFC</span>
-                        <strong>{{ profesor.rfc }}</strong>
-                    </div>
-                    <div>
-                        <span>CURP</span>
-                        <strong>{{ profesor.curp }}</strong>
-                    </div>
-                    <div class="paper-wide-field">
-                        <span>Direccion</span>
-                        <strong>{{ profesor.direccion }}</strong>
-                    </div>
-                </div>
+        <div class="paper-info-grid">
+          <div>
+            <span>Costo por hora</span>
+            <strong>$ {{ profesor.costo_por_hora|money }}</strong>
+          </div>
+          <div>
+            <span>Estado</span>
+            <strong>{{ nomina.get_estado_display }}</strong>
+          </div>
+          <div class="paper-wide-field">
+            <span>RFC / CURP</span>
+            <strong>{{ profesor.rfc }} / {{ profesor.curp }}</strong>
+          </div>
+        </div>
 
-                <div class="paper-section-head">
-                    <h3>Conceptos</h3>
-                    <span>Percepciones y deducciones</span>
-                </div>
+        <div class="paper-section-head">
+          <h3>Conceptos</h3>
+          <span>Percepciones, deducciones e ISR simplificado</span>
+        </div>
 
-                <div class="paper-concepts-groups">
-                    <section class="paper-concept-box paper-concept-box-percepcion">
-                        <div class="paper-concept-box-head">
-                            <div>
-                                <span class="concept-pill concept-pill-percepcion">Percepciones</span>
-                            </div>
-                        </div>
-                        <div class="paper-concepts-table" data-concept-table="PERCEPCION">
-                            <div class="paper-concepts-row paper-concepts-row-head">
-                                <span>Concepto</span>
-                                <span>Monto</span>
-                            </div>
-                            <div class="paper-concepts-row">
-                                <strong>Sueldo</strong>
-                                <strong class="amount-pos">$ {{ nomina.total_bruto|money }}</strong>
-                            </div>
-                        </div>
-                        <div class="paper-concept-total">
-                            <span>Total de percepciones</span>
-                            <strong data-total-percepciones data-base-total="{{ preview_total_percepciones }}">$ {{ preview_total_percepciones|money }}</strong>
-                        </div>
-                    </section>
-
-                    <section class="paper-concept-box paper-concept-box-deduccion">
-                        <div class="paper-concept-box-head">
-                            <div>
-                                <span class="concept-pill concept-pill-deduccion">Deducciones</span>
-                            </div>
-                        </div>
-                        <div class="paper-concepts-table" data-concept-table="DEDUCCION">
-                            <div class="paper-concepts-row paper-concepts-row-head">
-                                <span>Concepto</span>
-                                <span>Monto</span>
-                            </div>
-                            <div class="paper-concepts-row">
-                                <strong>Impuestos</strong>
-                                <strong class="amount-neg">$ {{ nomina.total_impuestos|money }}</strong>
-                            </div>
-                            <div class="paper-concepts-row">
-                                <strong>Faltas</strong>
-                                <strong class="amount-neg">$ {{ preview_descuento_faltas|money }}</strong>
-                            </div>
-                        </div>
-                        <div class="paper-concept-total">
-                            <span>Total de deducciones</span>
-                            <strong data-total-deducciones data-base-total="{{ preview_total_deducciones }}">$ {{ preview_total_deducciones|money }}</strong>
-                        </div>
-                    </section>
-                </div>
-
-                <footer class="paper-totals">
-                    <div class="paper-net-total">
-                        <span>Neto a pagar</span>
-                        <strong data-total-neto data-base-total="{{ preview_total_neto }}">$ {{ preview_total_neto|money }}</strong>
-                    </div>
-                    <div class="paper-net-text">
-                        <strong data-total-neto-text>{{ preview_total_neto_texto }}</strong>
-                    </div>
-                </footer>
+        <div class="paper-concepts-groups">
+          <section class="paper-concept-box paper-concept-box-percepcion">
+            <div class="paper-concept-box-head">
+              <span class="concept-pill concept-pill-percepcion">Percepciones</span>
             </div>
-        </section>
-
-        <aside class="nomina-concepts-panel" aria-label="Agregar conceptos a la nomina">
-            <div class="concept-panel-header">
-                <span class="paper-kicker">Edicion</span>
-                <h3>Agregar concepto</h3>
+            <div class="paper-concepts-table" data-concept-table="PERCEPCION">
+              <div class="paper-concepts-row paper-concepts-row-head">
+                <span>Concepto</span>
+                <span>Monto</span>
+              </div>
+              <div class="paper-concepts-row">
+                <strong>Sueldo bruto</strong>
+                <strong class="amount-pos">$ {{ nomina.total_bruto|money }}</strong>
+              </div>
+              {% for detalle in detalle_percepciones %}
+                <div class="paper-concepts-row">
+                  <span>
+                    <strong>{{ detalle.concepto.nombre }}</strong>
+                    {% if detalle.descripcion %}<small>{{ detalle.descripcion }}</small>{% endif %}
+                  </span>
+                  <span>
+                    <strong class="amount-pos">$ {{ detalle.monto|money }}</strong>
+                    {% if editable %}
+                      <form method="post" action="{% url 'eliminar_concepto_nomina' detalle.id %}">
+                        {% csrf_token %}
+                        <button class="concept-delete" type="submit">Eliminar</button>
+                      </form>
+                    {% endif %}
+                  </span>
+                </div>
+              {% endfor %}
             </div>
+            <div class="paper-concept-total">
+              <span>Total percepciones</span>
+              <strong data-total-percepciones data-base-total="{{ preview_total_percepciones }}">$ {{ preview_total_percepciones|money }}</strong>
+            </div>
+          </section>
 
-            <form class="concept-form" id="concept-form">
-                <div class="form-group">
-                    <label class="form-label" for="concept-type">Tipo</label>
-                    <select class="form-select" id="concept-type" name="concept_type">
-                        <option value="PERCEPCION">Percepcion</option>
-                        <option value="DEDUCCION">Deduccion</option>
-                    </select>
+          <section class="paper-concept-box paper-concept-box-deduccion">
+            <div class="paper-concept-box-head">
+              <span class="concept-pill concept-pill-deduccion">Deducciones</span>
+            </div>
+            <div class="paper-concepts-table" data-concept-table="DEDUCCION">
+              <div class="paper-concepts-row paper-concepts-row-head">
+                <span>Concepto</span>
+                <span>Monto</span>
+              </div>
+              <div class="paper-concepts-row">
+                <strong>ISR simplificado</strong>
+                <strong class="amount-neg">$ {{ nomina.total_impuestos|money }}</strong>
+              </div>
+              {% if preview_descuento_faltas %}
+                <div class="paper-concepts-row">
+                  <strong>Faltas y retardos</strong>
+                  <strong class="amount-neg">$ {{ preview_descuento_faltas|money }}</strong>
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="concept-name">Concepto</label>
-                    <input class="form-input" id="concept-name" name="concept_name" type="text" placeholder="Bono de puntualidad">
+              {% endif %}
+              {% for detalle in detalle_deducciones %}
+                <div class="paper-concepts-row">
+                  <span>
+                    <strong>{{ detalle.concepto.nombre }}</strong>
+                    {% if detalle.descripcion %}<small>{{ detalle.descripcion }}</small>{% endif %}
+                  </span>
+                  <span>
+                    <strong class="amount-neg">$ {{ detalle.monto|money }}</strong>
+                    {% if editable %}
+                      <form method="post" action="{% url 'eliminar_concepto_nomina' detalle.id %}">
+                        {% csrf_token %}
+                        <button class="concept-delete" type="submit">Eliminar</button>
+                      </form>
+                    {% endif %}
+                  </span>
                 </div>
+              {% endfor %}
+            </div>
+            <div class="paper-concept-total">
+              <span>Total deducciones</span>
+              <strong data-total-deducciones data-base-total="{{ preview_total_deducciones }}">$ {{ preview_total_deducciones|money }}</strong>
+            </div>
+          </section>
+        </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="concept-amount">Monto</label>
-                    <input class="form-input" id="concept-amount" name="concept_amount" type="number" min="0" step="0.01" placeholder="0.00">
-                </div>
+        <footer class="paper-totals">
+          <div class="paper-net-total">
+            <span>Neto a pagar</span>
+            <strong data-total-neto data-base-total="{{ preview_total_neto }}">$ {{ preview_total_neto|money }}</strong>
+          </div>
+          <div class="paper-net-text">
+            <strong data-total-neto-text>{{ preview_total_neto_texto }}</strong>
+          </div>
+        </footer>
+      </div>
+    </section>
 
-                <div class="form-group">
-                    <label class="form-label" for="concept-detail">Detalle</label>
-                    <textarea class="form-textarea" id="concept-detail" name="concept_detail" rows="4" placeholder="Descripcion del ajuste"></textarea>
-                </div>
+    <aside class="nomina-concepts-panel" aria-label="Agregar conceptos a la nomina">
+      <div class="concept-panel-header">
+        <span class="paper-kicker">Edicion</span>
+        <h3>Conceptos de nomina</h3>
+        <p class="panel-note">Estado: {{ nomina.get_estado_display }}. Actualizada: {{ nomina.fecha_actualizacion|date:"d/m/Y H:i" }}</p>
+      </div>
 
-                <button class="btn-submit" type="submit">Agregar al preview</button>
-            </form>
+      {% if editable %}
+        <form class="concept-form" id="concept-form" method="post" action="{% url 'agregar_concepto_nomina' nomina.id %}">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="form-label" for="concept-type">Tipo</label>
+            <select class="form-select" id="concept-type" name="concept_type">
+              <option value="PERCEPCION">Percepcion</option>
+              <option value="DEDUCCION">Deduccion</option>
+            </select>
+          </div>
 
-            {% if nomina.estado != "pagada" %}
-                <a class="btn-submit" style="display:block;text-align:center;margin-top:1rem;text-decoration:none" href="{% url 'pagar_nomina' nomina.id %}">
-                    Marcar como pagada
-                </a>
-            {% endif %}
-        </aside>
-    </div>
+          <div class="form-group">
+            <label class="form-label" for="concept-name">Concepto</label>
+            <input class="form-input" id="concept-name" name="concept_name" type="text" placeholder="Bono, prestamo, ajuste" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="concept-amount">Monto</label>
+            <input class="form-input" id="concept-amount" name="concept_amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="concept-detail">Detalle</label>
+            <textarea class="form-textarea" id="concept-detail" name="concept_detail" rows="4" placeholder="Descripcion opcional"></textarea>
+          </div>
+
+          <button class="btn-submit" type="submit">Agregar concepto</button>
+        </form>
+
+        <div class="concept-actions">
+          <form method="post" action="{% url 'regenerar_nomina' nomina.id %}">
+            {% csrf_token %}
+            <button class="btn-outline" type="submit">Regenerar nomina</button>
+          </form>
+          <form method="post" action="{% url 'cerrar_nomina' nomina.id %}">
+            {% csrf_token %}
+            <button class="btn-primary" type="submit">Cerrar nomina</button>
+          </form>
+        </div>
+      {% else %}
+        <div class="locked-note">Esta nomina no puede modificarse porque esta cerrada o pertenece a un periodo cerrado.</div>
+        {% if nomina.estado == "cerrada" %}
+          <form method="post" action="{% url 'pagar_nomina' nomina.id %}" class="concept-actions">
+            {% csrf_token %}
+            <button class="btn-primary" type="submit">Marcar como pagada</button>
+          </form>
+        {% endif %}
+      {% endif %}
+
+      {% if nomina.estado == "cerrada" or nomina.estado == "pagada" %}
+        <div class="concept-actions">
+          <a class="btn-outline" href="{% url 'recibo_nomina_print' nomina.id %}" target="_blank">Ver PDF</a>
+        </div>
+      {% endif %}
+
+      <a class="btn-outline back-link" href="{% url 'contabilidad_dashboard' %}?page=inicio">Volver a nominas</a>
+    </aside>
+  </div>
 </div>
-
 {% endblock %}
 
 {% block extra %}
@@ -193,15 +259,15 @@
 {% endblock %}
 
 {% block page_js %}
-    <script src="{% static 'js/contabilidad_dashboard.js' %}"></script>
-    {% for message in messages %}
-    <script>
-        showToast('{{ message|escapejs }}', '{{ message.tags|default:"success"|escapejs }}');
-    </script>
-    {% endfor %}
-    {% if toast_message %}
-    <script>
-        showToast('{{ toast_message|escapejs }}', '{{ toast_type|default:"success"|escapejs }}');
-    </script>
-    {% endif %}
+<script src="{% static 'js/contabilidad_dashboard.js' %}"></script>
+{% for message in messages %}
+<script>
+  showToast('{{ message|escapejs }}', '{{ message.tags|default:"success"|escapejs }}');
+</script>
+{% endfor %}
+{% if toast_message %}
+<script>
+  showToast('{{ toast_message|escapejs }}', '{{ toast_type|default:"success"|escapejs }}');
+</script>
+{% endif %}
 {% endblock %}

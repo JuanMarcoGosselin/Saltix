@@ -13,11 +13,12 @@ from core.decorators import requiere_rol
 from Notifications.utils import notify_user
 from Profesores.services.dashboard import get_dashboard_context
 
-from .models import Horario, Profesor
+from .models import Profesor
 from .utils import *
 
 
 @login_required
+@requiere_rol("Profesor")
 def dashboard(request):
     profesor = (
         Profesor.objects
@@ -112,6 +113,7 @@ def registro_asistencia(request):
 
 
 @require_POST
+@login_required
 @requiere_rol("Profesor")
 def asistencia_accion(request):
     try:
@@ -125,6 +127,11 @@ def asistencia_accion(request):
 
         profesor = Profesor.objects.get(usuario_id=request.user.id)
         hoy = timezone.localdate()
+        horario = obtener_horario_hoy(profesor).filter(id=horario_id).first()
+        if not horario:
+            return JsonResponse({
+                "error": "Horario no disponible para este profesor"
+            }, status=403)
 
         asistencia = Asistencia.objects.filter(
             profesor=profesor,
@@ -139,7 +146,6 @@ def asistencia_accion(request):
                 }, status=400)
 
             ahora = timezone.now()
-            horario = Horario.objects.get(id=horario_id)
             tz = timezone.get_current_timezone()
             inicio = timezone.make_aware(
                 dt.combine(hoy, horario.hora_inicio),

@@ -68,7 +68,6 @@
         <div class="table-wrap">
             <div class="table-header">
                 <h3>Desglose del recibo - {{ periodo_actual }}</h3>
-                <button class="btn-primary">⬇ Descargar PDF</button>
             </div>
             <table>
                 <thead>
@@ -129,7 +128,9 @@
                         <td>{{ recibo.fecha_pago }}</td>
                         <td>{{ recibo.neto }}</td>
                         <td><span class="pill {{ recibo.estado_clase }}">{{ recibo.estado_label }}</span></td>
-                        <td><button class="{{ recibo.accion_clase }}">{{ recibo.accion_label }}</button></td>
+                        <td>
+                            <a class="btn-outline btn-sm" href="{% url 'recibo_nomina_print' recibo.id %}" target="_blank">Ver PDF</a>
+                        </td>
                     </tr>
                 {% empty %}
                     <tr><td colspan="5">Sin recibos disponibles.</td></tr>
@@ -164,30 +165,35 @@
         </div>
         <div class="table-wrap">
             <div class="table-header">
-                <h3>Detalle mensual {{ historial_anio }}</h3>
-                <button class="btn-outline">Exportar Excel</button>
+                <h3>Pagos registrados</h3>
             </div>
             <table>
                 <thead>
                     <tr>
-                        <th>Mes</th>
+                        <th>Periodo</th>
                         <th>Percepciones</th>
                         <th>Deducciones</th>
-                        <th>Bonos</th>
                         <th>Neto</th>
+                        <th>Horas</th>
+                        <th>F/R</th>
+                        <th>Estado</th>
+                        <th>Accion</th>
                     </tr>
                 </thead>
                 <tbody>
-                {% for mes in historial_mensual %}
+                {% for pago in historial_pagos %}
                     <tr>
-                        <td>{{ mes.nombre }}</td>
-                        <td>{{ mes.percepciones }}</td>
-                        <td>{{ mes.deducciones }}</td>
-                        <td>{{ mes.bonos }}</td>
-                        <td style="font-weight:700;color:var(--accent)">{{ mes.neto }}</td>
+                        <td>{{ pago.periodo }}</td>
+                        <td>{{ pago.percepciones }}</td>
+                        <td>{{ pago.deducciones }}</td>
+                        <td style="font-weight:700;color:var(--accent)">{{ pago.neto }}</td>
+                        <td>{{ pago.horas }}</td>
+                        <td>F: {{ pago.faltas }} / R: {{ pago.retardos }}</td>
+                        <td><span class="pill {{ pago.estado_clase }}">{{ pago.estado_label }}</span></td>
+                        <td><a class="btn-outline btn-sm" href="{% url 'recibo_nomina_print' pago.id %}" target="_blank">Ver PDF</a></td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="5">Sin historial mensual.</td></tr>
+                    <tr><td colspan="8">Sin historial de pagos disponible.</td></tr>
                 {% endfor %}
                 </tbody>
             </table>

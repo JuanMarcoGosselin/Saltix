@@ -254,13 +254,27 @@ def get_recibo_detalle(ultima_nomina, detalle_nomina):
         }
         for concepto in detalle_nomina
     ]
+    if ultima_nomina.total_impuestos:
+        recibo_detalle.append(
+            {
+                "concepto": "ISR",
+                "tipo_label": "DEDUCCION",
+                "tipo_clase": "deduccion",
+                "importe": ultima_nomina.total_impuestos,
+            }
+        )
+
+    if ultima_nomina.total_deducciones:
+        recibo_detalle.append(
+            {
+                "concepto": "Deducciones por faltas y retardos",
+                "tipo_label": "DEDUCCION",
+                "tipo_clase": "deduccion",
+                "importe": ultima_nomina.total_deducciones,
+            }
+        )
+
     recibo_detalle += [
-        {
-            "concepto": "Deducciones por faltas",
-            "tipo_label": "DEDUCCION",
-            "tipo_clase": "deduccion",
-            "importe": ultima_nomina.total_deducciones,
-        },
         {
             "concepto": "NETO A PAGAR",
             "tipo_clase": "neto",

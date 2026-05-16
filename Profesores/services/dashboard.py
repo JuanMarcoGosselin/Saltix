@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from Contabilidad.models import DetalleNomina, Nomina
-from Contabilidad.utils import calcular_pago_base, get_horas_trabajadas, get_periodo_activo
+from Contabilidad.utils import calcular_pago_base, get_horas_trabajadas, get_periodo_activo, total_horas_periodo
 from Profesores.utils import (
     get_attendance_stats,
     get_faltas,
@@ -60,8 +60,8 @@ def build_horario_colors(profesor, inicio_semana, fin_semana):
 def calculate_salary_kpis(profesor, periodo):
     ultima_nomina = (
         Nomina.objects
-        .filter(profesor=profesor, estado="pagada")
-        .order_by("-fecha_de_generacion")
+        .filter(profesor=profesor, estado__in=["procesando", "cerrada", "pagada"])
+        .order_by("-fecha_actualizacion", "-fecha_de_generacion")
         .first()
     )
     detalle_nomina = DetalleNomina.objects.filter(nomina=ultima_nomina) if ultima_nomina else []
@@ -69,6 +69,9 @@ def calculate_salary_kpis(profesor, periodo):
     horas_trabajadas = Decimal(str(get_horas_trabajadas(profesor.id)))
     salario_bruto = calcular_pago_base(profesor.id)
     salario_neto = horas_trabajadas * profesor.costo_por_hora
+
+    recibos = get_recibos_profesor(profesor)
+    historial = get_historial_pagos_profesor(profesor)
 
     return {
         "salario_bruto": salario_bruto,
@@ -79,12 +82,80 @@ def calculate_salary_kpis(profesor, periodo):
             if periodo else "N/A"
         ),
         "recibo_detalle": get_recibo_detalle(ultima_nomina, detalle_nomina),
+        "recibos": recibos,
+        **historial,
+    }
+
+
+def get_recibos_profesor(profesor):
+    nominas = (
+        Nomina.objects
+        .filter(profesor=profesor, estado="pagada")
+        .select_related("periodo")
+        .order_by("-periodo__fecha_fin", "-fecha_actualizacion")
+    )
+    return [
+        {
+            "id": nomina.id,
+            "periodo": f"{nomina.periodo.fecha_inicio:%d/%m/%Y} - {nomina.periodo.fecha_fin:%d/%m/%Y}",
+            "fecha_pago": nomina.fecha_actualizacion.strftime("%d/%m/%Y"),
+            "neto": f"$ {nomina.total_neto:,.2f}",
+            "bruto": f"$ {nomina.total_bruto:,.2f}",
+            "percepciones": f"$ {nomina.total_percepciones:,.2f}",
+            "deducciones": f"$ {(nomina.total_deducciones + nomina.total_impuestos):,.2f}",
+            "horas": nomina.horas_trabajadas,
+            "retardos": nomina.retardos,
+            "faltas": nomina.faltas,
+            "estado_label": nomina.get_estado_display(),
+            "estado_clase": f"pill-{nomina.estado}",
+        }
+        for nomina in nominas
+    ]
+
+
+def get_historial_pagos_profesor(profesor):
+    nominas = list(
+        Nomina.objects
+        .filter(profesor=profesor, estado="pagada")
+        .select_related("periodo")
+        .order_by("-periodo__fecha_fin", "-fecha_actualizacion")
+    )
+    anio = timezone.localdate().year
+    nominas_anio = [nomina for nomina in nominas if nomina.periodo.fecha_fin.year == anio]
+
+    acumulado_total = sum((nomina.total_neto for nomina in nominas_anio), Decimal("0"))
+    deducciones_total = sum(
+        (nomina.total_deducciones + nomina.total_impuestos for nomina in nominas_anio),
+        Decimal("0"),
+    )
+    bonos_total = Decimal("0")
+    for nomina in nominas_anio:
+        bonos_total += sum(
+            (
+                detalle.monto
+                for detalle in DetalleNomina.objects.filter(
+                    nomina=nomina,
+                    concepto__tipo="PERCEPCION",
+                )
+            ),
+            Decimal("0"),
+        )
+
+    return {
+        "historial_anio": anio,
+        "historial_pagos": get_recibos_profesor(profesor),
+        "acumulado_total": f"$ {acumulado_total:,.2f}",
+        "acumulado_periodo": f"{len(nominas_anio)} nominas en {anio}",
+        "deducciones_total": f"$ {deducciones_total:,.2f}",
+        "deducciones_label": "Deducciones e ISR acumulados",
+        "bonos_total": f"$ {bonos_total:,.2f}",
+        "bonos_label": "Percepciones adicionales acumuladas",
     }
 
 
 def calculate_hours_kpis(profesor):
     horas_trabajadas = get_horas_trabajadas(profesor.id)
-    salario_bruto = calcular_pago_base(profesor.id)
+    horas_esperadas = total_horas_periodo(profesor.id)
 
     return {
         "horas_trabajadas": (
@@ -92,7 +163,7 @@ def calculate_hours_kpis(profesor):
             if profesor.costo_por_hora > 0 else "N/A"
         ),
         "horas_esperadas": (
-            f"{salario_bruto // profesor.costo_por_hora} horas"
+            f"{int(horas_esperadas)} horas"
             if profesor.costo_por_hora > 0 else "N/A"
         ),
     }

@@ -31,41 +31,59 @@
   <div class="welcome-banner welcome-banner-conta">
     <div class="welcome-text">
       <h2>Panel de Contabilidad</h2>
-      <p>{% if periodo_label %}Periodo activo: {{ periodo_label }}{% else %}Sin periodo de nomina activo{% endif %}</p>
+      <p>{% if periodo_label %}Periodo activo: {{ periodo_label }} - {{ periodo_actual.estado|lower }}{% else %}Sin periodo de nomina activo{% endif %}</p>
     </div>
   </div>
 
   <div class="table-wrap">
     <div class="table-header">
-      <h3>Nomina del periodo</h3>
+      <h3>Nomina del periodo activo</h3>
+      <div class="period-actions">
+        {% if periodo_actual and periodo_actual.estado == "ABIERTO" %}
+          <form method="post" action="{% url 'generar_nominas' %}">
+            {% csrf_token %}
+            <button class="btn-primary" type="submit">Generar todas</button>
+          </form>
+          <form method="post" action="{% url 'regenerar_nominas' %}">
+            {% csrf_token %}
+            <button class="btn-outline" type="submit">Regenerar todas</button>
+          </form>
+        {% endif %}
+      </div>
     </div>
-    <div class="tabs" id="nomina-tabs">
-      <button class="tab-btn active" type="button" data-filter="todos" onclick="filterNomina('todos',this)">Todos</button>
-      <button class="tab-btn" type="button" data-filter="pendiente" onclick="filterNomina('pendiente',this)">Pendientes</button>
-      <button class="tab-btn" type="button" data-filter="procesando" onclick="filterNomina('procesando',this)">En proceso</button>
-      <button class="tab-btn" type="button" data-filter="pagada" onclick="filterNomina('pagada',this)">Pagadas</button>
-    </div>
+
     <table>
-      <thead><tr><th>Profesor</th><th>Bruto</th><th>Neto</th><th>Estado</th><th>Accion</th></tr></thead>
+      <thead>
+        <tr><th>Profesor</th><th>Bruto</th><th>Neto</th><th>F/R</th><th>ISR</th><th>Estado</th><th>Accion</th></tr>
+      </thead>
       <tbody id="nomina-tbody">
         {% for nomina in nominas %}
           <tr data-status="{{ nomina.estado|default:'sin-estado' }}">
-            <td>{%if nomina.estado == "pendiente" %} {{ nomina.profesor }}{% else %} {{ nomina.profesor.usuario.get_full_name }}{% endif %}</td>
+            <td>{% if nomina.estado == "pendiente" %}{{ nomina.profesor }}{% else %}{{ nomina.profesor.usuario.get_full_name }}{% endif %}</td>
             <td>{% firstof nomina.bruto "--" %}</td>
             <td class="amount-neu">{% firstof nomina.neto "--" %}</td>
+            <td>{% if nomina.estado == "pendiente" %}--{% else %}F: {{ nomina.faltas }} / R: {{ nomina.retardos }}{% endif %}</td>
+            <td>{% if nomina.estado == "pendiente" %}--{% else %}{{ nomina.total_impuestos }}{% endif %}</td>
             <td><span class="pill pill-{{ nomina.estado|default:'gray' }}">{{ nomina.estado|capfirst|default:"Sin estado" }}</span></td>
-            <td>
+            <td class="actions-cell">
               {% if nomina.estado == "pendiente" %}
-                <a class="btn-outline btn-sm" href="{% url 'procesar_nomina' nomina.id %}">Generar</a>
-              {% elif nomina.estado == "procesando" %}
-                <a class="btn-outline btn-sm" href="{% url 'procesar_nomina' nomina.profesor.id %}">Revisar</a>
+                <form class="inline-form" method="post" action="{% url 'procesar_nomina' nomina.id %}">
+                  {% csrf_token %}
+                  <button class="btn-outline btn-sm" type="submit">Generar</button>
+                </form>
               {% else %}
-                <span class="pill pill-gray">Sin accion</span>
+                <a class="btn-outline btn-sm" href="{% url 'detalle_nomina' nomina.id %}">Detalle</a>
+                {% if nomina.estado == "procesando" and periodo_actual.estado == "ABIERTO" %}
+                  <form class="inline-form" method="post" action="{% url 'regenerar_nomina' nomina.id %}">
+                    {% csrf_token %}
+                    <button class="btn-outline btn-sm" type="submit">Regenerar</button>
+                  </form>
+                {% endif %}
               {% endif %}
             </td>
           </tr>
         {% empty %}
-          <tr><td colspan="5" class="empty-cell">Sin registros de nomina para el periodo activo.</td></tr>
+          <tr><td colspan="7" class="empty-cell">Sin periodo activo o sin registros de nomina.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -74,7 +92,7 @@
 
 <div class="page" id="page-periodos">
   <div class="section-title">Periodos de Nomina</div>
-  <div class="section-sub">Administra el periodo activo y consulta los periodos anteriores desde una sola vista.</div>
+  <div class="section-sub">Administra periodos quincenales: 1 al 15 y 16 al ultimo dia del mes.</div>
   <div class="table-wrap">
     <div class="table-header">
       <h3>Periodos de nomina</h3>
@@ -83,7 +101,10 @@
           <span style="color:var(--gray-400)">&#128269;</span>
           <input type="text" placeholder="Buscar periodo..." oninput="searchPeriodos(this.value)">
         </div>
-        <button class="btn-primary" type="button" onclick="location.href='{% url "abrir_periodo" %}'">Nuevo periodo</button>
+        <form method="post" action="{% url 'abrir_periodo' %}">
+          {% csrf_token %}
+          <button class="btn-primary" type="submit">Nuevo periodo actual</button>
+        </form>
       </div>
     </div>
     <table>
@@ -97,7 +118,10 @@
             <td><span class="pill pill-{{ periodo.estado|default:'gray' }}">{{ periodo.estado|default:"Sin estado" }}</span></td>
             <td>
               {% if periodo.estado == "ABIERTO" %}
-                <a class="btn-outline btn-sm btn-close" href="{% url 'cerrar_periodo' periodo.id %}">Cerrar</a>
+                <form method="post" action="{% url 'cerrar_periodo' periodo.id %}">
+                  {% csrf_token %}
+                  <button class="btn-outline btn-sm btn-close" type="submit">Cerrar</button>
+                </form>
               {% else %}
                 <span class="pill pill-gray">Sin acciones</span>
               {% endif %}
@@ -111,28 +135,119 @@
   </div>
 </div>
 
+<div class="page" id="page-historial">
+  <div class="section-title">Historial de Nominas</div>
+  <div class="section-sub">Nominas cerradas o pagadas de periodos anteriores al periodo activo.</div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Nominas generadas</h3>
+    </div>
+
+    <form class="filter-panel filter-panel-conta" method="get">
+      <input type="hidden" name="page" value="historial">
+      <div class="filter-field">
+        <label for="filtro-periodo">Periodo</label>
+        <select id="filtro-periodo" class="form-select" name="periodo">
+          <option value="">Todos anteriores</option>
+          {% for periodo in periodos_historial %}
+            <option value="{{ periodo.id }}" {% if selected_periodo == periodo.id|stringformat:"s" %}selected{% endif %}>{{ periodo.fecha_inicio }} - {{ periodo.fecha_fin }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label for="filtro-profesor">Profesor</label>
+        <select id="filtro-profesor" class="form-select" name="profesor">
+          <option value="">Todos</option>
+          {% for profesor in profesores %}
+            <option value="{{ profesor.id }}" {% if selected_profesor == profesor.id|stringformat:"s" %}selected{% endif %}>{{ profesor.usuario.get_full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label for="filtro-estado">Estado</label>
+        <select id="filtro-estado" class="form-select" name="estado">
+          <option value="">Todos</option>
+          <option value="cerrada" {% if selected_estado == "cerrada" %}selected{% endif %}>Cerrada</option>
+          <option value="pagada" {% if selected_estado == "pagada" %}selected{% endif %}>Pagada</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn-primary" type="submit">Filtrar</button>
+        <a class="btn-outline" href="{% url 'contabilidad_dashboard' %}?page=historial">Limpiar</a>
+      </div>
+    </form>
+
+    <div class="tabs" id="historial-tabs">
+      <button class="tab-btn active" type="button" data-filter="todos" onclick="filterHistorial('todos',this)">Todos</button>
+      <button class="tab-btn" type="button" data-filter="cerrada" onclick="filterHistorial('cerrada',this)">Cerradas</button>
+      <button class="tab-btn" type="button" data-filter="pagada" onclick="filterHistorial('pagada',this)">Pagadas</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Profesor</th><th>Periodo</th><th>Bruto</th><th>Neto</th><th>F/R</th><th>ISR</th><th>Estado</th><th>Accion</th></tr>
+      </thead>
+      <tbody id="historial-tbody">
+        {% for nomina in historial_nominas %}
+          <tr data-status="{{ nomina.estado }}">
+            <td>{{ nomina.profesor.usuario.get_full_name }}</td>
+            <td>{{ nomina.periodo.fecha_inicio }} - {{ nomina.periodo.fecha_fin }}</td>
+            <td>{{ nomina.total_bruto }}</td>
+            <td class="amount-neu">{{ nomina.total_neto }}</td>
+            <td>F: {{ nomina.faltas }} / R: {{ nomina.retardos }}</td>
+            <td>{{ nomina.total_impuestos }}</td>
+            <td><span class="pill pill-{{ nomina.estado }}">{{ nomina.estado|capfirst }}</span></td>
+            <td class="actions-cell">
+              <a class="btn-outline btn-sm" href="{% url 'detalle_nomina' nomina.id %}">Detalle</a>
+              {% if nomina.estado == "procesando" %}
+                <form class="inline-form" method="post" action="{% url 'regenerar_nomina' nomina.id %}">
+                  {% csrf_token %}
+                  <button class="btn-outline btn-sm" type="submit">Regenerar</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="empty-cell">No hay nominas cerradas o pagadas de periodos anteriores.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <div class="page" id="page-reportes">
   <div class="section-title">Reportes Financieros</div>
-  <div class="section-sub">Salidas previstas para auditoria y seguimiento administrativo.</div>
-  <div class="report-grid">
-    <div class="report-card">
-      <div class="report-icon">&#128196;</div>
-      <div class="report-title">Recibos de nomina</div>
-      <div class="report-desc">Comprobantes PDF emitidos al cierre de nomina.</div>
-      <span class="pill pill-gray">Pendiente</span>
+  <div class="section-sub">Vista previa, reporte administrativo, recibos PDF y consolidado por periodo.</div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Periodos disponibles</h3>
+      {% if periodo_actual %}
+        <div class="period-actions">
+          <a class="btn-outline" href="{% url 'vista_previa_periodo' periodo_actual.id %}">Vista previa actual</a>
+          <a class="btn-primary" href="{% url 'reporte_periodo' periodo_actual.id %}">Reporte actual</a>
+        </div>
+      {% endif %}
     </div>
-    <div class="report-card">
-      <div class="report-icon">&#128202;</div>
-      <div class="report-title">Nomina por periodo</div>
-      <div class="report-desc">Reporte administrativo filtrado por periodo.</div>
-      <span class="pill pill-gray">Pendiente</span>
-    </div>
-    <div class="report-card">
-      <div class="report-icon">&#128270;</div>
-      <div class="report-title">Vista previa</div>
-      <div class="report-desc">Previsualizacion antes de cerrar el periodo.</div>
-      <span class="pill pill-gray">Pendiente</span>
-    </div>
+    <table>
+      <thead>
+        <tr><th>Periodo</th><th>Estado</th><th>Vista previa</th><th>Reporte administrativo</th><th>PDF consolidado</th></tr>
+      </thead>
+      <tbody>
+        {% for periodo in periodos %}
+          <tr>
+            <td>{{ periodo.fecha_inicio }} - {{ periodo.fecha_fin }}</td>
+            <td><span class="pill pill-{{ periodo.estado }}">{{ periodo.estado }}</span></td>
+            <td><a class="btn-outline btn-sm" href="{% url 'vista_previa_periodo' periodo.id %}">Abrir</a></td>
+            <td><a class="btn-outline btn-sm" href="{% url 'reporte_periodo' periodo.id %}">Abrir</a></td>
+            <td class="actions-cell">
+              <a class="btn-outline btn-sm" href="{% url 'reporte_periodo_print' periodo.id %}" target="_blank">Ver PDF</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty-cell">No hay periodos para reportar.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}

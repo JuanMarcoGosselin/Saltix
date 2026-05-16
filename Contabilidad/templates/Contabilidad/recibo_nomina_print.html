@@ -1,0 +1,368 @@
+{% load money_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recibo NOM-{{ nomina.id|stringformat:"05d" }}</title>
+  <style>
+    :root {
+      --navy: #0d1f3c;
+      --muted: #64748b;
+      --line: #d7deea;
+      --soft: #f8fafc;
+      --green: #008f6b;
+      --red: #c0392b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #eef2f7;
+      color: #15223a;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    .print-toolbar {
+      align-items: center;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding: 14px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--navy);
+      font-weight: 800;
+      padding: 9px 13px;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+
+    .page {
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 45px rgba(13, 31, 60, .14);
+      margin: 28px auto;
+      max-width: 880px;
+      padding: 34px;
+    }
+
+    .paper-header {
+      align-items: flex-start;
+      border-bottom: 2px solid var(--navy);
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 18px;
+    }
+
+    .kicker {
+      color: var(--green);
+      display: block;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      color: var(--navy);
+      font-size: 28px;
+      margin: 5px 0 3px;
+    }
+
+    p { color: var(--muted); margin: 0; }
+
+    .folio {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      min-width: 160px;
+      padding: 12px 14px;
+      text-align: right;
+    }
+
+    .folio span,
+    .meta-card span,
+    .info-card span,
+    .total span {
+      color: #8794a8;
+      display: block;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .folio strong,
+    .meta-card strong,
+    .info-card strong {
+      color: var(--navy);
+      font-size: 13px;
+    }
+
+    .meta-grid {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: 1.4fr 1.1fr repeat(4, .7fr);
+      margin-top: 20px;
+      overflow: hidden;
+    }
+
+    .meta-card {
+      border-right: 1px solid var(--line);
+      min-width: 0;
+      padding: 13px;
+    }
+
+    .meta-card:last-child { border-right: none; }
+
+    .info-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 14px;
+    }
+
+    .info-card {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+    }
+
+    .wide { grid-column: 1 / -1; }
+
+    .section-head {
+      align-items: end;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      margin-top: 28px;
+      padding-bottom: 10px;
+    }
+
+    .section-head h2 {
+      color: var(--navy);
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .concepts {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 14px;
+    }
+
+    .box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .box.percepciones { border-color: #b7eadc; }
+    .box.deducciones { border-color: #f2c7c1; }
+
+    .box-head {
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 14px;
+    }
+
+    .percepciones .box-head { background: #f2fcf8; border-bottom-color: #b7eadc; }
+    .deducciones .box-head { background: #fff7f6; border-bottom-color: #f2c7c1; }
+
+    .pill {
+      border-radius: 999px;
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 6px 10px;
+    }
+
+    .pill-pos { background: #ddf8ed; color: var(--green); }
+    .pill-neg { background: #fdecea; color: var(--red); }
+
+    .row {
+      align-items: center;
+      border-bottom: 1px solid #edf1f7;
+      display: grid;
+      gap: 12px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      min-height: 50px;
+      padding: 12px 14px;
+    }
+
+    .row.head {
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      min-height: auto;
+      padding-block: 9px;
+      text-transform: uppercase;
+    }
+
+    .row:last-child { border-bottom: none; }
+    .row > :last-child { text-align: right; }
+    small { color: var(--muted); display: block; margin-top: 3px; }
+
+    .amount-pos { color: var(--green); }
+    .amount-neg { color: var(--red); }
+
+    .box-total {
+      align-items: center;
+      background: var(--soft);
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      padding: 13px 14px;
+      text-transform: uppercase;
+    }
+
+    .percepciones .box-total { background: #f2fcf8; border-top-color: #b7eadc; }
+    .deducciones .box-total { background: #fff7f6; border-top-color: #f2c7c1; }
+
+    .net {
+      align-items: center;
+      background: var(--navy);
+      border-radius: 10px;
+      color: #fff;
+      display: flex;
+      gap: 20px;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding: 18px 20px;
+    }
+
+    .net span { color: #aeb9cc; display: block; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+    .net strong { font-size: 24px; }
+    .net-text { color: #dbe4f2; font-size: 12px; font-weight: 800; text-align: right; }
+
+    .legend {
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 22px;
+      padding-top: 12px;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .print-toolbar { display: none; }
+      .page {
+        border: none;
+        box-shadow: none;
+        margin: 0;
+        max-width: none;
+        padding: 0;
+      }
+      @page { margin: 14mm; size: letter; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-toolbar">
+    <a class="btn" href="{% url 'detalle_nomina' nomina.id %}">Volver</a>
+    <button style="cursor: pointer;" class="btn btn-primary" type="button" onclick="window.print()">Guardar como PDF</button>
+  </div>
+
+  <main class="page">
+    <header class="paper-header">
+      <div>
+        <span class="kicker">SALTIX</span>
+        <h1>Recibo de nomina</h1>
+        <p>Detalle calculado del periodo</p>
+      </div>
+      <div class="folio">
+        <span>Folio</span>
+        <strong>NOM-{{ nomina.id|stringformat:"05d" }}</strong>
+      </div>
+    </header>
+
+    <section class="meta-grid">
+      <div class="meta-card"><span>Receptor</span><strong>{{ profesor.usuario.get_full_name }}</strong></div>
+      <div class="meta-card"><span>Periodo</span><strong>{{ periodo.fecha_inicio|date:"d/m/Y" }} - {{ periodo.fecha_fin|date:"d/m/Y" }}</strong></div>
+      <div class="meta-card"><span>Horas</span><strong>{{ nomina.horas_trabajadas }}</strong></div>
+      <div class="meta-card"><span>Faltas</span><strong>{{ nomina.faltas }}</strong></div>
+      <div class="meta-card"><span>Retardos</span><strong>{{ nomina.retardos }}</strong></div>
+      <div class="meta-card"><span>Eq. retardos</span><strong>{{ nomina.faltas_equivalentes }}</strong></div>
+    </section>
+
+    <section class="info-grid">
+      <div class="info-card"><span>Costo por hora</span><strong>$ {{ profesor.costo_por_hora|money }}</strong></div>
+      <div class="info-card"><span>Estado</span><strong>{{ nomina.get_estado_display }}</strong></div>
+      <div class="info-card wide"><span>RFC / CURP</span><strong>{{ profesor.rfc }} / {{ profesor.curp }}</strong></div>
+    </section>
+
+    <div class="section-head">
+      <h2>Conceptos</h2>
+      {% if not es_profesor %}
+        <p>Percepciones, deducciones e ISR simplificado</p>
+      {% endif %}
+    </div>
+
+    <section class="concepts">
+      <div class="box percepciones">
+        <div class="box-head"><span class="pill pill-pos">Percepciones</span></div>
+        <div class="row head"><span>Concepto</span><span>Monto</span></div>
+        <div class="row"><strong>Sueldo bruto</strong><strong class="amount-pos">$ {{ nomina.total_bruto|money }}</strong></div>
+        {% for detalle in percepciones %}
+          <div class="row">
+            <span><strong>{{ detalle.concepto.nombre }}</strong>{% if detalle.descripcion %}<small>{{ detalle.descripcion }}</small>{% endif %}</span>
+            <strong class="amount-pos">$ {{ detalle.monto|money }}</strong>
+          </div>
+        {% endfor %}
+        <div class="box-total"><span>Total percepciones</span><strong>$ {{ nomina.total_percepciones|money }}</strong></div>
+      </div>
+
+      <div class="box deducciones">
+        <div class="box-head"><span class="pill pill-neg">Deducciones</span></div>
+        <div class="row head"><span>Concepto</span><span>Monto</span></div>
+        {% if nomina.total_impuestos %}
+          <div class="row"><strong>ISR simplificado</strong><strong class="amount-neg">$ {{ nomina.total_impuestos|money }}</strong></div>
+        {% endif %}
+        {% for detalle in deducciones %}
+          <div class="row">
+            <span><strong>{{ detalle.concepto.nombre }}</strong>{% if detalle.descripcion %}<small>{{ detalle.descripcion }}</small>{% endif %}</span>
+            <strong class="amount-neg">$ {{ detalle.monto|money }}</strong>
+          </div>
+        {% endfor %}
+        <div class="box-total"><span>Total deducciones</span><strong>$ {{ preview_total_deducciones|money }}</strong></div>
+      </div>
+    </section>
+
+    <section class="net">
+      <div>
+        <span>{% if es_profesor %}Importe total neto{% else %}Neto a pagar{% endif %}</span>
+        <strong>$ {{ nomina.total_neto|money }}</strong>
+      </div>
+      <div class="net-text">{{ preview_total_neto_texto }}</div>
+    </section>
+
+    <div class="legend">{{ leyenda }}</div>
+  </main>
+
+  {% if auto_print %}
+    <script>window.addEventListener('load', () => window.print());</script>
+  {% endif %}
+</body>
+</html>

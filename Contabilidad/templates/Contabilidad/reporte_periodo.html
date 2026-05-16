@@ -1,0 +1,117 @@
+{% extends "core/layout.html" %}
+{% load static %}
+{% load money_filters %}
+
+{% block title %}SALTIX - Reporte de nomina{% endblock %}
+
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard_base.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard_shared.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard_contabilidad.css' %}">
+{% endblock %}
+
+{% block topbar %}
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()">&#x2630;</button>
+    <div class="breadcrumb"><strong id="breadcrumb-text">Reporte administrativo</strong></div>
+  </div>
+  <div class="topbar-actions">
+    {% include "Notifications/partials/bell.html" %}
+  </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="page active" id="page-reportes">
+  <div class="section-title">Reporte Administrativo de Nomina</div>
+  <div class="section-sub">{{ periodo.fecha_inicio }} - {{ periodo.fecha_fin }} · {{ periodo.estado }}</div>
+
+  <div class="conta-summary-grid report-summary-grid">
+    <div class="conta-summary-card"><div class="card-bar bar-teal"></div><div class="summary-label">Total bruto</div><div class="summary-value">$ {{ totales.total_bruto|money }}</div><div class="summary-meta">Sueldo base calculado</div></div>
+    <div class="conta-summary-card"><div class="card-bar bar-blue"></div><div class="summary-label">Percepciones</div><div class="summary-value">$ {{ totales.total_percepciones|money }}</div><div class="summary-meta">Bruto + extras</div></div>
+    <div class="conta-summary-card"><div class="card-bar bar-red"></div><div class="summary-label">Deducciones</div><div class="summary-value">$ {{ totales.total_deducciones|money }}</div><div class="summary-meta">Sin ISR</div></div>
+    <div class="conta-summary-card"><div class="card-bar bar-orange"></div><div class="summary-label">ISR</div><div class="summary-value">$ {{ totales.total_isr|money }}</div><div class="summary-meta">Simplificado Sprint 4</div></div>
+    <div class="conta-summary-card"><div class="card-bar bar-teal"></div><div class="summary-label">Neto</div><div class="summary-value">$ {{ totales.total_neto|money }}</div><div class="summary-meta">{{ totales.total_profesores }} nominas</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header">
+      <h3>Nominas del periodo</h3>
+      <div class="period-actions">
+        <a class="btn-outline" href="{% url 'vista_previa_periodo' periodo.id %}">Vista previa</a>
+        <a class="btn-outline" href="{% url 'reporte_periodo_print' periodo.id %}" target="_blank">Ver PDF</a>
+      </div>
+    </div>
+
+    <form class="filter-panel filter-panel-conta" method="get">
+      <div class="filter-field">
+        <label for="profesor">Profesor</label>
+        <select id="profesor" class="form-select" name="profesor">
+          <option value="">Todos</option>
+          {% for profesor in profesores %}
+            <option value="{{ profesor.id }}" {% if selected_profesor == profesor.id|stringformat:"s" %}selected{% endif %}>{{ profesor.usuario.get_full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label for="estado">Estado</label>
+        <select id="estado" class="form-select" name="estado">
+          <option value="">Todos</option>
+          <option value="procesando" {% if selected_estado == "procesando" %}selected{% endif %}>En proceso</option>
+          <option value="cerrada" {% if selected_estado == "cerrada" %}selected{% endif %}>Cerrada</option>
+          <option value="pagada" {% if selected_estado == "pagada" %}selected{% endif %}>Pagada</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn-primary" type="submit">Filtrar</button>
+        <a class="btn-outline" href="{% url 'reporte_periodo' periodo.id %}">Limpiar</a>
+      </div>
+    </form>
+
+    <table>
+      <thead>
+        <tr><th>Profesor</th><th>Departamento</th><th>Bruto</th><th>Percepciones</th><th>Deducciones</th><th>ISR</th><th>Neto</th><th>Estado</th><th>Actualizada</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for nomina in nominas %}
+          <tr>
+            <td>{{ nomina.profesor.usuario.get_full_name }}</td>
+            <td>{{ nomina.profesor.departamento.nombre|default:"Sin departamento" }}</td>
+            <td>$ {{ nomina.total_bruto|money }}</td>
+            <td>$ {{ nomina.total_percepciones|money }}</td>
+            <td>$ {{ nomina.total_deducciones|money }}</td>
+            <td>$ {{ nomina.total_impuestos|money }}</td>
+            <td class="amount-neu">$ {{ nomina.total_neto|money }}</td>
+            <td><span class="pill pill-{{ nomina.estado }}">{{ nomina.estado|capfirst }}</span></td>
+            <td>{{ nomina.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
+            <td class="actions-cell">
+              <a class="btn-outline btn-sm" href="{% url 'detalle_nomina' nomina.id %}">Detalle</a>
+              {% if nomina.estado == "cerrada" or nomina.estado == "pagada" %}
+                <a class="btn-outline btn-sm" href="{% url 'recibo_nomina_print' nomina.id %}" target="_blank">Ver PDF</a>
+              {% else %}
+                <span class="pill pill-gray">PDF bloqueado</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="10" class="empty-cell">No hay nominas para este periodo.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra %}
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{% static 'js/contabilidad_dashboard.js' %}"></script>
+{% endblock %}

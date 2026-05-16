@@ -1,6 +1,7 @@
 const breadcrumbs = {
   inicio: 'Inicio',
   periodos: 'Periodos de Nomina',
+  historial: 'Historial de Nominas',
   reportes: 'Reportes Financieros',
 };
 
@@ -111,6 +112,16 @@ function filterNomina(filter, button) {
   });
 }
 
+function filterHistorial(filter, button) {
+  document.querySelectorAll('#historial-tabs .tab-btn').forEach((tab) => tab.classList.remove('active'));
+  if (button) button.classList.add('active');
+  const rows = document.querySelectorAll('#historial-tbody tr[data-status]');
+  rows.forEach((row) => {
+    const status = row.dataset.status || '';
+    row.hidden = !(filter === 'todos' || status === filter);
+  });
+}
+
 function searchPeriodos(value) {
   const term = (value || '').trim().toLowerCase();
   const rows = document.querySelectorAll('#periodos-tbody tr[data-search]');
@@ -214,6 +225,7 @@ function updateNominaPreviewTotals(type, amount) {
 function setupNominaConceptForm() {
   const form = document.getElementById('concept-form');
   if (!form) return;
+  if (form.method && form.method.toLowerCase() === 'post') return;
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();

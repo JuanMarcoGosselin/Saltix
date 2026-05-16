@@ -12,8 +12,8 @@ from .models import (
 
 @admin.register(Nomina)
 class NominaAdmin(admin.ModelAdmin):
-    list_display = ("profesor", "periodo", "total_bruto", "total_neto", "fecha_de_generacion")
-    list_filter = ("periodo",)
+    list_display = ("profesor", "periodo", "estado", "total_bruto", "total_impuestos", "total_neto", "fecha_de_generacion")
+    list_filter = ("periodo", "estado")
     search_fields = ("profesor__usuario__nombre", "profesor__usuario__apellido")
     list_select_related = ("profesor", "periodo")
 
@@ -33,7 +33,7 @@ class CatalogoConceptoAdmin(admin.ModelAdmin):
 
 @admin.register(DetalleNomina)
 class DetalleNominaAdmin(admin.ModelAdmin):
-    list_display = ("nomina", "concepto", "monto")
+    list_display = ("nomina", "concepto", "monto", "descripcion")
     list_filter = ("concepto",)
     list_select_related = ("nomina", "concepto")
 

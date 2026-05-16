@@ -1,0 +1,292 @@
+{% load money_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ tipo_reporte }} periodo {{ periodo.id }}</title>
+  <style>
+    :root {
+      --navy: #0d1f3c;
+      --muted: #64748b;
+      --line: #d7deea;
+      --soft: #f8fafc;
+      --green: #008f6b;
+      --red: #c0392b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background: #eef2f7;
+      color: #15223a;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .print-toolbar {
+      align-items: center;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      padding: 14px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--navy);
+      font-weight: 800;
+      padding: 9px 13px;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+
+    .page {
+      background: #fff;
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 45px rgba(13, 31, 60, .14);
+      margin: 28px auto;
+      max-width: 1060px;
+      padding: 34px;
+    }
+
+    .header {
+      align-items: flex-start;
+      border-bottom: 2px solid var(--navy);
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 18px;
+    }
+
+    .kicker {
+      color: var(--green);
+      display: block;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      color: var(--navy);
+      font-size: 28px;
+      margin: 5px 0 3px;
+    }
+
+    p { color: var(--muted); margin: 0; }
+
+    .badge {
+      background: #e6f9f4;
+      border-radius: 999px;
+      color: var(--green);
+      font-weight: 900;
+      padding: 8px 12px;
+      text-transform: uppercase;
+    }
+
+    .summary {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(5, 1fr);
+      margin-top: 20px;
+    }
+
+    .card {
+      background: var(--soft);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+    }
+
+    .card span {
+      color: #8794a8;
+      display: block;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: .06em;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .card strong {
+      color: var(--navy);
+      font-size: 17px;
+    }
+
+    .table-title {
+      align-items: end;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      margin-top: 28px;
+      padding-bottom: 10px;
+    }
+
+    .table-title h2 {
+      color: var(--navy);
+      font-size: 16px;
+      margin: 0;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-top: 14px;
+      width: 100%;
+    }
+
+    th {
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .04em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    th, td {
+      border-bottom: 1px solid #edf1f7;
+      padding: 9px 8px;
+      vertical-align: top;
+    }
+
+    td.amount { font-weight: 800; text-align: right; white-space: nowrap; }
+    th.amount { text-align: right; }
+
+    .state {
+      border-radius: 999px;
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 5px 8px;
+      text-transform: uppercase;
+    }
+
+    .state-procesando { background: #e8f2ff; color: #2470c7; }
+    .state-cerrada { background: #eef0f2; color: #636e72; }
+    .state-pagada { background: #ddf8ed; color: var(--green); }
+
+    .issues {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      margin-top: 24px;
+      overflow: hidden;
+    }
+
+    .issues h2 {
+      background: var(--soft);
+      border-bottom: 1px solid var(--line);
+      color: var(--navy);
+      font-size: 15px;
+      margin: 0;
+      padding: 12px 14px;
+    }
+
+    .issues ul { margin: 0; padding: 12px 28px 16px; }
+    .issues li { margin-bottom: 6px; }
+
+    @media print {
+      body { background: #fff; }
+      .print-toolbar { display: none; }
+      .page {
+        border: none;
+        box-shadow: none;
+        margin: 0;
+        max-width: none;
+        padding: 0;
+      }
+      @page { margin: 12mm; size: landscape; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-toolbar">
+    <a class="btn" href="{% url 'reporte_periodo' periodo.id %}">Volver</a>
+    <button style="cursor:pointer;" class="btn btn-primary" type="button" onclick="window.print()">Guardar como PDF</button>
+  </div>
+
+  <main class="page">
+    <header class="header">
+      <div>
+        <span class="kicker">SALTIX</span>
+        <h1>Reporte de nomina</h1>
+        <p>{{ periodo.fecha_inicio|date:"d/m/Y" }} - {{ periodo.fecha_fin|date:"d/m/Y" }} · Generado {{ fecha_generacion|date:"d/m/Y H:i" }}</p>
+      </div>
+      <div class="badge">{{ tipo_reporte }} · {{ periodo.estado }}</div>
+    </header>
+
+    <section class="summary">
+      <div class="card"><span>Profesores</span><strong>{{ resumen.totales.total_profesores }}</strong></div>
+      <div class="card"><span>Bruto</span><strong>$ {{ resumen.totales.total_bruto|money }}</strong></div>
+      <div class="card"><span>Percepciones</span><strong>$ {{ resumen.totales.total_percepciones|money }}</strong></div>
+      <div class="card"><span>Deducciones / ISR</span><strong>$ {{ resumen.totales.total_deducciones|money }} / $ {{ resumen.totales.total_isr|money }}</strong></div>
+      <div class="card"><span>Neto</span><strong>$ {{ resumen.totales.total_neto|money }}</strong></div>
+    </section>
+
+    <div class="table-title">
+      <h2>Nominas del periodo</h2>
+      <p>{{ resumen.total_nominas_generadas }} generadas · {{ resumen.total_nominas_pendientes }} pendientes</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Profesor</th>
+          <th>Departamento</th>
+          <th class="amount">Horas</th>
+          <th class="amount">Bruto</th>
+          <th class="amount">Percepciones</th>
+          <th class="amount">Deducciones</th>
+          <th class="amount">ISR</th>
+          <th class="amount">Neto</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for nomina in resumen.nominas %}
+          <tr>
+            <td>{{ nomina.profesor.usuario.get_full_name }}</td>
+            <td>{{ nomina.profesor.departamento.nombre|default:"Sin departamento" }}</td>
+            <td class="amount">{{ nomina.horas_trabajadas }}</td>
+            <td class="amount">$ {{ nomina.total_bruto|money }}</td>
+            <td class="amount">$ {{ nomina.total_percepciones|money }}</td>
+            <td class="amount">$ {{ nomina.total_deducciones|money }}</td>
+            <td class="amount">$ {{ nomina.total_impuestos|money }}</td>
+            <td class="amount">$ {{ nomina.total_neto|money }}</td>
+            <td><span class="state state-{{ nomina.estado }}">{{ nomina.estado }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="9">No hay nominas generadas para este periodo.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <section class="issues">
+      <h2>Inconsistencias detectadas</h2>
+      <ul>
+        {% for inconsistencia in resumen.inconsistencias %}
+          <li>{{ inconsistencia }}</li>
+        {% empty %}
+          <li>Sin inconsistencias detectadas.</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </main>
+
+  {% if auto_print %}
+    <script>window.addEventListener('load', () => window.print());</script>
+  {% endif %}
+</body>
+</html>
