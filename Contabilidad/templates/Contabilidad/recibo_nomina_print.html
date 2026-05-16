@@ -281,7 +281,11 @@
 </head>
 <body>
   <div class="print-toolbar">
-    <a class="btn" href="{% url 'detalle_nomina' nomina.id %}">Volver</a>
+    {% if es_profesor %}
+      <a class="btn" href="/profesores/?page=recibos">Volver</a>
+    {% else %}
+      <a class="btn" href="{% url 'detalle_nomina' nomina.id %}">Volver</a>
+    {% endif %}
     <button style="cursor: pointer;" class="btn btn-primary" type="button" onclick="window.print()">Guardar como PDF</button>
   </div>
 
